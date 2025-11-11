@@ -38,7 +38,7 @@ export default function DashboardPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -146,6 +146,35 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">+73</div>
                 <p className="text-xs text-muted-foreground">
                   Awaiting fulfillment
+                </p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="cursor-pointer hover:bg-accent transition-colors"
+              onClick={() => router.push('/dashboard/refunds')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Returns
+                </CardTitle>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  className="h-4 w-4 text-muted-foreground"
+                >
+                  <path d="M9 14l-5-5 5-5" />
+                  <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                </svg>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">+12</div>
+                <p className="text-xs text-muted-foreground">
+                  Pending returns
                 </p>
               </CardContent>
             </Card>

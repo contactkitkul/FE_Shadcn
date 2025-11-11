@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -25,31 +25,37 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Tag, Percent } from "lucide-react"
-import { Discount, EnumDiscountStatus, EnumDiscountType } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "sonner"
-import { format } from "date-fns"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Edit, Trash2, Tag, Percent } from "lucide-react";
+import {
+  Discount,
+  EnumDiscountStatus,
+  EnumDiscountType,
+  EnumDiscountReason,
+} from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function DiscountsPage() {
-  const [discounts, setDiscounts] = useState<Discount[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null)
-  const [selectedDiscountType, setSelectedDiscountType] = useState<EnumDiscountType>(EnumDiscountType.PERCENTAGE)
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+  const [selectedDiscountType, setSelectedDiscountType] =
+    useState<EnumDiscountType>(EnumDiscountType.PERCENTAGE);
 
   useEffect(() => {
     // Mock data
@@ -97,43 +103,50 @@ export default function DiscountsPage() {
           timesUsed: 200,
           discountPercentage: 15,
         },
-      ]
-      setDiscounts(mockDiscounts)
-      setLoading(false)
-    }, 1000)
-  }, [])
+      ];
+      setDiscounts(mockDiscounts);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   const filteredDiscounts = discounts.filter(
     (discount) =>
       discount.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       discount.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
   const getStatusBadge = (status: EnumDiscountStatus) => {
-    const variants: Record<EnumDiscountStatus, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<
+      EnumDiscountStatus,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
       ACTIVE: "default",
       INACTIVE: "secondary",
       EXPIRED: "destructive",
       REDEEMED_OUT: "outline",
-    }
-    return <Badge variant={variants[status]}>{status}</Badge>
-  }
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
 
   const handleDelete = (id: string) => {
-    toast.success("Discount deleted successfully")
-    setDiscounts(discounts.filter((d) => d.id !== id))
-  }
+    toast.success("Discount deleted successfully");
+    setDiscounts(discounts.filter((d) => d.id !== id));
+  };
 
   const handleEdit = (discount: Discount) => {
-    setEditingDiscount(discount)
-    setIsDialogOpen(true)
-  }
+    setEditingDiscount(discount);
+    setIsDialogOpen(true);
+  };
 
   const handleSave = () => {
-    toast.success(editingDiscount ? "Discount updated successfully" : "Discount created successfully")
-    setIsDialogOpen(false)
-    setEditingDiscount(null)
-  }
+    toast.success(
+      editingDiscount
+        ? "Discount updated successfully"
+        : "Discount created successfully"
+    );
+    setIsDialogOpen(false);
+    setEditingDiscount(null);
+  };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -168,25 +181,38 @@ export default function DiscountsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Discount Type</Label>
-                  <Select value={selectedDiscountType} onValueChange={(value) => setSelectedDiscountType(value as EnumDiscountType)}>
+                  <Select
+                    value={selectedDiscountType}
+                    onValueChange={(value) =>
+                      setSelectedDiscountType(value as EnumDiscountType)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="PERCENTAGE">Percentage</SelectItem>
                       <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
-                      <SelectItem value="X_FREE_ON_Y_PURCHASE">Buy X Get Y Free</SelectItem>
+                      <SelectItem value="X_FREE_ON_Y_PURCHASE">
+                        Buy X Get Y Free
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              
+
               {/* Conditional Fields Based on Discount Type */}
               {selectedDiscountType === EnumDiscountType.PERCENTAGE && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="percentage">Discount Percentage (%)</Label>
-                    <Input id="percentage" type="number" placeholder="20" min="0" max="100" />
+                    <Input
+                      id="percentage"
+                      type="number"
+                      placeholder="20"
+                      min="0"
+                      max="100"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maxDiscount">Max Discount Amount (€)</Label>
@@ -194,15 +220,16 @@ export default function DiscountsPage() {
                   </div>
                 </div>
               )}
-              
+
               {selectedDiscountType === EnumDiscountType.FIXED_AMOUNT && (
                 <div className="space-y-2">
                   <Label htmlFor="fixedAmount">Discount Amount (€)</Label>
                   <Input id="fixedAmount" type="number" placeholder="10" />
                 </div>
               )}
-              
-              {selectedDiscountType === EnumDiscountType.X_FREE_ON_Y_PURCHASE && (
+
+              {selectedDiscountType ===
+                EnumDiscountType.X_FREE_ON_Y_PURCHASE && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="buyQty">Buy Quantity (X)</Label>
@@ -214,7 +241,7 @@ export default function DiscountsPage() {
                   </div>
                 </div>
               )}
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minCartValue">Min Cart Value (€)</Label>
@@ -244,6 +271,24 @@ export default function DiscountsPage() {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="reason">Discount Reason</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CHINA_MISTAKE">China Mistake</SelectItem>
+                    <SelectItem value="EUROPE_MISTAKE">
+                      Europe Mistake
+                    </SelectItem>
+                    <SelectItem value="OTHERS">Others</SelectItem>
+                    <SelectItem value="NO_MISTAKE_EQUAL_HIT">
+                      No Mistake / Equal Hit
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -266,7 +311,9 @@ export default function DiscountsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Discounts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Discounts
+            </CardTitle>
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -281,7 +328,10 @@ export default function DiscountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {discounts.filter(d => d.status === EnumDiscountStatus.ACTIVE).length}
+              {
+                discounts.filter((d) => d.status === EnumDiscountStatus.ACTIVE)
+                  .length
+              }
             </div>
             <p className="text-xs text-muted-foreground">Currently available</p>
           </CardContent>
@@ -305,7 +355,13 @@ export default function DiscountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(discounts.reduce((sum, d) => sum + (d.timesUsed / d.usageLimit * 100), 0) / discounts.length)}%
+              {Math.round(
+                discounts.reduce(
+                  (sum, d) => sum + (d.timesUsed / d.usageLimit) * 100,
+                  0
+                ) / discounts.length
+              )}
+              %
             </div>
             <p className="text-xs text-muted-foreground">Of usage limit</p>
           </CardContent>
@@ -317,7 +373,6 @@ export default function DiscountsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Discount Codes</CardTitle>
-              <CardDescription>Manage promotional discounts</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -357,21 +412,31 @@ export default function DiscountsPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
                       <Tag className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No discounts found</p>
+                      <p className="text-muted-foreground">
+                        No discounts found
+                      </p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredDiscounts.map((discount) => (
                     <TableRow key={discount.id}>
-                      <TableCell className="font-medium font-mono">{discount.code}</TableCell>
-                      <TableCell>{discount.discountType.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="font-medium font-mono">
+                        {discount.code}
+                      </TableCell>
                       <TableCell>
-                        {discount.discountPercentage ? `${discount.discountPercentage}%` : `£${discount.discountAmount}`}
+                        {discount.discountType.replace(/_/g, " ")}
+                      </TableCell>
+                      <TableCell>
+                        {discount.discountPercentage
+                          ? `${discount.discountPercentage}%`
+                          : `£${discount.discountAmount}`}
                       </TableCell>
                       <TableCell>
                         {discount.timesUsed} / {discount.usageLimit}
                       </TableCell>
-                      <TableCell>{format(new Date(discount.expiryDate), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>
+                        {format(new Date(discount.expiryDate), "MMM dd, yyyy")}
+                      </TableCell>
                       <TableCell>{getStatusBadge(discount.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -400,5 +465,5 @@ export default function DiscountsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

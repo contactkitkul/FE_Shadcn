@@ -114,6 +114,13 @@ export enum EnumDiscountType {
   X_FREE_ON_Y_PURCHASE = "X_FREE_ON_Y_PURCHASE",
 }
 
+export enum EnumDiscountReason {
+  CHINA_MISTAKE = "CHINA_MISTAKE",
+  EUROPE_MISTAKE = "EUROPE_MISTAKE",
+  OTHERS = "OTHERS",
+  NO_MISTAKE_EQUAL_HIT = "NO_MISTAKE_EQUAL_HIT",
+}
+
 export enum EnumRiskChargeback {
   EXTREMELY_SAFE = "EXTREMELY_SAFE",
   SAFE = "SAFE",
@@ -255,6 +262,7 @@ export interface Discount {
   minQty?: number
   description?: string
   discountType: EnumDiscountType
+  discountReason?: EnumDiscountReason
   timesUsed: number
   discountPercentage?: number
   discountAmount?: number

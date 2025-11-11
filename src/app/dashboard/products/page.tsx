@@ -48,6 +48,8 @@ import {
 } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { getAllTeams, getLeagueForTeam, formatTeamName } from "@/lib/team-league-mapping";
+import { VariantManager } from "@/components/products/variant-manager";
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -56,6 +58,10 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [autoLeague, setAutoLeague] = useState<EnumLeague | undefined>(undefined);
+  const [variantManagerOpen, setVariantManagerOpen] = useState(false);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -201,7 +207,25 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="team">Team</Label>
-                    <Input id="team" placeholder="Enter team name" />
+                    <Select 
+                      value={selectedTeam}
+                      onValueChange={(value) => {
+                        setSelectedTeam(value);
+                        const league = getLeagueForTeam(value);
+                        setAutoLeague(league);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select team" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {getAllTeams().sort().map((team) => (
+                          <SelectItem key={team} value={team}>
+                            {formatTeamName(team)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="year">Year</Label>
@@ -210,21 +234,13 @@ export default function ProductsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="league">League</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select league" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PREMIER_LEAGUE">
-                          Premier League
-                        </SelectItem>
-                        <SelectItem value="LA_LIGA">La Liga</SelectItem>
-                        <SelectItem value="SERIE_A">Serie A</SelectItem>
-                        <SelectItem value="BUNDESLIGA">Bundesliga</SelectItem>
-                        <SelectItem value="LIGUE_1">Ligue 1</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="league">League (Auto-assigned)</Label>
+                    <Input 
+                      id="league" 
+                      value={autoLeague ? autoLeague.replace(/_/g, " ") : "Select a team first"}
+                      disabled
+                      className="bg-muted"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="homeAway">Type</Label>
@@ -356,6 +372,17 @@ export default function ProductsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setSelectedProductForVariants(product);
+                              setVariantManagerOpen(true);
+                            }}
+                            title="Manage variants"
+                          >
+                            <Package className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDuplicate(product)}
                             title="Duplicate product"
                           >
@@ -385,6 +412,16 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Variant Manager Dialog */}
+      {selectedProductForVariants && (
+        <VariantManager
+          productId={selectedProductForVariants.id}
+          productName={selectedProductForVariants.name}
+          open={variantManagerOpen}
+          onOpenChange={setVariantManagerOpen}
+        />
+      )}
     </div>
   );
 }

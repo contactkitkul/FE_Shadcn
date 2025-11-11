@@ -45,6 +45,7 @@ import {
 } from "@/types";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { validateAddress, type Address } from "@/lib/address-validation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +77,7 @@ export default function OrderDetailPage({
   const [trackingRows, setTrackingRows] = useState([{ provider: "", trackingNumber: "" }]);
   const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [addressValidation, setAddressValidation] = useState<ReturnType<typeof validateAddress> | null>(null);
 
   useEffect(() => {
     // Mock data - replace with actual API call
@@ -141,6 +143,26 @@ export default function OrderDetailPage({
         ],
       };
       setOrder(mockOrder);
+      
+      // Validate address
+      const addressToValidate: Address = {
+        line1: mockOrder.shippingLine1,
+        line2: mockOrder.shippingLine2,
+        city: mockOrder.shippingCity,
+        state: mockOrder.shippingState,
+        postalCode: mockOrder.shippingPostalCode,
+        country: mockOrder.shippingCountry,
+        name: mockOrder.shippingName,
+      };
+      const validation = validateAddress(addressToValidate);
+      setAddressValidation(validation);
+      
+      if (!validation.isValid) {
+        toast.error("Address validation failed - please review");
+      } else if (validation.warnings.length > 0) {
+        toast.warning("Address has warnings - please review");
+      }
+      
       setLoading(false);
     }, 500);
   }, [params.id]);
@@ -325,7 +347,7 @@ export default function OrderDetailPage({
                 {/* Order Items */}
                 <div className="space-y-3">
                   {order.orderItems?.map((item, index) => (
-                    <div key={item.id}>
+                    <div key={item.id} className={item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK ? "opacity-50" : ""}>
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3">
                           <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
@@ -334,6 +356,9 @@ export default function OrderDetailPage({
                           <div>
                             <p className="font-medium">
                               2004 Portugal 2a Equipacion
+                              {item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK && (
+                                <Badge variant="destructive" className="ml-2">Cancelled</Badge>
+                              )}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               S / Sin parche
@@ -387,10 +412,13 @@ export default function OrderDetailPage({
                             className="h-8 w-8"
                             onClick={() => {
                               if (!order) return;
-                              const updatedItems = order.orderItems?.filter(i => i.id !== item.id);
+                              const updatedItems = order.orderItems?.map(i =>
+                                i.id === item.id ? { ...i, noStockStatus: EnumNoStockStatus.OUT_OF_STOCK } : i
+                              );
                               setOrder({ ...order, orderItems: updatedItems });
-                              toast.success("Item removed from order");
+                              toast.success("Item marked as cancelled");
                             }}
+                            title="Mark item as cancelled"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -707,6 +735,34 @@ export default function OrderDetailPage({
                   <p>{order.shippingCountry}</p>
                   <p>{order.shippingPhone}</p>
                 </div>
+                
+                {/* Address Validation Results */}
+                {addressValidation && (
+                  <div className="mt-3 space-y-2">
+                    {addressValidation.errors.length > 0 && (
+                      <div className="rounded-md bg-destructive/10 p-2">
+                        <p className="text-xs font-medium text-destructive mb-1">Address Errors:</p>
+                        {addressValidation.errors.map((error, idx) => (
+                          <p key={idx} className="text-xs text-destructive">• {error}</p>
+                        ))}
+                      </div>
+                    )}
+                    {addressValidation.warnings.length > 0 && (
+                      <div className="rounded-md bg-yellow-50 p-2">
+                        <p className="text-xs font-medium text-yellow-800 mb-1">Address Warnings:</p>
+                        {addressValidation.warnings.map((warning, idx) => (
+                          <p key={idx} className="text-xs text-yellow-700">• {warning}</p>
+                        ))}
+                      </div>
+                    )}
+                    {addressValidation.isValid && addressValidation.warnings.length === 0 && (
+                      <div className="rounded-md bg-green-50 p-2">
+                        <p className="text-xs text-green-700">✓ Address validated successfully</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <Button variant="link" className="h-auto p-0 text-sm mt-2">
                   View map
                 </Button>

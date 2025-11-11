@@ -1,31 +1,72 @@
 "use client"
 
+import { subDays, format } from "date-fns"
+
 export function Overview() {
+  // Generate last 14 days of data
+  const generateData = () => {
+    const data = []
+    for (let i = 13; i >= 0; i--) {
+      const date = subDays(new Date(), i)
+      data.push({
+        date: format(date, "MMM dd"),
+        sales: Math.floor(Math.random() * 5000) + 1000, // Random sales data
+        orders: Math.floor(Math.random() * 50) + 10,
+        products: Math.floor(Math.random() * 100) + 20,
+      })
+    }
+    return data
+  }
+
+  const last14Days = generateData()
+  const maxSales = Math.max(...last14Days.map(d => d.sales))
+
   return (
-    <div className="h-[350px] flex items-center justify-center">
-      <div className="space-y-4 w-full">
-        {/* Simple bar chart representation */}
-        <div className="flex items-end justify-between h-64 gap-4">
-          {[
-            { month: "Jan", value: 80 },
-            { month: "Feb", value: 45 },
-            { month: "Mar", value: 90 },
-            { month: "Apr", value: 60 },
-            { month: "May", value: 75 },
-            { month: "Jun", value: 95 },
-            { month: "Jul", value: 70 },
-            { month: "Aug", value: 85 },
-            { month: "Sep", value: 55 },
-            { month: "Oct", value: 80 },
-            { month: "Nov", value: 90 },
-            { month: "Dec", value: 100 },
-          ].map((item) => (
-            <div key={item.month} className="flex flex-col items-center flex-1 gap-2">
-              <div className="w-full bg-primary rounded-t-md transition-all hover:opacity-80" 
-                   style={{ height: `${item.value}%` }} />
-              <span className="text-xs text-muted-foreground">{item.month}</span>
+    <div className="h-[350px]">
+      <div className="space-y-4 w-full h-full">
+        <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-primary rounded-sm" />
+            <span className="text-muted-foreground">Sales (€)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-sm" />
+            <span className="text-muted-foreground">Orders</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-sm" />
+            <span className="text-muted-foreground">Products Sold</span>
+          </div>
+        </div>
+        {/* Bar chart for last 14 days */}
+        <div className="flex items-end justify-between h-64 gap-2">
+          {last14Days.map((item, index) => (
+            <div key={index} className="flex flex-col items-center flex-1 gap-2 group">
+              <div className="w-full flex flex-col gap-1 items-center">
+                <div 
+                  className="w-full bg-primary rounded-t-md transition-all hover:opacity-80" 
+                  style={{ height: `${(item.sales / maxSales) * 200}px` }}
+                  title={`Sales: €${item.sales}`}
+                />
+                <div 
+                  className="w-full bg-blue-500 rounded-t-md transition-all hover:opacity-80" 
+                  style={{ height: `${(item.orders / 50) * 100}px` }}
+                  title={`Orders: ${item.orders}`}
+                />
+                <div 
+                  className="w-full bg-green-500 rounded-t-md transition-all hover:opacity-80" 
+                  style={{ height: `${(item.products / 100) * 80}px` }}
+                  title={`Products: ${item.products}`}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground rotate-45 origin-left whitespace-nowrap">
+                {item.date}
+              </span>
             </div>
           ))}
+        </div>
+        <div className="text-xs text-muted-foreground text-center pt-2">
+          Last 14 days performance
         </div>
       </div>
     </div>
