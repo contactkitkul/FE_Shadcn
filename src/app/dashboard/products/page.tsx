@@ -64,7 +64,7 @@ export default function ProductsPage() {
       const mockProducts: Product[] = [
         {
           id: "1",
-          createdAt: new Date(),
+          createdAt: new Date("2024-11-10"),
           updatedAt: new Date(),
           sku: "MU-HOME-23-24",
           productStatus: EnumProductStatus.ACTIVE,
@@ -81,7 +81,7 @@ export default function ProductsPage() {
         },
         {
           id: "2",
-          createdAt: new Date(),
+          createdAt: new Date("2024-11-11"),
           updatedAt: new Date(),
           sku: "RM-AWAY-23-24",
           productStatus: EnumProductStatus.ACTIVE,
@@ -97,7 +97,11 @@ export default function ProductsPage() {
           productVariantId: "var2",
         },
       ];
-      setProducts(mockProducts);
+      // Sort by newest first (createdAt DESC)
+      const sortedProducts = mockProducts.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setProducts(sortedProducts);
       setLoading(false);
     }, 1000);
   }, []);

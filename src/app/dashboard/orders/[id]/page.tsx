@@ -34,12 +34,14 @@ import {
   Plus,
   Trash2,
   Check,
+  ExternalLink,
 } from "lucide-react";
 import {
   Order,
   EnumOrderStatus,
   EnumCurrency,
   EnumRiskChargeback,
+  EnumNoStockStatus,
 } from "@/types";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -108,6 +110,7 @@ export default function OrderDetailPage({
             orderId: params.id,
             productVariantId: "var1",
             customisationString: "JAS_2623: 75877",
+            noStockStatus: EnumNoStockStatus.NONE,
             quantity: 1,
             productVariant: {
               id: "var1",
@@ -229,6 +232,17 @@ export default function OrderDetailPage({
     }
   };
 
+  const getTrackingUrl = (provider: string, trackingNumber: string): string => {
+    const urls: Record<string, string> = {
+      DHL: `https://www.dhl.com/track?tracking-id=${trackingNumber}`,
+      FedEx: `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`,
+      UPS: `https://www.ups.com/track?tracknum=${trackingNumber}`,
+      "Royal Mail": `https://www.royalmail.com/track-your-item#/tracking-results/${trackingNumber}`,
+      USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`,
+    };
+    return urls[provider] || "#";
+  };
+
   const handleMarkAsFulfilled = () => {
     const validTracking = trackingRows.filter(row => row.provider && row.trackingNumber);
     if (validTracking.length === 0) {
@@ -329,20 +343,57 @@ export default function OrderDetailPage({
                                 ✓ {item.customisationString}
                               </p>
                             )}
+                            {/* Stock Status Dropdown */}
+                            <div className="mt-2">
+                              <Select
+                                value={item.noStockStatus}
+                                onValueChange={(value) => {
+                                  if (!order) return;
+                                  const updatedItems = order.orderItems?.map(i =>
+                                    i.id === item.id ? { ...i, noStockStatus: value as EnumNoStockStatus } : i
+                                  );
+                                  setOrder({ ...order, orderItems: updatedItems });
+                                  toast.success("Stock status updated");
+                                }}
+                              >
+                                <SelectTrigger className="w-[180px] h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NONE">Stock: None</SelectItem>
+                                  <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
-                            {item.quantity}
-                          </p>
-                          <p className="text-sm font-semibold">
-                            €
-                            {(
-                              (item.productVariant?.sellPrice || 0) *
-                              item.quantity
-                            ).toFixed(2)}
-                          </p>
+                        <div className="text-right flex flex-col items-end gap-2">
+                          <div>
+                            <p className="font-medium">
+                              €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
+                              {item.quantity}
+                            </p>
+                            <p className="text-sm font-semibold">
+                              €
+                              {(
+                                (item.productVariant?.sellPrice || 0) *
+                                item.quantity
+                              ).toFixed(2)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              if (!order) return;
+                              const updatedItems = order.orderItems?.filter(i => i.id !== item.id);
+                              setOrder({ ...order, orderItems: updatedItems });
+                              toast.success("Item removed from order");
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       {index < (order.orderItems?.length || 0) - 1 && (
@@ -350,6 +401,17 @@ export default function OrderDetailPage({
                       )}
                     </div>
                   ))}
+                  
+                  {/* Add Item Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => toast.info("Add item functionality - coming soon")}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Item
+                  </Button>
                 </div>
 
                 <Separator />
@@ -381,6 +443,16 @@ export default function OrderDetailPage({
                         onChange={(e) => handleTrackingChange(index, "trackingNumber", e.target.value)}
                         className="flex-1"
                       />
+                      {row.provider && row.trackingNumber && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => window.open(getTrackingUrl(row.provider, row.trackingNumber), "_blank")}
+                          title="Track shipment"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
                       {trackingRows.length > 1 && (
                         <Button
                           variant="ghost"

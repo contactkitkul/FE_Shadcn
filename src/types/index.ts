@@ -122,6 +122,11 @@ export enum EnumRiskChargeback {
   EXTREMELY_UNSAFE = "EXTREMELY_UNSAFE",
 }
 
+export enum EnumNoStockStatus {
+  NONE = "NONE",
+  OUT_OF_STOCK = "OUT_OF_STOCK",
+}
+
 export interface Product {
   id: string
   createdAt: Date
@@ -210,6 +215,7 @@ export interface OrderItem {
   productVariant?: ProductVariant
   customisationString?: string
   customisationPrice?: number
+  noStockStatus: EnumNoStockStatus
   quantity: number
 }
 

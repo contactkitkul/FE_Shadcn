@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,25 +9,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Bell } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { MobileNav } from "./mobile-nav"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, Bell } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MobileNav } from "./mobile-nav";
 
 export function Navbar() {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleLogout = () => {
-    router.push("/login")
-  }
+    router.push("/login");
+  };
 
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4 gap-4">
         {/* Mobile Menu */}
         <MobileNav />
-        
+
         {/* Search */}
         <div className="flex-1">
           <div className="relative w-full max-w-sm">
@@ -51,10 +51,12 @@ export function Navbar() {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src="/avatars/01.png" alt="User" />
-                  <AvatarFallback>SC</AvatarFallback>
+                  <AvatarFallback>UN</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -68,10 +70,6 @@ export function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 Log out
               </DropdownMenuItem>
@@ -80,5 +78,5 @@ export function Navbar() {
         </div>
       </div>
     </div>
-  )
+  );
 }
