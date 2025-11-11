@@ -50,6 +50,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getAllTeams, getLeagueForTeam, formatTeamName } from "@/lib/team-league-mapping";
 import { VariantManager } from "@/components/products/variant-manager";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -62,6 +72,11 @@ export default function ProductsPage() {
   const [autoLeague, setAutoLeague] = useState<EnumLeague | undefined>(undefined);
   const [variantManagerOpen, setVariantManagerOpen] = useState(false);
   const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    productId: string;
+    newStatus: EnumProductStatus;
+    productName: string;
+  } | null>(null);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -260,7 +275,7 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select>
+                    <Select defaultValue="ACTIVE">
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -275,7 +290,7 @@ export default function ProductsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="shirtType">Shirt Type</Label>
-                    <Select>
+                    <Select defaultValue="NORMAL">
                       <SelectTrigger>
                         <SelectValue placeholder="Select shirt type" />
                       </SelectTrigger>
@@ -422,6 +437,39 @@ export default function ProductsPage() {
           onOpenChange={setVariantManagerOpen}
         />
       )}
+
+      {/* Status Change Confirmation Dialog */}
+      <AlertDialog open={!!pendingStatusChange} onOpenChange={() => setPendingStatusChange(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the status of{" "}
+              <span className="font-semibold">{pendingStatusChange?.productName}</span> to{" "}
+              <span className="font-semibold">
+                {pendingStatusChange?.newStatus.replace(/_/g, " ").toLowerCase()}
+              </span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (!pendingStatusChange) return;
+              setProducts(products.map(product => 
+                product.id === pendingStatusChange.productId 
+                  ? { ...product, productStatus: pendingStatusChange.newStatus, updatedAt: new Date() }
+                  : product
+              ));
+              toast.success("Product status updated successfully");
+              setPendingStatusChange(null);
+            }}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

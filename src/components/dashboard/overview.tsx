@@ -39,31 +39,36 @@ export function Overview() {
           </div>
         </div>
         {/* Bar chart for last 14 days */}
-        <div className="flex items-end justify-between h-64 gap-2">
-          {last14Days.map((item, index) => (
-            <div key={index} className="flex flex-col items-center flex-1 gap-2 group">
-              <div className="w-full flex flex-col gap-1 items-center">
-                <div 
-                  className="w-full bg-primary rounded-t-md transition-all hover:opacity-80" 
-                  style={{ height: `${(item.sales / maxSales) * 200}px` }}
-                  title={`Sales: €${item.sales}`}
-                />
-                <div 
-                  className="w-full bg-blue-500 rounded-t-md transition-all hover:opacity-80" 
-                  style={{ height: `${(item.orders / 50) * 100}px` }}
-                  title={`Orders: ${item.orders}`}
-                />
-                <div 
-                  className="w-full bg-green-500 rounded-t-md transition-all hover:opacity-80" 
-                  style={{ height: `${(item.products / 100) * 80}px` }}
-                  title={`Products: ${item.products}`}
-                />
+        <div className="flex items-end justify-between h-64 gap-1">
+          {last14Days.map((item, index) => {
+            const maxOrders = Math.max(...last14Days.map(d => d.orders));
+            const maxProducts = Math.max(...last14Days.map(d => d.products));
+            
+            return (
+              <div key={index} className="flex flex-col items-center flex-1 gap-2 group">
+                <div className="w-full flex flex-col justify-end items-center h-56">
+                  <div 
+                    className="w-full bg-primary rounded-t-sm transition-all hover:opacity-80 mb-1" 
+                    style={{ height: `${Math.max((item.sales / maxSales) * 180, 4)}px` }}
+                    title={`Sales: €${item.sales}`}
+                  />
+                  <div 
+                    className="w-full bg-blue-500 rounded-t-sm transition-all hover:opacity-80 mb-1" 
+                    style={{ height: `${Math.max((item.orders / maxOrders) * 60, 2)}px` }}
+                    title={`Orders: ${item.orders}`}
+                  />
+                  <div 
+                    className="w-full bg-green-500 rounded-t-sm transition-all hover:opacity-80" 
+                    style={{ height: `${Math.max((item.products / maxProducts) * 40, 2)}px` }}
+                    title={`Products: ${item.products}`}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground rotate-45 origin-left whitespace-nowrap">
+                  {item.date}
+                </span>
               </div>
-              <span className="text-xs text-muted-foreground rotate-45 origin-left whitespace-nowrap">
-                {item.date}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="text-xs text-muted-foreground text-center pt-2">
           Last 14 days performance

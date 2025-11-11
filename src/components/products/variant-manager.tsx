@@ -73,6 +73,13 @@ const DEFAULT_VARIANTS: Omit<
     costPrice: 10.0,
     stockQty: 50,
   },
+  {
+    size: EnumSize.XXL,
+    patch: EnumPatch.NO_PATCH,
+    sellPrice: 19.99,
+    costPrice: 10.0,
+    stockQty: 50,
+  },
 ];
 
 export function VariantManager({
@@ -170,7 +177,7 @@ export function VariantManager({
             <div className="flex gap-2">
               <Button onClick={addDefaultVariants} variant="outline" size="sm">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Default Variants (S, M, L, XL)
+                Add Default Variants (S, M, L, XL, XXL)
               </Button>
               <Button
                 onClick={() => setIsAddDialogOpen(true)}
@@ -200,7 +207,7 @@ export function VariantManager({
                       colSpan={6}
                       className="text-center text-muted-foreground"
                     >
-                      No variants added yet. Click - Add Default Variants - to
+                      No variants added yet. Click "Add Default Variants" to
                       get started.
                     </TableCell>
                   </TableRow>

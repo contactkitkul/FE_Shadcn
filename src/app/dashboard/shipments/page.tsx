@@ -26,17 +26,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, Truck, Package, MapPin } from "lucide-react"
+import { Search, Truck, Package, MapPin, Check } from "lucide-react"
 import { Shipment, EnumShipmentStatus } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    shipmentId: string;
+    newStatus: EnumShipmentStatus;
+    shipmentNumber: string;
+  } | null>(null)
 
   useEffect(() => {
     // Mock data
@@ -103,11 +118,20 @@ export default function ShipmentsPage() {
     return <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
   }
 
-  const handleStatusChange = (shipmentId: string, newStatus: EnumShipmentStatus) => {
+  const handleStatusChange = (shipmentId: string, newStatus: EnumShipmentStatus, shipmentNumber: string) => {
+    setPendingStatusChange({ shipmentId, newStatus, shipmentNumber })
+  }
+
+  const confirmStatusChange = () => {
+    if (!pendingStatusChange) return
+    
     setShipments(shipments.map(shipment => 
-      shipment.id === shipmentId ? { ...shipment, status: newStatus } : shipment
+      shipment.id === pendingStatusChange.shipmentId 
+        ? { ...shipment, status: pendingStatusChange.newStatus, updatedAt: new Date() } 
+        : shipment
     ))
     toast.success("Shipment status updated successfully")
+    setPendingStatusChange(null)
   }
 
   const getProviderIcon = (provider: string) => {
@@ -262,7 +286,7 @@ export default function ShipmentsPage() {
                       <TableCell>
                         <Select
                           value={shipment.status}
-                          onValueChange={(value) => handleStatusChange(shipment.id, value as EnumShipmentStatus)}
+                          onValueChange={(value) => handleStatusChange(shipment.id, value as EnumShipmentStatus, shipment.trackingNumber)}
                         >
                           <SelectTrigger className="w-[160px] h-8">
                             <SelectValue />
@@ -284,6 +308,31 @@ export default function ShipmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!pendingStatusChange} onOpenChange={() => setPendingStatusChange(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the status of shipment{" "}
+              <span className="font-semibold">{pendingStatusChange?.shipmentNumber}</span> to{" "}
+              <span className="font-semibold">
+                {pendingStatusChange?.newStatus.replace(/_/g, " ").toLowerCase()}
+              </span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmStatusChange}>
+              <Check className="mr-2 h-4 w-4" />
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

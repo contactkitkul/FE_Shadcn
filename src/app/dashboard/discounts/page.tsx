@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Tag, Percent } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Tag, Percent, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Discount,
   EnumDiscountStatus,
@@ -56,6 +56,8 @@ export default function DiscountsPage() {
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   const [selectedDiscountType, setSelectedDiscountType] =
     useState<EnumDiscountType>(EnumDiscountType.PERCENTAGE);
+  const [sortColumn, setSortColumn] = useState<string>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     // Mock data
@@ -63,7 +65,7 @@ export default function DiscountsPage() {
       const mockDiscounts: Discount[] = [
         {
           id: "1",
-          createdAt: new Date(),
+          createdAt: new Date("2024-11-10"),
           updatedAt: new Date(),
           code: "SUMMER2024",
           status: EnumDiscountStatus.ACTIVE,
@@ -78,7 +80,7 @@ export default function DiscountsPage() {
         },
         {
           id: "2",
-          createdAt: new Date(),
+          createdAt: new Date("2024-11-11"),
           updatedAt: new Date(),
           code: "WELCOME10",
           status: EnumDiscountStatus.ACTIVE,
@@ -92,7 +94,7 @@ export default function DiscountsPage() {
         },
         {
           id: "3",
-          createdAt: new Date(),
+          createdAt: new Date("2024-11-09"),
           updatedAt: new Date(),
           code: "EXPIRED2023",
           status: EnumDiscountStatus.EXPIRED,
@@ -109,11 +111,52 @@ export default function DiscountsPage() {
     }, 1000);
   }, []);
 
-  const filteredDiscounts = discounts.filter(
-    (discount) =>
-      discount.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discount.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  const filteredAndSortedDiscounts = discounts
+    .filter(
+      (discount) =>
+        discount.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        discount.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      let aValue: any = a[sortColumn as keyof Discount];
+      let bValue: any = b[sortColumn as keyof Discount];
+
+      if (sortColumn === "createdAt" || sortColumn === "expiryDate") {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (sortDirection === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
 
   const getStatusBadge = (status: EnumDiscountStatus) => {
     const variants: Record<
@@ -398,19 +441,74 @@ export default function DiscountsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("code")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Code
+                      {getSortIcon("code")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("discountType")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Type
+                      {getSortIcon("discountType")}
+                    </Button>
+                  </TableHead>
                   <TableHead>Value</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Expiry</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("timesUsed")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Usage
+                      {getSortIcon("timesUsed")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("expiryDate")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Expiry
+                      {getSortIcon("expiryDate")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("status")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Status
+                      {getSortIcon("status")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("createdAt")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Created
+                      {getSortIcon("createdAt")}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDiscounts.length === 0 ? (
+                {filteredAndSortedDiscounts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <Tag className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                       <p className="text-muted-foreground">
                         No discounts found
@@ -418,7 +516,7 @@ export default function DiscountsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredDiscounts.map((discount) => (
+                  filteredAndSortedDiscounts.map((discount: Discount) => (
                     <TableRow key={discount.id}>
                       <TableCell className="font-medium font-mono">
                         {discount.code}
@@ -438,6 +536,9 @@ export default function DiscountsPage() {
                         {format(new Date(discount.expiryDate), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell>{getStatusBadge(discount.status)}</TableCell>
+                      <TableCell>
+                        {format(new Date(discount.createdAt), "MMM dd, yyyy")}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button

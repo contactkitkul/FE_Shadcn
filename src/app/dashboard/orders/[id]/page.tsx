@@ -21,6 +21,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Package,
   User,
@@ -78,6 +86,7 @@ export default function OrderDetailPage({
   const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [addressValidation, setAddressValidation] = useState<ReturnType<typeof validateAddress> | null>(null);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
 
   useEffect(() => {
     // Mock data - replace with actual API call
@@ -434,8 +443,8 @@ export default function OrderDetailPage({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full mt-2"
-                    onClick={() => toast.info("Add item functionality - coming soon")}
+                    className="mt-4"
+                    onClick={() => setShowAddItemDialog(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Item
@@ -865,6 +874,106 @@ export default function OrderDetailPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Item Dialog */}
+      <Dialog open={showAddItemDialog} onOpenChange={setShowAddItemDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Item to Order</DialogTitle>
+            <DialogDescription>
+              Add a new item to order #{order?.orderID}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const newItem = {
+              id: `new-${Date.now()}`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              orderId: order?.id || "",
+              productVariantId: "variant-1", // This would come from product selection
+              customisationString: formData.get("customisation") as string || undefined,
+              customisationPrice: parseFloat(formData.get("customisationPrice") as string) || 0,
+              noStockStatus: "NONE" as any,
+              quantity: parseInt(formData.get("quantity") as string) || 1,
+            };
+            
+            if (order) {
+              setOrder({
+                ...order,
+                orderItems: [...(order.orderItems || []), newItem]
+              });
+              toast.success("Item added to order successfully");
+              setShowAddItemDialog(false);
+            }
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="product">Product</Label>
+              <Input 
+                id="product" 
+                name="product"
+                placeholder="2004 Portugal 2a Equipacion" 
+                defaultValue="2004 Portugal 2a Equipacion"
+                required 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="size">Size</Label>
+                <Select name="size" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="S">S</SelectItem>
+                    <SelectItem value="M">M</SelectItem>
+                    <SelectItem value="L">L</SelectItem>
+                    <SelectItem value="XL">XL</SelectItem>
+                    <SelectItem value="XXL">XXL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input 
+                  id="quantity" 
+                  name="quantity"
+                  type="number" 
+                  min="1" 
+                  defaultValue="1"
+                  required 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customisation">Customisation (Optional)</Label>
+              <Input 
+                id="customisation" 
+                name="customisation"
+                placeholder="Player name, number, etc." 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customisationPrice">Customisation Price (€)</Label>
+              <Input 
+                id="customisationPrice" 
+                name="customisationPrice"
+                type="number" 
+                step="0.01"
+                min="0"
+                defaultValue="0"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowAddItemDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Add Item</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Users, Eye, ShoppingBag, Calendar } from "lucide-react"
+import { Search, Users, Eye, ShoppingBag, Calendar, Edit, ArrowUpDown, ArrowUp, ArrowDown, Check, X } from "lucide-react"
 import { Customer } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ interface CustomerWithOrders extends Customer {
   orderCount: number
   totalSpent: number
   lastOrderDate?: Date
+  email: string // Add email field
   orders?: Array<{
     id: string
     orderID: string
@@ -51,6 +53,12 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithOrders | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [sortColumn, setSortColumn] = useState<string>("createdAt")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+  const [editingCustomer, setEditingCustomer] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{firstName: string, lastName: string, email: string}>(
+    {firstName: "", lastName: "", email: ""}
+  )
 
   useEffect(() => {
     // Mock data with order information
@@ -58,10 +66,13 @@ export default function CustomersPage() {
       const mockCustomers: CustomerWithOrders[] = [
         {
           id: "1",
+          createdAt: new Date("2024-10-01"),
+          updatedAt: new Date(),
           firstName: "John",
           lastName: "Doe",
           phone: "1234567890",
           countryCode: "+44",
+          email: "john.doe@example.com",
           orderCount: 5,
           totalSpent: 245.50,
           lastOrderDate: new Date("2024-11-10"),
@@ -75,10 +86,13 @@ export default function CustomersPage() {
         },
         {
           id: "2",
+          createdAt: new Date("2024-09-15"),
+          updatedAt: new Date(),
           firstName: "Jane",
           lastName: "Smith",
           phone: "9876543210",
           countryCode: "+44",
+          email: "jane.smith@example.com",
           orderCount: 3,
           totalSpent: 128.90,
           lastOrderDate: new Date("2024-11-08"),
@@ -90,10 +104,13 @@ export default function CustomersPage() {
         },
         {
           id: "3",
+          createdAt: new Date("2024-11-05"),
+          updatedAt: new Date(),
           firstName: "Michael",
           lastName: "Johnson",
           phone: "5551234567",
           countryCode: "+1",
+          email: "michael.johnson@example.com",
           orderCount: 1,
           totalSpent: 55.00,
           lastOrderDate: new Date("2024-11-11"),
@@ -103,10 +120,13 @@ export default function CustomersPage() {
         },
         {
           id: "4",
+          createdAt: new Date("2024-08-20"),
+          updatedAt: new Date(),
           firstName: "Emily",
           lastName: "Brown",
           phone: "4449876543",
           countryCode: "+44",
+          email: "emily.brown@example.com",
           orderCount: 7,
           totalSpent: 385.00,
           lastOrderDate: new Date("2024-11-09"),
@@ -126,12 +146,84 @@ export default function CustomersPage() {
     }, 1000)
   }, [])
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm)
-  )
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortColumn(column)
+      setSortDirection("asc")
+    }
+  }
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    )
+  }
+
+  const handleEdit = (customer: CustomerWithOrders) => {
+    setEditingCustomer(customer.id)
+    setEditValues({
+      firstName: customer.firstName,
+      lastName: customer.lastName || "",
+      email: customer.email,
+    })
+  }
+
+  const handleSaveEdit = (customerId: string) => {
+    setCustomers(customers.map(customer => 
+      customer.id === customerId 
+        ? { 
+            ...customer, 
+            firstName: editValues.firstName,
+            lastName: editValues.lastName,
+            email: editValues.email,
+            updatedAt: new Date()
+          }
+        : customer
+    ))
+    setEditingCustomer(null)
+    toast.success("Customer updated successfully")
+  }
+
+  const handleCancelEdit = () => {
+    setEditingCustomer(null)
+    setEditValues({firstName: "", lastName: "", email: ""})
+  }
+
+  const filteredAndSortedCustomers = customers
+    .filter(
+      (customer) =>
+        customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone.includes(searchTerm)
+    )
+    .sort((a, b) => {
+      let aValue: any = a[sortColumn as keyof CustomerWithOrders]
+      let bValue: any = b[sortColumn as keyof CustomerWithOrders]
+
+      if (sortColumn === "createdAt" || sortColumn === "lastOrderDate") {
+        aValue = new Date(aValue).getTime()
+        bValue = new Date(bValue).getTime()
+      }
+
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase()
+        bValue = bValue.toLowerCase()
+      }
+
+      if (sortDirection === "asc") {
+        return aValue > bValue ? 1 : -1
+      } else {
+        return aValue < bValue ? 1 : -1
+      }
+    })
 
   const handleViewDetails = (customer: CustomerWithOrders) => {
     setSelectedCustomer(customer)
@@ -223,7 +315,7 @@ export default function CustomersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.length === 0 ? (
+                {filteredAndSortedCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
@@ -231,7 +323,7 @@ export default function CustomersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCustomers.map((customer) => (
+                  filteredAndSortedCustomers.map((customer: CustomerWithOrders) => (
                     <TableRow 
                       key={customer.id}
                       className="cursor-pointer hover:bg-muted/50"
