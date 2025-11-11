@@ -19,9 +19,11 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Users, Eye } from "lucide-react"
+import { Search, Users, Eye, ShoppingBag, Calendar } from "lucide-react"
 import { Customer } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { format } from "date-fns"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -30,23 +32,46 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+interface CustomerWithOrders extends Customer {
+  orderCount: number
+  totalSpent: number
+  lastOrderDate?: Date
+  orders?: Array<{
+    id: string
+    orderID: string
+    date: Date
+    amount: number
+    status: string
+  }>
+}
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customers, setCustomers] = useState<CustomerWithOrders[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithOrders | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   useEffect(() => {
-    // Mock data
+    // Mock data with order information
     setTimeout(() => {
-      const mockCustomers: Customer[] = [
+      const mockCustomers: CustomerWithOrders[] = [
         {
           id: "1",
           firstName: "John",
           lastName: "Doe",
           phone: "1234567890",
           countryCode: "+44",
+          orderCount: 5,
+          totalSpent: 245.50,
+          lastOrderDate: new Date("2024-11-10"),
+          orders: [
+            { id: "o1", orderID: "FUTGY@44615", date: new Date("2024-11-10"), amount: 45.50, status: "FULFILLED" },
+            { id: "o2", orderID: "FUTGY@44610", date: new Date("2024-11-05"), amount: 52.00, status: "FULFILLED" },
+            { id: "o3", orderID: "FUTGY@44605", date: new Date("2024-10-28"), amount: 38.00, status: "FULFILLED" },
+            { id: "o4", orderID: "FUTGY@44600", date: new Date("2024-10-15"), amount: 60.00, status: "FULFILLED" },
+            { id: "o5", orderID: "FUTGY@44595", date: new Date("2024-10-01"), amount: 50.00, status: "FULFILLED" },
+          ],
         },
         {
           id: "2",
@@ -54,6 +79,14 @@ export default function CustomersPage() {
           lastName: "Smith",
           phone: "9876543210",
           countryCode: "+44",
+          orderCount: 3,
+          totalSpent: 128.90,
+          lastOrderDate: new Date("2024-11-08"),
+          orders: [
+            { id: "o6", orderID: "FUTGY@44612", date: new Date("2024-11-08"), amount: 42.90, status: "FULFILLED" },
+            { id: "o7", orderID: "FUTGY@44608", date: new Date("2024-10-22"), amount: 46.00, status: "FULFILLED" },
+            { id: "o8", orderID: "FUTGY@44602", date: new Date("2024-10-10"), amount: 40.00, status: "FULFILLED" },
+          ],
         },
         {
           id: "3",
@@ -61,6 +94,12 @@ export default function CustomersPage() {
           lastName: "Johnson",
           phone: "5551234567",
           countryCode: "+1",
+          orderCount: 1,
+          totalSpent: 55.00,
+          lastOrderDate: new Date("2024-11-11"),
+          orders: [
+            { id: "o9", orderID: "FUTGY@44613", date: new Date("2024-11-11"), amount: 55.00, status: "RECEIVED" },
+          ],
         },
         {
           id: "4",
@@ -68,6 +107,18 @@ export default function CustomersPage() {
           lastName: "Brown",
           phone: "4449876543",
           countryCode: "+44",
+          orderCount: 7,
+          totalSpent: 385.00,
+          lastOrderDate: new Date("2024-11-09"),
+          orders: [
+            { id: "o10", orderID: "FUTGY@44611", date: new Date("2024-11-09"), amount: 48.00, status: "FULFILLED" },
+            { id: "o11", orderID: "FUTGY@44609", date: new Date("2024-11-02"), amount: 52.00, status: "FULFILLED" },
+            { id: "o12", orderID: "FUTGY@44607", date: new Date("2024-10-25"), amount: 55.00, status: "FULFILLED" },
+            { id: "o13", orderID: "FUTGY@44604", date: new Date("2024-10-18"), amount: 60.00, status: "FULFILLED" },
+            { id: "o14", orderID: "FUTGY@44601", date: new Date("2024-10-12"), amount: 45.00, status: "FULFILLED" },
+            { id: "o15", orderID: "FUTGY@44598", date: new Date("2024-10-05"), amount: 65.00, status: "FULFILLED" },
+            { id: "o16", orderID: "FUTGY@44595", date: new Date("2024-09-28"), amount: 60.00, status: "FULFILLED" },
+          ],
         },
       ]
       setCustomers(mockCustomers)
@@ -82,7 +133,7 @@ export default function CustomersPage() {
       customer.phone.includes(searchTerm)
   )
 
-  const handleViewDetails = (customer: Customer) => {
+  const handleViewDetails = (customer: CustomerWithOrders) => {
     setSelectedCustomer(customer)
     setIsDetailOpen(true)
   }
@@ -165,8 +216,9 @@ export default function CustomersPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>Country Code</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Orders</TableHead>
+                  <TableHead>Total Spent</TableHead>
+                  <TableHead>Last Order</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -180,16 +232,26 @@ export default function CustomersPage() {
                   </TableRow>
                 ) : (
                   filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                    <TableRow 
+                      key={customer.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleViewDetails(customer)}
+                    >
                       <TableCell className="font-medium">
                         {customer.firstName} {customer.lastName}
                       </TableCell>
-                      <TableCell>{customer.phone}</TableCell>
-                      <TableCell>{customer.countryCode}</TableCell>
+                      <TableCell>{customer.countryCode} {customer.phone}</TableCell>
                       <TableCell>
-                        <Badge variant="default">Active</Badge>
+                        <div className="flex items-center gap-1">
+                          <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{customer.orderCount}</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="font-semibold">€{customer.totalSpent.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {customer.lastOrderDate ? format(customer.lastOrderDate, "MMM dd, yyyy") : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -230,22 +292,39 @@ export default function CustomersPage() {
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Statistics</h4>
-                  <p className="text-sm text-muted-foreground">Total Orders: 5</p>
-                  <p className="text-sm text-muted-foreground">Total Spent: £450.00</p>
-                  <p className="text-sm text-muted-foreground">Average Order: £90.00</p>
+                  <p className="text-sm text-muted-foreground">Total Orders: {selectedCustomer.orderCount}</p>
+                  <p className="text-sm text-muted-foreground">Total Spent: €{selectedCustomer.totalSpent.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">Average Order: €{(selectedCustomer.totalSpent / selectedCustomer.orderCount).toFixed(2)}</p>
                 </div>
               </div>
+              <Separator />
               <div>
-                <h4 className="font-semibold mb-2">Recent Orders</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm p-2 bg-muted rounded">
-                    <span>ORD-2024-001</span>
-                    <span>£89.99</span>
-                  </div>
-                  <div className="flex justify-between text-sm p-2 bg-muted rounded">
-                    <span>ORD-2024-002</span>
-                    <span>£119.99</span>
-                  </div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  Order History ({selectedCustomer.orders?.length || 0})
+                </h4>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {selectedCustomer.orders && selectedCustomer.orders.length > 0 ? (
+                    selectedCustomer.orders.map((order) => (
+                      <div key={order.id} className="flex items-center justify-between text-sm p-3 bg-muted rounded hover:bg-muted/80 transition-colors">
+                        <div className="flex-1">
+                          <p className="font-medium">{order.orderID}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(order.date, "MMM dd, yyyy")}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">€{order.amount.toFixed(2)}</p>
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {order.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No orders found</p>
+                  )}
                 </div>
               </div>
             </div>

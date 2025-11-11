@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -25,28 +26,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Package } from "lucide-react"
-import { Product, EnumProductStatus, EnumProductType, EnumLeague, EnumShirtType, EnumHomeAway } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "sonner"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Edit, Trash2, Package, Upload } from "lucide-react";
+import {
+  Product,
+  EnumProductStatus,
+  EnumProductType,
+  EnumLeague,
+  EnumShirtType,
+  EnumHomeAway,
+} from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -87,168 +96,185 @@ export default function ProductsPage() {
           homeAway: EnumHomeAway.AWAY,
           productVariantId: "var2",
         },
-      ]
-      setProducts(mockProducts)
-      setLoading(false)
-    }, 1000)
-  }, [])
+      ];
+      setProducts(mockProducts);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
   const getStatusBadge = (status: EnumProductStatus) => {
-    const variants: Record<EnumProductStatus, "default" | "secondary" | "destructive"> = {
+    const variants: Record<
+      EnumProductStatus,
+      "default" | "secondary" | "destructive"
+    > = {
       ACTIVE: "default",
       INACTIVE: "secondary",
       OUT_OF_STOCK: "destructive",
-    }
-    return <Badge variant={variants[status]}>{status}</Badge>
-  }
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
 
   const handleDelete = (id: string) => {
-    toast.success("Product deleted successfully")
-    setProducts(products.filter((p) => p.id !== id))
-  }
+    toast.success("Product deleted successfully");
+    setProducts(products.filter((p) => p.id !== id));
+  };
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product)
-    setIsDialogOpen(true)
-  }
+    setEditingProduct(product);
+    setIsDialogOpen(true);
+  };
 
   const handleSave = () => {
-    toast.success(editingProduct ? "Product updated successfully" : "Product created successfully")
-    setIsDialogOpen(false)
-    setEditingProduct(null)
-  }
+    toast.success(
+      editingProduct
+        ? "Product updated successfully"
+        : "Product created successfully"
+    );
+    setIsDialogOpen(false);
+    setEditingProduct(null);
+  };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Products</h2>
-          <p className="text-muted-foreground">
-            Manage your football shirt inventory
-          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingProduct(null)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingProduct ? "Edit Product" : "Add New Product"}
-              </DialogTitle>
-              <DialogDescription>
-                Fill in the product details below
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Product Name</Label>
-                  <Input id="name" placeholder="Enter product name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input id="sku" placeholder="Enter SKU" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="team">Team</Label>
-                  <Input id="team" placeholder="Enter team name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="year">Year</Label>
-                  <Input id="year" placeholder="2023/24" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="league">League</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select league" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PREMIER_LEAGUE">Premier League</SelectItem>
-                      <SelectItem value="LA_LIGA">La Liga</SelectItem>
-                      <SelectItem value="SERIE_A">Serie A</SelectItem>
-                      <SelectItem value="BUNDESLIGA">Bundesliga</SelectItem>
-                      <SelectItem value="LIGUE_1">Ligue 1</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="homeAway">Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HOME">Home</SelectItem>
-                      <SelectItem value="AWAY">Away</SelectItem>
-                      <SelectItem value="THIRD">Third</SelectItem>
-                      <SelectItem value="GOALKEEPER">Goalkeeper</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="INACTIVE">Inactive</SelectItem>
-                      <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shirtType">Shirt Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select shirt type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NORMAL">Normal</SelectItem>
-                      <SelectItem value="PLAYER">Player</SelectItem>
-                      <SelectItem value="RETRO">Retro</SelectItem>
-                      <SelectItem value="KID">Kid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/products/bulk-upload")}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Upload
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingProduct(null)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
               </Button>
-              <Button onClick={handleSave}>Save Product</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingProduct ? "Edit Product" : "Add New Product"}
+                </DialogTitle>
+                <DialogDescription>
+                  Fill in the product details below
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Product Name</Label>
+                    <Input id="name" placeholder="Enter product name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sku">SKU</Label>
+                    <Input id="sku" placeholder="Enter SKU" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="team">Team</Label>
+                    <Input id="team" placeholder="Enter team name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Year</Label>
+                    <Input id="year" placeholder="2023/24" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="league">League</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select league" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PREMIER_LEAGUE">
+                          Premier League
+                        </SelectItem>
+                        <SelectItem value="LA_LIGA">La Liga</SelectItem>
+                        <SelectItem value="SERIE_A">Serie A</SelectItem>
+                        <SelectItem value="BUNDESLIGA">Bundesliga</SelectItem>
+                        <SelectItem value="LIGUE_1">Ligue 1</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="homeAway">Type</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HOME">Home</SelectItem>
+                        <SelectItem value="AWAY">Away</SelectItem>
+                        <SelectItem value="THIRD">Third</SelectItem>
+                        <SelectItem value="GOALKEEPER">Goalkeeper</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">Active</SelectItem>
+                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                        <SelectItem value="OUT_OF_STOCK">
+                          Out of Stock
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shirtType">Shirt Type</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select shirt type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NORMAL">Normal</SelectItem>
+                        <SelectItem value="PLAYER">Player</SelectItem>
+                        <SelectItem value="RETRO">Retro</SelectItem>
+                        <SelectItem value="KID">Kid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>Save Product</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Product Inventory</CardTitle>
-              <CardDescription>
-                View and manage all football shirts
-              </CardDescription>
+              <CardTitle>Products</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -295,13 +321,19 @@ export default function ProductsPage() {
                 ) : (
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.sku}</TableCell>
+                      <TableCell className="font-medium">
+                        {product.sku}
+                      </TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.team?.replace(/_/g, " ")}</TableCell>
-                      <TableCell>{product.league?.replace(/_/g, " ")}</TableCell>
+                      <TableCell>
+                        {product.league?.replace(/_/g, " ")}
+                      </TableCell>
                       <TableCell>{product.year}</TableCell>
                       <TableCell>{product.homeAway}</TableCell>
-                      <TableCell>{getStatusBadge(product.productStatus)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(product.productStatus)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -329,5 +361,5 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

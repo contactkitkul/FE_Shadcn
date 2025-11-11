@@ -1,9 +1,11 @@
-# Football Shirt E-Commerce - Frontend Features
+# Shirt E-Commerce - Frontend Features
 
 ## ✅ Completed Implementation
 
 ### 1. **Enhanced UI Components**
+
 Added comprehensive shadcn/ui components:
+
 - ✅ Table (data tables with sorting)
 - ✅ Dialog (modals for forms)
 - ✅ Form (form handling)
@@ -17,14 +19,18 @@ Added comprehensive shadcn/ui components:
 - ✅ Breadcrumb
 
 ### 2. **Type System** (`src/types/index.ts`)
+
 Complete TypeScript types matching Prisma schema:
+
 - Product, ProductVariant, ProductImage
 - Order, OrderItem, Payment, Shipment
 - Customer, Discount
 - All enums (Status, Currency, League, Team, etc.)
 
 ### 3. **API Integration** (`src/lib/api.ts`)
+
 Utility functions for backend communication:
+
 - Products CRUD
 - Orders management
 - Customers retrieval
@@ -32,7 +38,9 @@ Utility functions for backend communication:
 - Shipments tracking
 
 ### 4. **Products Management** (`/dashboard/products`)
+
 **Features:**
+
 - Product listing with search
 - Add/Edit product dialog
 - Product fields:
@@ -45,7 +53,9 @@ Utility functions for backend communication:
 - Real-time filtering
 
 ### 5. **Orders Management** (`/dashboard/orders`)
+
 **List View:**
+
 - Order listing with status badges
 - Search by order ID or customer name
 - Filter by order status
@@ -54,23 +64,28 @@ Utility functions for backend communication:
 - Click-through to detailed view
 
 **Detail View** (`/dashboard/orders/[id]`):
+
 - **Header Section:**
+
   - Order ID with status badges (Unfulfilled/Paid)
   - Timestamp and source
   - Action buttons (Print, Edit, More actions)
 
 - **Fulfillment Section:**
+
   - Product items with images
   - Quantities and prices
   - Customization details
   - Mark as fulfilled button
 
 - **Payment Section:**
+
   - Itemized pricing (Subtotal, Shipping, Total)
   - Payment status
   - Transaction details
 
 - **Timeline:**
+
   - Comment system (staff-only)
   - Order events chronology
   - Email confirmations
@@ -78,6 +93,7 @@ Utility functions for backend communication:
   - Timestamps for all activities
 
 - **Customer Sidebar:**
+
   - Customer name and order count
   - Contact information (email, phone)
   - Shipping address with map link
@@ -90,7 +106,9 @@ Utility functions for backend communication:
   - Tags management
 
 ### 6. **Customers Management** (`/dashboard/customers`)
+
 **Features:**
+
 - Customer directory
 - Contact information display
 - Search functionality
@@ -104,7 +122,9 @@ Utility functions for backend communication:
   - Average order value
 
 ### 7. **Discounts Management** (`/dashboard/discounts`)
+
 **Features:**
+
 - Discount code listing
 - Create/Edit discount dialog
 - Discount types:
@@ -122,7 +142,9 @@ Utility functions for backend communication:
 - Statistics dashboard
 
 ### 8. **Shipments Tracking** (`/dashboard/shipments`)
+
 **Features:**
+
 - Shipment listing
 - Multiple carriers (DHL, FedEx, UPS, Royal Mail)
 - Status tracking:
@@ -137,7 +159,9 @@ Utility functions for backend communication:
 - Quick status updates
 
 ### 9. **Dashboard Enhancements** (`/dashboard`)
+
 **Updated Metrics:**
+
 - Total Revenue (£45,231.89)
 - Total Orders (+2,350)
 - Shirts Sold (+3,234)
@@ -146,8 +170,10 @@ Utility functions for backend communication:
 - Recent orders list
 
 ### 10. **Navigation Updates**
+
 **Sidebar:**
-- Updated branding ("Football Shirts")
+
+- Updated branding ("Shirts")
 - Added Discounts route
 - Added Shipments route
 - Active route highlighting
@@ -156,6 +182,7 @@ Utility functions for backend communication:
 ## 🎨 Design Features
 
 ### UI/UX Improvements:
+
 - ✅ Consistent color scheme
 - ✅ Status badges with appropriate colors
 - ✅ Loading skeletons
@@ -167,6 +194,7 @@ Utility functions for backend communication:
 - ✅ Click-through navigation
 
 ### Shopify-Style Order Detail Page:
+
 - ✅ Clean, professional layout
 - ✅ Three-column responsive grid
 - ✅ Timeline with activity feed
@@ -179,6 +207,7 @@ Utility functions for backend communication:
 ## 🔗 Integration Points
 
 ### Backend API Endpoints Expected:
+
 ```
 GET    /api/products
 POST   /api/products
@@ -203,6 +232,7 @@ PATCH  /api/shipments/:id/status
 ```
 
 ## 📦 Dependencies Added
+
 - `date-fns` - Date formatting
 - `sonner` - Toast notifications
 - All shadcn/ui components

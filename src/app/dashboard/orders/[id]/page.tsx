@@ -1,55 +1,79 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  MapPin, 
-  CreditCard, 
+} from "@/components/ui/select";
+import {
+  ArrowLeft,
+  Package,
+  User,
+  MapPin,
+  CreditCard,
   Truck,
   Mail,
   Phone,
-  Edit,
-  Printer,
-  MoreHorizontal,
   AlertCircle,
-  CheckCircle
-} from "lucide-react"
-import { Order, EnumOrderStatus, EnumCurrency, EnumRiskChargeback } from "@/types"
-import { format } from "date-fns"
-import { toast } from "sonner"
+  CheckCircle,
+  Plus,
+  Trash2,
+  Check,
+} from "lucide-react";
+import {
+  Order,
+  EnumOrderStatus,
+  EnumCurrency,
+  EnumRiskChargeback,
+} from "@/types";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const [order, setOrder] = useState<Order | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [comment, setComment] = useState("")
+export default function OrderDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const router = useRouter();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [comment, setComment] = useState("");
+  const [trackingRows, setTrackingRows] = useState([{ provider: "", trackingNumber: "" }]);
+  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     // Mock data - replace with actual API call
@@ -70,9 +94,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         orderID: "FUTGY@44613",
         orderStatus: EnumOrderStatus.RECEIVED,
         customerId: "cust1",
-        totalAmount: 19.90,
+        totalAmount: 19.9,
         discountAmount: 0,
-        payableAmount: 19.90,
+        payableAmount: 19.9,
         currencyPayment: EnumCurrency.EUR,
         riskChargeback: EnumRiskChargeback.SAFE,
         notes: "",
@@ -92,11 +116,11 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               productId: "prod1",
               size: "M" as any,
               patch: "NO_PATCH" as any,
-              sellPrice: 19.90,
-              costPrice: 10.00,
+              sellPrice: 19.9,
+              costPrice: 10.0,
               stockQty: 50,
-            }
-          }
+            },
+          },
         ],
         payments: [
           {
@@ -108,58 +132,130 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             paymentStatus: "SUCCESS" as any,
             transactionId: "MC_083E",
             paymentGateway: "Mastercard",
-            amountPaid: 19.90,
+            amountPaid: 19.9,
             currencyPaid: EnumCurrency.EUR,
-          }
-        ]
-      }
-      setOrder(mockOrder)
-      setLoading(false)
-    }, 500)
-  }, [params.id])
+          },
+        ],
+      };
+      setOrder(mockOrder);
+      setLoading(false);
+    }, 500);
+  }, [params.id]);
 
   const getStatusBadge = (status: EnumOrderStatus) => {
-    const config: Record<EnumOrderStatus, { variant: "default" | "secondary" | "destructive" | "outline", label: string, color: string }> = {
-      RECEIVED: { variant: "secondary", label: "Unfulfilled", color: "bg-yellow-100 text-yellow-800" },
-      PARTIALLY_FULFILLED: { variant: "secondary", label: "Partially Fulfilled", color: "bg-blue-100 text-blue-800" },
-      FULFILLED: { variant: "default", label: "Fulfilled", color: "bg-green-100 text-green-800" },
-      CANCELLED: { variant: "destructive", label: "Cancelled", color: "bg-red-100 text-red-800" },
-      FULLY_REFUNDED: { variant: "outline", label: "Refunded", color: "bg-gray-100 text-gray-800" },
-    }
-    return config[status]
-  }
+    const config: Record<
+      EnumOrderStatus,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+        color: string;
+      }
+    > = {
+      RECEIVED: {
+        variant: "secondary",
+        label: "Unfulfilled",
+        color: "bg-yellow-100 text-yellow-800",
+      },
+      PARTIALLY_FULFILLED: {
+        variant: "secondary",
+        label: "Partially Fulfilled",
+        color: "bg-blue-100 text-blue-800",
+      },
+      FULFILLED: {
+        variant: "default",
+        label: "Fulfilled",
+        color: "bg-green-100 text-green-800",
+      },
+      CANCELLED: {
+        variant: "destructive",
+        label: "Cancelled",
+        color: "bg-red-100 text-red-800",
+      },
+      FULLY_REFUNDED: {
+        variant: "outline",
+        label: "Refunded",
+        color: "bg-gray-100 text-gray-800",
+      },
+    };
+    return config[status];
+  };
 
   const getRiskBadge = (risk: EnumRiskChargeback) => {
-    const config: Record<EnumRiskChargeback, { label: string, color: string }> = {
-      EXTREMELY_SAFE: { label: "Low", color: "text-green-600" },
-      SAFE: { label: "Low", color: "text-green-600" },
-      MEDIUM: { label: "Medium", color: "text-yellow-600" },
-      UNSAFE: { label: "High", color: "text-red-600" },
-      EXTREMELY_UNSAFE: { label: "High", color: "text-red-600" },
-    }
-    return config[risk]
-  }
+    const config: Record<EnumRiskChargeback, { label: string; color: string }> =
+      {
+        EXTREMELY_SAFE: { label: "Low", color: "text-green-600" },
+        SAFE: { label: "Low", color: "text-green-600" },
+        MEDIUM: { label: "Medium", color: "text-yellow-600" },
+        UNSAFE: { label: "High", color: "text-red-600" },
+        EXTREMELY_UNSAFE: { label: "High", color: "text-red-600" },
+      };
+    return config[risk];
+  };
 
   const handleStatusChange = (newStatus: EnumOrderStatus) => {
     if (order) {
-      setOrder({ ...order, orderStatus: newStatus })
-      toast.success("Order status updated successfully")
+      setOrder({ ...order, orderStatus: newStatus });
+      toast.success("Order status updated successfully");
     }
-  }
+  };
 
   const handleAddComment = () => {
     if (comment.trim()) {
-      toast.success("Comment added to timeline")
-      setComment("")
+      toast.success("Comment added to timeline");
+      setComment("");
     }
-  }
+  };
+
+  const handleAddTrackingRow = () => {
+    setTrackingRows([...trackingRows, { provider: "", trackingNumber: "" }]);
+  };
+
+  const handleRemoveTrackingRow = (index: number) => {
+    setTrackingRows(trackingRows.filter((_, i) => i !== index));
+  };
+
+  const handleTrackingChange = (index: number, field: "provider" | "trackingNumber", value: string) => {
+    const updated = [...trackingRows];
+    updated[index][field] = value;
+    setTrackingRows(updated);
+  };
+
+  const handleSaveTracking = () => {
+    const validTracking = trackingRows.filter(row => row.provider && row.trackingNumber);
+    if (validTracking.length > 0) {
+      toast.success(`${validTracking.length} tracking detail(s) saved`);
+    } else {
+      toast.error("Please add at least one tracking detail");
+    }
+  };
+
+  const handleMarkAsFulfilled = () => {
+    const validTracking = trackingRows.filter(row => row.provider && row.trackingNumber);
+    if (validTracking.length === 0) {
+      toast.error("Please add tracking information before marking as fulfilled");
+      return;
+    }
+    setShowFulfillDialog(true);
+  };
+
+  const confirmFulfillment = () => {
+    handleStatusChange(EnumOrderStatus.FULFILLED);
+    setShowFulfillDialog(false);
+    toast.success("Order marked as fulfilled");
+  };
+
+  const confirmCancellation = () => {
+    handleStatusChange(EnumOrderStatus.CANCELLED);
+    setShowCancelDialog(false);
+    toast.success("Order cancelled");
+  };
 
   if (loading || !order) {
-    return <div className="flex-1 p-8">Loading...</div>
+    return <div className="flex-1 p-8">Loading...</div>;
   }
 
-  const statusConfig = getStatusBadge(order.orderStatus)
-  const riskConfig = getRiskBadge(order.riskChargeback)
+  const statusConfig = getStatusBadge(order.orderStatus);
+  const riskConfig = getRiskBadge(order.riskChargeback);
 
   return (
     <div className="flex-1 p-8 pt-6">
@@ -172,33 +268,28 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold">{order.orderID}</h2>
             <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
-            <Badge variant="outline">Paid</Badge>
+            <Badge variant="outline" className="bg-green-100 text-green-800">Paid</Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {format(new Date(order.createdAt), "MMMM d, yyyy 'at' h:mm a")} from Online Store
+            {format(new Date(order.createdAt), "MMMM d, yyyy 'at' h:mm a")} from
+            Online Store
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowCancelDialog(true)}
+          >
+            Cancel Order
           </Button>
-          <Button variant="outline" size="sm">
-            Edit
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => toast.info("Refund functionality")}
+          >
+            Refund
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                More actions
-                <MoreHorizontal className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Refund</DropdownMenuItem>
-              <DropdownMenuItem>Cancel order</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
@@ -208,49 +299,126 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           {/* Fulfillment Status */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  <CardTitle className="text-base">{statusConfig.label}</CardTitle>
-                </div>
-                <Button variant="outline" size="sm">
-                  Mark as fulfilled
-                </Button>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                <CardTitle className="text-base">
+                  {statusConfig.label}
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {order.orderItems?.map((item, index) => (
-                  <div key={item.id}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-3">
-                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="font-medium">2004 Portugal 2a Equipacion</p>
-                          <p className="text-sm text-muted-foreground">S / Sin parche</p>
-                          {item.customisationString && (
-                            <p className="text-sm text-muted-foreground">
-                              ✓ {item.customisationString}
+              <div className="space-y-4">
+                {/* Order Items */}
+                <div className="space-y-3">
+                  {order.orderItems?.map((item, index) => (
+                    <div key={item.id}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-3">
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              2004 Portugal 2a Equipacion
                             </p>
-                          )}
+                            <p className="text-sm text-muted-foreground">
+                              S / Sin parche
+                            </p>
+                            {item.customisationString && (
+                              <p className="text-sm text-muted-foreground">
+                                ✓ {item.customisationString}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
+                            {item.quantity}
+                          </p>
+                          <p className="text-sm font-semibold">
+                            €
+                            {(
+                              (item.productVariant?.sellPrice || 0) *
+                              item.quantity
+                            ).toFixed(2)}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          €{item.productVariant?.sellPrice.toFixed(2)} × {item.quantity}
-                        </p>
-                        <p className="text-sm font-semibold">
-                          €{((item.productVariant?.sellPrice || 0) * item.quantity).toFixed(2)}
-                        </p>
-                      </div>
+                      {index < (order.orderItems?.length || 0) - 1 && (
+                        <Separator className="mt-3" />
+                      )}
                     </div>
-                    {index < (order.orderItems?.length || 0) - 1 && (
-                      <Separator className="mt-3" />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                <Separator />
+
+                {/* Tracking Information */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Tracking Information</Label>
+                  {trackingRows.map((row, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Select
+                        value={row.provider}
+                        onValueChange={(value) => handleTrackingChange(index, "provider", value)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DHL">DHL</SelectItem>
+                          <SelectItem value="FedEx">FedEx</SelectItem>
+                          <SelectItem value="UPS">UPS</SelectItem>
+                          <SelectItem value="Royal Mail">Royal Mail</SelectItem>
+                          <SelectItem value="USPS">USPS</SelectItem>
+                          <SelectItem value="La Poste">La Poste</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Tracking number"
+                        value={row.trackingNumber}
+                        onChange={(e) => handleTrackingChange(index, "trackingNumber", e.target.value)}
+                        className="flex-1"
+                      />
+                      {trackingRows.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveTrackingRow(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddTrackingRow}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Tracking
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleSaveTracking}
+                    className="flex-1"
+                  >
+                    Save Tracking
+                  </Button>
+                  <Button
+                    onClick={handleMarkAsFulfilled}
+                    className="flex-1"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Mark as Fulfilled
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -264,15 +432,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>1 item</span>
                   <span>€{order.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-muted-foreground">Estándar (0.0 kg: Item 0.0 kg, Package 0.0 kg)</span>
                   <span>€0.00</span>
                 </div>
                 <Separator />
@@ -285,6 +451,25 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                   <span>Paid</span>
                   <span>€{order.payableAmount.toFixed(2)}</span>
                 </div>
+                {order.payments && order.payments.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Transaction ID</span>
+                        <span className="font-mono">{order.payments[0].transactionId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Payment Date</span>
+                        <span>{format(new Date(order.payments[0].createdAt), "MMM d, yyyy h:mm a")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Payment Method</span>
+                        <span>{order.payments[0].paymentGateway}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -306,21 +491,17 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                       placeholder="Leave a comment..."
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
-                      className="min-h-[80px]"
+                      rows={2}
+                      className="resize-none"
                     />
                     <div className="flex justify-between items-center mt-2">
-                      <div className="flex gap-2 text-muted-foreground">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Only you and other staff can see comments
+                      </p>
                       <Button size="sm" onClick={handleAddComment}>
                         Post
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Only you and other staff can see comments
-                    </p>
                   </div>
                 </div>
 
@@ -329,17 +510,22 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 {/* Timeline Events */}
                 <div className="space-y-4">
                   <div className="text-sm font-semibold">Today</div>
-                  
+
                   <div className="flex gap-3">
                     <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                     <div className="flex-1">
                       <p className="text-sm">
-                        Order confirmation email was sent to {order.shippingName} ({order.shippingEmail})
+                        Order confirmation email was sent to{" "}
+                        {order.shippingName} ({order.shippingEmail})
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {format(new Date(order.createdAt), "h:mm a")}
                       </p>
-                      <Button variant="link" className="h-auto p-0 text-sm" onClick={() => toast.info("Email preview")}>
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 text-sm"
+                        onClick={() => toast.info("Email preview")}
+                      >
                         View email
                       </Button>
                     </div>
@@ -350,7 +536,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                       <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                       <div className="flex-1">
                         <p className="text-sm">
-                          €{order.payments[0].amountPaid.toFixed(2)} EUR will be added to your Nov 14, 2025 payout
+                          €{order.payments[0].amountPaid.toFixed(2)} EUR will be
+                          added to your Nov 14, 2025 payout
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(order.createdAt), "h:mm a")}
@@ -364,10 +551,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                       <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                       <div className="flex-1">
                         <p className="text-sm">
-                          A €{order.payments[0].amountPaid.toFixed(2)} EUR payment was processed using a {order.payments[0].paymentGateway} ending in {order.payments[0].transactionId}
+                          A €{order.payments[0].amountPaid.toFixed(2)} EUR
+                          payment was processed using a{" "}
+                          {order.payments[0].paymentGateway} ending in{" "}
+                          {order.payments[0].transactionId}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(order.payments[0].createdAt), "h:mm a")}
+                          {format(
+                            new Date(order.payments[0].createdAt),
+                            "h:mm a"
+                          )}
                         </p>
                       </div>
                     </div>
@@ -377,7 +570,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                     <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                     <div className="flex-1">
                       <p className="text-sm">
-                        Confirmation #{order.orderID.split('@')[1]} was generated for this order
+                        Confirmation #{order.orderID.split("@")[1]} was
+                        generated for this order
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {format(new Date(order.createdAt), "h:mm a")}
@@ -395,12 +589,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           {/* Notes */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Notes</CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
+              <CardTitle className="text-base">Notes</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
@@ -412,12 +601,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           {/* Customer */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Customer</CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
+              <CardTitle className="text-base">Customer</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
@@ -456,10 +640,6 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </Button>
               </div>
               <Separator />
-              <div>
-                <p className="text-sm font-medium mb-1">Billing address</p>
-                <p className="text-sm text-muted-foreground">Same as shipping address</p>
-              </div>
             </CardContent>
           </Card>
 
@@ -490,19 +670,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           {/* Order Risk */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Order risk</CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
+              <CardTitle className="text-base">Order risk</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full ${
-                      order.riskChargeback === EnumRiskChargeback.EXTREMELY_SAFE || order.riskChargeback === EnumRiskChargeback.SAFE
+                      order.riskChargeback ===
+                        EnumRiskChargeback.EXTREMELY_SAFE ||
+                      order.riskChargeback === EnumRiskChargeback.SAFE
                         ? "bg-green-500 w-1/4"
                         : order.riskChargeback === EnumRiskChargeback.MEDIUM
                         ? "bg-yellow-500 w-1/2"
@@ -520,22 +697,46 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </CardContent>
           </Card>
 
-          {/* Tags */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Tags</CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">No tags</p>
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {/* Confirmation Dialogs */}
+      <AlertDialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Order as Fulfilled?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the order as fulfilled and notify the customer with tracking information.
+              This action can be reversed if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFulfillment}>
+              <Check className="h-4 w-4 mr-2" />
+              Confirm Fulfillment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This action will notify the customer
+              and may trigger a refund process.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancellation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Cancel Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  )
+  );
 }

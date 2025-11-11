@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,37 +17,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Search, Eye, Package, TrendingUp } from "lucide-react"
-import { Order, EnumOrderStatus, EnumCurrency } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "sonner"
-import { format } from "date-fns"
+} from "@/components/ui/select";
+import { Search, Eye, Package, TrendingUp } from "lucide-react";
+import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function OrdersPage() {
-  const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   useEffect(() => {
     // Mock data
@@ -95,42 +95,56 @@ export default function OrdersPage() {
           currencyPayment: EnumCurrency.GBP,
           riskChargeback: "EXTREMELY_SAFE" as any,
         },
-      ]
-      setOrders(mockOrders)
-      setLoading(false)
-    }, 1000)
-  }, [])
+      ];
+      setOrders(mockOrders);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shippingName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || order.orderStatus === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      order.shippingName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || order.orderStatus === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusBadge = (status: EnumOrderStatus) => {
-    const variants: Record<EnumOrderStatus, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
+    const variants: Record<
+      EnumOrderStatus,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+      }
+    > = {
       RECEIVED: { variant: "default", label: "Received" },
-      PARTIALLY_FULFILLED: { variant: "secondary", label: "Partially Fulfilled" },
+      PARTIALLY_FULFILLED: {
+        variant: "secondary",
+        label: "Partially Fulfilled",
+      },
       FULFILLED: { variant: "default", label: "Fulfilled" },
       CANCELLED: { variant: "destructive", label: "Cancelled" },
       FULLY_REFUNDED: { variant: "outline", label: "Refunded" },
-    }
-    return <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
-  }
+    };
+    return (
+      <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
+    );
+  };
 
   const handleStatusChange = (orderId: string, newStatus: EnumOrderStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, orderStatus: newStatus } : order
-    ))
-    toast.success("Order status updated successfully")
-  }
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, orderStatus: newStatus } : order
+      )
+    );
+    toast.success("Order status updated successfully");
+  };
 
   const handleViewDetails = (order: Order) => {
-    setSelectedOrder(order)
-    setIsDetailOpen(true)
-  }
+    setSelectedOrder(order);
+    setIsDetailOpen(true);
+  };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -152,7 +166,9 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{orders.length}</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              +12% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -162,9 +178,14 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(o => o.orderStatus === EnumOrderStatus.RECEIVED).length}
+              {
+                orders.filter((o) => o.orderStatus === EnumOrderStatus.RECEIVED)
+                  .length
+              }
             </div>
-            <p className="text-xs text-muted-foreground">Awaiting fulfillment</p>
+            <p className="text-xs text-muted-foreground">
+              Awaiting fulfillment
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -174,9 +195,15 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(o => o.orderStatus === EnumOrderStatus.FULFILLED).length}
+              {
+                orders.filter(
+                  (o) => o.orderStatus === EnumOrderStatus.FULFILLED
+                ).length
+              }
             </div>
-            <p className="text-xs text-muted-foreground">Successfully delivered</p>
+            <p className="text-xs text-muted-foreground">
+              Successfully delivered
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -198,7 +225,6 @@ export default function OrdersPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Order Management</CardTitle>
-              <CardDescription>View and update order statuses</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -208,7 +234,9 @@ export default function OrdersPage() {
                 <SelectContent>
                   <SelectItem value="all">All Orders</SelectItem>
                   <SelectItem value="RECEIVED">Received</SelectItem>
-                  <SelectItem value="PARTIALLY_FULFILLED">Partially Fulfilled</SelectItem>
+                  <SelectItem value="PARTIALLY_FULFILLED">
+                    Partially Fulfilled
+                  </SelectItem>
                   <SelectItem value="FULFILLED">Fulfilled</SelectItem>
                   <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 </SelectContent>
@@ -254,14 +282,20 @@ export default function OrdersPage() {
                   </TableRow>
                 ) : (
                   filteredOrders.map((order) => (
-                    <TableRow 
+                    <TableRow
                       key={order.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                      onClick={() =>
+                        router.push(`/dashboard/orders/${order.id}`)
+                      }
                     >
-                      <TableCell className="font-medium">{order.orderID}</TableCell>
+                      <TableCell className="font-medium">
+                        {order.orderID}
+                      </TableCell>
                       <TableCell>{order.shippingName}</TableCell>
-                      <TableCell>{format(new Date(order.createdAt), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>
+                        {format(new Date(order.createdAt), "MMM dd, yyyy")}
+                      </TableCell>
                       <TableCell>
                         {order.currencyPayment === EnumCurrency.GBP ? "£" : "€"}
                         {order.payableAmount.toFixed(2)}
@@ -273,24 +307,35 @@ export default function OrdersPage() {
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              router.push(`/dashboard/orders/${order.id}`)
+                              e.stopPropagation();
+                              router.push(`/dashboard/orders/${order.id}`);
                             }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Select
                             value={order.orderStatus}
-                            onValueChange={(value) => handleStatusChange(order.id, value as EnumOrderStatus)}
+                            onValueChange={(value) =>
+                              handleStatusChange(
+                                order.id,
+                                value as EnumOrderStatus
+                              )
+                            }
                           >
                             <SelectTrigger className="w-[140px] h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="RECEIVED">Received</SelectItem>
-                              <SelectItem value="PARTIALLY_FULFILLED">Partially Fulfilled</SelectItem>
-                              <SelectItem value="FULFILLED">Fulfilled</SelectItem>
-                              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                              <SelectItem value="PARTIALLY_FULFILLED">
+                                Partially Fulfilled
+                              </SelectItem>
+                              <SelectItem value="FULFILLED">
+                                Fulfilled
+                              </SelectItem>
+                              <SelectItem value="CANCELLED">
+                                Cancelled
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -309,29 +354,40 @@ export default function OrdersPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription>
-              {selectedOrder?.orderID}
-            </DialogDescription>
+            <DialogDescription>{selectedOrder?.orderID}</DialogDescription>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-semibold mb-2">Customer Information</h4>
-                  <p className="text-sm text-muted-foreground">Name: {selectedOrder.shippingName}</p>
-                  <p className="text-sm text-muted-foreground">Email: {selectedOrder.shippingEmail}</p>
-                  <p className="text-sm text-muted-foreground">Phone: {selectedOrder.shippingPhone}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Name: {selectedOrder.shippingName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Email: {selectedOrder.shippingEmail}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Phone: {selectedOrder.shippingPhone}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Shipping Address</h4>
-                  <p className="text-sm text-muted-foreground">{selectedOrder.shippingLine1}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedOrder.shippingLine1}
+                  </p>
                   {selectedOrder.shippingLine2 && (
-                    <p className="text-sm text-muted-foreground">{selectedOrder.shippingLine2}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOrder.shippingLine2}
+                    </p>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingPostalCode}
+                    {selectedOrder.shippingCity}, {selectedOrder.shippingState}{" "}
+                    {selectedOrder.shippingPostalCode}
                   </p>
-                  <p className="text-sm text-muted-foreground">{selectedOrder.shippingCountry}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedOrder.shippingCountry}
+                  </p>
                 </div>
               </div>
               <div>
@@ -356,5 +412,5 @@ export default function OrdersPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
