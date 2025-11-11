@@ -25,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,6 +58,11 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [statusChangeDialog, setStatusChangeDialog] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    orderId: string;
+    newStatus: EnumOrderStatus;
+  } | null>(null);
 
   useEffect(() => {
     // Mock data
@@ -133,12 +148,23 @@ export default function OrdersPage() {
   };
 
   const handleStatusChange = (orderId: string, newStatus: EnumOrderStatus) => {
+    setPendingStatusChange({ orderId, newStatus });
+    setStatusChangeDialog(true);
+  };
+
+  const confirmStatusChange = () => {
+    if (!pendingStatusChange) return;
+
     setOrders(
       orders.map((order) =>
-        order.id === orderId ? { ...order, orderStatus: newStatus } : order
+        order.id === pendingStatusChange.orderId
+          ? { ...order, orderStatus: pendingStatusChange.newStatus }
+          : order
       )
     );
     toast.success("Order status updated successfully");
+    setStatusChangeDialog(false);
+    setPendingStatusChange(null);
   };
 
   const handleViewDetails = (order: Order) => {
@@ -411,6 +437,30 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Status Change Confirmation Dialog */}
+      <AlertDialog open={statusChangeDialog} onOpenChange={setStatusChangeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the order status to{" "}
+              <span className="font-semibold">
+                {pendingStatusChange?.newStatus.replace(/_/g, " ")}
+              </span>
+              ? This action will update the order.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmStatusChange}>
+              Confirm Change
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

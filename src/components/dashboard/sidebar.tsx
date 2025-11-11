@@ -14,7 +14,6 @@ import {
   CreditCard,
   Truck,
   Tag,
-  Warehouse,
   ShoppingBag,
   RefreshCcw,
   Activity,
@@ -50,11 +49,6 @@ const routes = [
     label: "Reports",
     icon: FileText,
     href: "/dashboard/reports",
-  },
-  {
-    label: "Inventory",
-    icon: Warehouse,
-    href: "/dashboard/inventory",
   },
   {
     label: "Discounts",
