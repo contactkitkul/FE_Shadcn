@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Bell } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { MobileNav } from "./mobile-nav"
 
 export function Navbar() {
   const router = useRouter()
@@ -24,6 +25,9 @@ export function Navbar() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4 gap-4">
+        {/* Mobile Menu */}
+        <MobileNav />
+        
         {/* Search */}
         <div className="flex-1">
           <div className="relative w-full max-w-sm">

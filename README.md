@@ -9,7 +9,13 @@ A modern authentication application built with Next.js 14, TypeScript, Tailwind 
   - Login page
   - Sign up page
   - Forgot password page
-- 📊 Dashboard with stats and activity feed
+- 📊 Professional dashboard inspired by shadcn/ui examples
+  - Sidebar navigation
+  - Top navbar with search and user menu
+  - Stats cards with icons
+  - Overview chart
+  - Recent sales list
+  - Tabs for different views
 - 🎨 Responsive design with Tailwind CSS
 - 🌙 Dark mode support
 - ⚡ Built with Next.js 14 App Router
