@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Package, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, Upload, Copy } from "lucide-react";
 import {
   Product,
   EnumProductStatus,
@@ -125,8 +125,21 @@ export default function ProductsPage() {
   };
 
   const handleDelete = (id: string) => {
-    toast.success("Product deleted successfully");
     setProducts(products.filter((p) => p.id !== id));
+    toast.success("Product deleted successfully");
+  };
+
+  const handleDuplicate = (product: Product) => {
+    const duplicatedProduct: Product = {
+      ...product,
+      id: `${product.id}-copy-${Date.now()}`,
+      sku: `${product.sku}-COPY`,
+      name: `${product.name} (Copy)`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setProducts([duplicatedProduct, ...products]);
+    toast.success("Product duplicated successfully");
   };
 
   const handleEdit = (product: Product) => {
@@ -340,6 +353,14 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDuplicate(product)}
+                            title="Duplicate product"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

@@ -49,6 +49,7 @@ export default function DiscountsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null)
+  const [selectedDiscountType, setSelectedDiscountType] = useState<EnumDiscountType>(EnumDiscountType.PERCENTAGE)
 
   useEffect(() => {
     // Mock data
@@ -167,7 +168,7 @@ export default function DiscountsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Discount Type</Label>
-                  <Select>
+                  <Select value={selectedDiscountType} onValueChange={(value) => setSelectedDiscountType(value as EnumDiscountType)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -179,24 +180,49 @@ export default function DiscountsPage() {
                   </Select>
                 </div>
               </div>
+              
+              {/* Conditional Fields Based on Discount Type */}
+              {selectedDiscountType === EnumDiscountType.PERCENTAGE && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="percentage">Discount Percentage (%)</Label>
+                    <Input id="percentage" type="number" placeholder="20" min="0" max="100" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxDiscount">Max Discount Amount (€)</Label>
+                    <Input id="maxDiscount" type="number" placeholder="50" />
+                  </div>
+                </div>
+              )}
+              
+              {selectedDiscountType === EnumDiscountType.FIXED_AMOUNT && (
+                <div className="space-y-2">
+                  <Label htmlFor="fixedAmount">Discount Amount (€)</Label>
+                  <Input id="fixedAmount" type="number" placeholder="10" />
+                </div>
+              )}
+              
+              {selectedDiscountType === EnumDiscountType.X_FREE_ON_Y_PURCHASE && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="buyQty">Buy Quantity (X)</Label>
+                    <Input id="buyQty" type="number" placeholder="2" min="1" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="freeQty">Get Free Quantity (Y)</Label>
+                    <Input id="freeQty" type="number" placeholder="1" min="1" />
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="value">Discount Value</Label>
-                  <Input id="value" type="number" placeholder="20" />
+                  <Label htmlFor="minCartValue">Min Cart Value (€)</Label>
+                  <Input id="minCartValue" type="number" placeholder="50" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="usageLimit">Usage Limit</Label>
                   <Input id="usageLimit" type="number" placeholder="100" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minCartValue">Min Cart Value</Label>
-                  <Input id="minCartValue" type="number" placeholder="50" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxDiscount">Max Discount Amount</Label>
-                  <Input id="maxDiscount" type="number" placeholder="100" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
