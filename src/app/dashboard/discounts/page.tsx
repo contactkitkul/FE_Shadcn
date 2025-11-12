@@ -298,7 +298,7 @@ export default function DiscountsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minCartValue">Min Cart Value (€)</Label>
-                  <Input id="minCartValue" type="number" placeholder="50" />
+                  <Input id="minCartValue" type="number" defaultValue={50} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="usageLimit">Usage Limit</Label>
@@ -317,9 +317,9 @@ export default function DiscountsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select>
+                  <Select defaultValue={EnumDiscountStatus.ACTIVE}>
                     <SelectTrigger>
-                      <SelectValue defaultValue={"EnumDiscountStatus.ACTIVE"} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ACTIVE">Active</SelectItem>
@@ -330,9 +330,9 @@ export default function DiscountsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reason">Discount Reason</Label>
-                <Select>
+                <Select defaultValue={EnumDiscountReason.OTHERS}>
                   <SelectTrigger>
-                    <SelectValue defaultValue={EnumDiscountReason.OTHERS} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CHINA_MISTAKE">China Mistake</SelectItem>

@@ -207,7 +207,7 @@ export function VariantManager({
                       colSpan={6}
                       className="text-center text-muted-foreground"
                     >
-                      No variants added yet. Click "Add Default Variants" to
+                      No variants added yet. Click - Add Default Variants - to
                       get started.
                     </TableCell>
                   </TableRow>

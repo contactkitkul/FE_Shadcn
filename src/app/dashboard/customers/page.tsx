@@ -33,11 +33,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-interface CustomerWithOrders extends Customer {
+interface CustomerWithOrders extends Omit<Customer, 'countryCode'> {
   orderCount: number
   totalSpent: number
   lastOrderDate?: Date
-  email: string // Add email field
+  email: string
+  countryId: string
+  country: {
+    name: string
+    countryCode: string
+  }
+  createdAt: Date
+  updatedAt: Date
   orders?: Array<{
     id: string
     orderID: string
@@ -66,13 +73,17 @@ export default function CustomersPage() {
       const mockCustomers: CustomerWithOrders[] = [
         {
           id: "1",
-          createdAt: new Date("2024-10-01"),
-          updatedAt: new Date(),
           firstName: "John",
           lastName: "Doe",
           phone: "1234567890",
-          countryCode: "+44",
+          countryId: "1",
+          country: {
+            name: "United Kingdom",
+            countryCode: "GB"
+          },
           email: "john.doe@example.com",
+          createdAt: new Date("2024-10-01"),
+          updatedAt: new Date(),
           orderCount: 5,
           totalSpent: 245.50,
           lastOrderDate: new Date("2024-11-10"),
@@ -86,13 +97,17 @@ export default function CustomersPage() {
         },
         {
           id: "2",
-          createdAt: new Date("2024-09-15"),
-          updatedAt: new Date(),
           firstName: "Jane",
           lastName: "Smith",
           phone: "9876543210",
-          countryCode: "+44",
+          countryId: "1",
+          country: {
+            name: "United Kingdom",
+            countryCode: "GB"
+          },
           email: "jane.smith@example.com",
+          createdAt: new Date("2024-09-15"),
+          updatedAt: new Date(),
           orderCount: 3,
           totalSpent: 128.90,
           lastOrderDate: new Date("2024-11-08"),
@@ -104,13 +119,17 @@ export default function CustomersPage() {
         },
         {
           id: "3",
-          createdAt: new Date("2024-11-05"),
-          updatedAt: new Date(),
           firstName: "Michael",
           lastName: "Johnson",
           phone: "5551234567",
-          countryCode: "+1",
+          countryId: "2",
+          country: {
+            name: "United States",
+            countryCode: "US"
+          },
           email: "michael.johnson@example.com",
+          createdAt: new Date("2024-11-01"),
+          updatedAt: new Date(),
           orderCount: 1,
           totalSpent: 55.00,
           lastOrderDate: new Date("2024-11-11"),
@@ -120,13 +139,17 @@ export default function CustomersPage() {
         },
         {
           id: "4",
-          createdAt: new Date("2024-08-20"),
-          updatedAt: new Date(),
           firstName: "Emily",
-          lastName: "Brown",
-          phone: "4449876543",
-          countryCode: "+44",
-          email: "emily.brown@example.com",
+          lastName: "Williams",
+          phone: "5559876543",
+          countryId: "2",
+          country: {
+            name: "United States",
+            countryCode: "US"
+          },
+          email: "emily.williams@example.com",
+          createdAt: new Date("2024-10-20"),
+          updatedAt: new Date(),
           orderCount: 7,
           totalSpent: 385.00,
           lastOrderDate: new Date("2024-11-09"),
@@ -332,7 +355,7 @@ export default function CustomersPage() {
                       <TableCell className="font-medium">
                         {customer.firstName} {customer.lastName}
                       </TableCell>
-                      <TableCell>{customer.countryCode} {customer.phone}</TableCell>
+                      <TableCell>+{customer.country.countryCode} {customer.phone}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <ShoppingBag className="h-4 w-4 text-muted-foreground" />
@@ -378,9 +401,7 @@ export default function CustomersPage() {
                   <p className="text-sm text-muted-foreground">
                     Name: {selectedCustomer.firstName} {selectedCustomer.lastName}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Phone: {selectedCustomer.countryCode} {selectedCustomer.phone}
-                  </p>
+                  <div className="text-sm text-muted-foreground">+{selectedCustomer.country.countryCode} {selectedCustomer.phone}</div>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Statistics</h4>
