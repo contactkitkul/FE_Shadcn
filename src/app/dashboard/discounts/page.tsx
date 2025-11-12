@@ -36,7 +36,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Tag, Percent, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Tag,
+  Percent,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import {
   Discount,
   EnumDiscountStatus,
@@ -55,7 +65,7 @@ export default function DiscountsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   const [selectedDiscountType, setSelectedDiscountType] =
-    useState<EnumDiscountType>(EnumDiscountType.PERCENTAGE);
+    useState<EnumDiscountType>(EnumDiscountType.FIXED_AMOUNT);
   const [sortColumn, setSortColumn] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -292,7 +302,12 @@ export default function DiscountsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="usageLimit">Usage Limit</Label>
-                  <Input id="usageLimit" type="number" placeholder="100" />
+                  <Input
+                    id="usageLimit"
+                    type="number"
+                    placeholder="1"
+                    defaultValue={1}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -304,7 +319,7 @@ export default function DiscountsPage() {
                   <Label htmlFor="status">Status</Label>
                   <Select>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue defaultValue={"EnumDiscountStatus.ACTIVE"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ACTIVE">Active</SelectItem>
@@ -317,7 +332,7 @@ export default function DiscountsPage() {
                 <Label htmlFor="reason">Discount Reason</Label>
                 <Select>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select reason" />
+                    <SelectValue defaultValue={EnumDiscountReason.OTHERS} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CHINA_MISTAKE">China Mistake</SelectItem>
