@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, Truck, Package, MapPin, Check } from "lucide-react"
+import { Search, Truck, Package, MapPin, Check, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Shipment, EnumShipmentStatus } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -47,6 +47,8 @@ export default function ShipmentsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [sortColumn, setSortColumn] = useState<string>("createdAt")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     shipmentId: string;
     newStatus: EnumShipmentStatus;
@@ -99,13 +101,54 @@ export default function ShipmentsPage() {
     }, 1000)
   }, [])
 
-  const filteredShipments = shipments.filter((shipment) => {
-    const matchesSearch =
-      shipment.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      shipment.provider.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || shipment.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortColumn(column)
+      setSortDirection("asc")
+    }
+  }
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    )
+  }
+
+  const filteredAndSortedShipments = shipments
+    .filter((shipment) => {
+      const matchesSearch =
+        shipment.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        shipment.provider.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === "all" || shipment.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+    .sort((a, b) => {
+      let aValue: any = a[sortColumn as keyof Shipment]
+      let bValue: any = b[sortColumn as keyof Shipment]
+
+      if (sortColumn === "createdAt") {
+        aValue = new Date(aValue).getTime()
+        bValue = new Date(bValue).getTime()
+      }
+
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase()
+        bValue = bValue.toLowerCase()
+      }
+
+      if (sortDirection === "asc") {
+        return aValue > bValue ? 1 : -1
+      } else {
+        return aValue < bValue ? 1 : -1
+      }
+    })
 
   const getStatusBadge = (status: EnumShipmentStatus) => {
     const variants: Record<EnumShipmentStatus, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
@@ -252,16 +295,61 @@ export default function ShipmentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tracking Number</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("trackingNumber")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Tracking Number
+                      {getSortIcon("trackingNumber")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("provider")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Provider
+                      {getSortIcon("provider")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("orderId")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Order ID
+                      {getSortIcon("orderId")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("createdAt")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Created
+                      {getSortIcon("createdAt")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("status")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Status
+                      {getSortIcon("status")}
+                    </Button>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredShipments.length === 0 ? (
+                {filteredAndSortedShipments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
                       <Truck className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
@@ -269,7 +357,7 @@ export default function ShipmentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredShipments.map((shipment) => (
+                  filteredAndSortedShipments.map((shipment: Shipment) => (
                     <TableRow key={shipment.id}>
                       <TableCell className="font-medium font-mono">
                         {shipment.trackingNumber}

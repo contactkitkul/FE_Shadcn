@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,23 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,15 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Eye, Package, TrendingUp, Download, Calendar, DollarSign, XCircle, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from "lucide-react";
-import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Search, Eye, Package, Download, CheckCircle, AlertCircle, Clock, DollarSign, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -71,63 +53,13 @@ export default function OrdersPage() {
     amount: true,
     status: true,
     date: true,
+    actions: true,
   });
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [statusChangeDialog, setStatusChangeDialog] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<{
-    orderId: string;
-    newStatus: EnumOrderStatus;
-  } | null>(null);
 
   useEffect(() => {
-    // Mock data
+    // No orders - empty state
     setTimeout(() => {
-      const mockOrders: Order[] = [
-        {
-          id: "1",
-          createdAt: new Date("2024-01-15"),
-          updatedAt: new Date(),
-          shippingName: "John Doe",
-          shippingPhone: "+1234567890",
-          shippingLine1: "123 Main St",
-          shippingCity: "London",
-          shippingState: "England",
-          shippingPostalCode: "SW1A 1AA",
-          shippingCountry: "UK",
-          shippingEmail: "john@example.com",
-          orderID: "ORD-2024-001",
-          orderStatus: EnumOrderStatus.RECEIVED,
-          customerId: "cust1",
-          totalAmount: 89.99,
-          discountAmount: 0,
-          payableAmount: 89.99,
-          currencyPayment: EnumCurrency.GBP,
-          riskChargeback: "SAFE" as any,
-        },
-        {
-          id: "2",
-          createdAt: new Date("2024-01-14"),
-          updatedAt: new Date(),
-          shippingName: "Jane Smith",
-          shippingPhone: "+1234567891",
-          shippingLine1: "456 Oak Ave",
-          shippingCity: "Manchester",
-          shippingState: "England",
-          shippingPostalCode: "M1 1AA",
-          shippingCountry: "UK",
-          shippingEmail: "jane@example.com",
-          orderID: "ORD-2024-002",
-          orderStatus: EnumOrderStatus.FULFILLED,
-          customerId: "cust2",
-          totalAmount: 129.99,
-          discountAmount: 10,
-          payableAmount: 119.99,
-          currencyPayment: EnumCurrency.GBP,
-          riskChargeback: "EXTREMELY_SAFE" as any,
-        },
-      ];
-      setOrders(mockOrders);
+      setOrders([]);
       setLoading(false);
     }, 1000);
   }, []);
@@ -141,143 +73,79 @@ export default function OrdersPage() {
     }
   };
 
-  const toggleColumn = (column: string) => {
-    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column as keyof typeof prev] }));
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shippingName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || order.orderStatus === statusFilter;
-    
-    // Date filtering
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const orderDate = new Date(order.createdAt);
-      orderDate.setHours(0, 0, 0, 0);
+  const toggleColumn = (column: string) => {
+    setVisibleColumns(prev => ({ 
+      ...prev, 
+      [column]: !prev[column as keyof typeof prev] 
+    }));
+  };
+
+  const filteredOrders = orders
+    .filter((order) => {
+      const matchesSearch =
+        order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.shippingName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || order.orderStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const aValue = a[sortColumn as keyof Order];
+      const bValue = b[sortColumn as keyof Order];
       
-      if (dateFilter === "today") {
-        matchesDate = orderDate.getTime() === today.getTime();
-      } else if (dateFilter === "yesterday") {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        matchesDate = orderDate.getTime() === yesterday.getTime();
-      } else if (dateFilter === "last7days") {
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        matchesDate = orderDate >= weekAgo;
-      } else if (dateFilter === "last30days") {
-        const monthAgo = new Date(today);
-        monthAgo.setDate(monthAgo.getDate() - 30);
-        matchesDate = orderDate >= monthAgo;
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === "asc" 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
       }
-    }
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  }).sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
-
-    switch (sortColumn) {
-      case "orderID":
-        aValue = a.orderID;
-        bValue = b.orderID;
-        break;
-      case "customer":
-        aValue = a.shippingName;
-        bValue = b.shippingName;
-        break;
-      case "amount":
-        aValue = a.payableAmount;
-        bValue = b.payableAmount;
-        break;
-      case "status":
-        aValue = a.orderStatus;
-        bValue = b.orderStatus;
-        break;
-      case "createdAt":
-        aValue = new Date(a.createdAt).getTime();
-        bValue = new Date(b.createdAt).getTime();
-        break;
-      default:
-        return 0;
-    }
-
-    if (sortDirection === "asc") {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+      
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortDirection === "asc" 
+          ? aValue.getTime() - bValue.getTime()
+          : bValue.getTime() - aValue.getTime();
+      }
+      
+      return 0;
+    });
 
   const getStatusBadge = (status: EnumOrderStatus) => {
-    const variants: Record<
-      EnumOrderStatus,
-      {
-        variant: "default" | "secondary" | "destructive" | "outline";
-        label: string;
-      }
-    > = {
+    const variants: Record<EnumOrderStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
       RECEIVED: { variant: "default", label: "Received" },
-      PARTIALLY_FULFILLED: {
-        variant: "secondary",
-        label: "Partially Fulfilled",
-      },
+      PARTIALLY_FULFILLED: { variant: "secondary", label: "Partially Fulfilled" },
       FULFILLED: { variant: "default", label: "Fulfilled" },
       CANCELLED: { variant: "destructive", label: "Cancelled" },
       FULLY_REFUNDED: { variant: "outline", label: "Refunded" },
     };
-    return (
-      <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
-    );
-  };
-
-  const handleStatusChange = (orderId: string, newStatus: EnumOrderStatus) => {
-    setPendingStatusChange({ orderId, newStatus });
-    setStatusChangeDialog(true);
-  };
-
-  const confirmStatusChange = () => {
-    if (!pendingStatusChange) return;
-
-    setOrders(
-      orders.map((order) =>
-        order.id === pendingStatusChange.orderId
-          ? { ...order, orderStatus: pendingStatusChange.newStatus }
-          : order
-      )
-    );
-    toast.success("Order status updated successfully");
-    setStatusChangeDialog(false);
-    setPendingStatusChange(null);
-  };
-
-  const handleViewDetails = (order: Order) => {
-    setSelectedOrder(order);
-    setIsDetailOpen(true);
+    return <Badge variant={variants[status].variant}>{variants[status].label}</Badge>;
   };
 
   const handleDownloadOrders = () => {
-    // Create CSV content
     const headers = ["Order ID", "Customer", "Amount", "Status", "Date"];
     const rows = filteredOrders.map(order => [
       order.orderID,
       order.shippingName,
-      `${order.currencyPayment === EnumCurrency.GBP ? "£" : "€"}${order.payableAmount.toFixed(2)}`,
+      `€${order.payableAmount.toFixed(2)}`,
       order.orderStatus,
-      format(order.createdAt, "yyyy-MM-dd HH:mm:ss")
+      format(order.createdAt, "MMM dd, yyyy")
     ]);
     
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-    
-    // Download file
+    const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -299,80 +167,21 @@ export default function OrdersPage() {
   const totalRevenue = orders.reduce((sum, o) => sum + o.payableAmount, 0);
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Received</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{receivedOrders}</div>
-            <p className="text-xs text-muted-foreground">Pending fulfillment</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fulfilled</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{fulfilledOrders}</div>
-            <p className="text-xs text-muted-foreground">Completed</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{cancelledOrders}</div>
-            <p className="text-xs text-muted-foreground">Cancelled orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">€{totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Total revenue</p>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="flex-1 space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground">
-            Manage and track customer orders
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+          <p className="text-sm text-muted-foreground">Manage and track customer orders</p>
         </div>
-        <Button onClick={handleDownloadOrders} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Download Orders
-        </Button>
       </div>
 
-      {/* Date Filters */}
-      <div className="flex gap-2">
+      {/* Date Filter Buttons */}
+      <div className="flex gap-1">
         <Button 
           variant={dateFilter === "all" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("all")}
+          className={dateFilter === "all" ? "bg-pink-500 hover:bg-pink-600 text-white border-0" : ""}
         >
           All Time
         </Button>
@@ -406,17 +215,72 @@ export default function OrdersPage() {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground">
-            Manage and track customer orders
-          </p>
-        </div>
-        <Button onClick={handleDownloadOrders} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Download Orders
-        </Button>
+      {/* Stats Cards */}
+      <div className="grid gap-3 grid-cols-5">
+        <Card className="border-l-4 border-l-gray-300">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Total Orders</p>
+                <div className="text-xl font-bold">{totalOrders}</div>
+                <p className="text-xs text-muted-foreground">All time</p>
+              </div>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-blue-400">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Received</p>
+                <div className="text-xl font-bold text-blue-600">{receivedOrders}</div>
+                <p className="text-xs text-muted-foreground">Pending fulfillment</p>
+              </div>
+              <Clock className="h-4 w-4 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-green-400">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Fulfilled</p>
+                <div className="text-xl font-bold text-green-600">{fulfilledOrders}</div>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+              <CheckCircle className="h-4 w-4 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-red-400">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Cancelled</p>
+                <div className="text-xl font-bold text-red-600">{cancelledOrders}</div>
+                <p className="text-xs text-muted-foreground">Cancelled orders</p>
+              </div>
+              <AlertCircle className="h-4 w-4 text-red-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-l-4 border-l-yellow-400">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Revenue</p>
+                <div className="text-xl font-bold">€{totalRevenue.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Total revenue</p>
+              </div>
+              <DollarSign className="h-4 w-4 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Orders Table */}
@@ -427,6 +291,15 @@ export default function OrdersPage() {
               <CardTitle>Order Management</CardTitle>
             </div>
             <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search orders..."
+                  className="pl-8 w-[300px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -465,42 +338,26 @@ export default function OrdersPage() {
                   >
                     Date & Time
                   </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.actions}
+                    onCheckedChange={() => toggleColumn("actions")}
+                  >
+                    Actions
+                  </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Orders</SelectItem>
-                  <SelectItem value="RECEIVED">Received</SelectItem>
-                  <SelectItem value="PARTIALLY_FULFILLED">
-                    Partially Fulfilled
-                  </SelectItem>
-                  <SelectItem value="FULFILLED">Fulfilled</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  className="pl-8 w-[300px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+              <Button variant="outline" size="sm">
+                All Orders
+              </Button>
+              <Button onClick={handleDownloadOrders} variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Download Orders
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -508,15 +365,11 @@ export default function OrdersPage() {
                     <TableHead>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="-ml-3 h-8 data-[state=open]:bg-accent"
                         onClick={() => handleSort("orderID")}
+                        className="h-auto p-0 font-semibold"
                       >
                         Order ID
-                        {sortColumn === "orderID" && (
-                          sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                        )}
-                        {sortColumn !== "orderID" && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                        {getSortIcon("orderID")}
                       </Button>
                     </TableHead>
                   )}
@@ -524,15 +377,11 @@ export default function OrdersPage() {
                     <TableHead>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="-ml-3 h-8 data-[state=open]:bg-accent"
-                        onClick={() => handleSort("customer")}
+                        onClick={() => handleSort("shippingName")}
+                        className="h-auto p-0 font-semibold"
                       >
                         Customer
-                        {sortColumn === "customer" && (
-                          sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                        )}
-                        {sortColumn !== "customer" && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                        {getSortIcon("shippingName")}
                       </Button>
                     </TableHead>
                   )}
@@ -540,15 +389,11 @@ export default function OrdersPage() {
                     <TableHead>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="-ml-3 h-8 data-[state=open]:bg-accent"
-                        onClick={() => handleSort("amount")}
+                        onClick={() => handleSort("payableAmount")}
+                        className="h-auto p-0 font-semibold"
                       >
                         Amount
-                        {sortColumn === "amount" && (
-                          sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                        )}
-                        {sortColumn !== "amount" && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                        {getSortIcon("payableAmount")}
                       </Button>
                     </TableHead>
                   )}
@@ -556,15 +401,11 @@ export default function OrdersPage() {
                     <TableHead>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="-ml-3 h-8 data-[state=open]:bg-accent"
-                        onClick={() => handleSort("status")}
+                        onClick={() => handleSort("orderStatus")}
+                        className="h-auto p-0 font-semibold"
                       >
                         Status
-                        {sortColumn === "status" && (
-                          sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                        )}
-                        {sortColumn !== "status" && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                        {getSortIcon("orderStatus")}
                       </Button>
                     </TableHead>
                   )}
@@ -572,198 +413,72 @@ export default function OrdersPage() {
                     <TableHead>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="-ml-3 h-8 data-[state=open]:bg-accent"
                         onClick={() => handleSort("createdAt")}
+                        className="h-auto p-0 font-semibold"
                       >
                         Date & Time
-                        {sortColumn === "createdAt" && (
-                          sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                        )}
-                        {sortColumn !== "createdAt" && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                        {getSortIcon("createdAt")}
                       </Button>
                     </TableHead>
                   )}
-                  <TableHead>Actions</TableHead>
+                  {visibleColumns.actions && (
+                    <TableHead>Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {visibleColumns.orderID && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
+                      {visibleColumns.customer && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
+                      {visibleColumns.amount && <TableCell><Skeleton className="h-4 w-16" /></TableCell>}
+                      {visibleColumns.status && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
+                      {visibleColumns.date && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
+                      {visibleColumns.actions && <TableCell><Skeleton className="h-4 w-16" /></TableCell>}
+                    </TableRow>
+                  ))
+                ) : filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={Object.values(visibleColumns).filter(Boolean).length} className="text-center py-8">
                       <Package className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                       <p className="text-muted-foreground">No orders found</p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredOrders.map((order) => (
-                    <TableRow
-                      key={order.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        router.push(`/dashboard/orders/${order.id}`)
-                      }
-                    >
-                      {visibleColumns.orderID && (
-                        <TableCell className="font-medium">
-                          {order.orderID}
-                        </TableCell>
-                      )}
-                      {visibleColumns.customer && (
-                        <TableCell>{order.shippingName}</TableCell>
-                      )}
-                      {visibleColumns.amount && (
-                        <TableCell>
-                          {order.currencyPayment === EnumCurrency.GBP ? "£" : "€"}
-                          {order.payableAmount.toFixed(2)}
-                        </TableCell>
-                      )}
-                      {visibleColumns.status && (
-                        <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>
-                      )}
+                    <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
+                      {visibleColumns.orderID && <TableCell className="font-medium">{order.orderID}</TableCell>}
+                      {visibleColumns.customer && <TableCell>{order.shippingName}</TableCell>}
+                      {visibleColumns.amount && <TableCell>€{order.payableAmount.toFixed(2)}</TableCell>}
+                      {visibleColumns.status && <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>}
                       {visibleColumns.date && (
                         <TableCell>
-                          {format(order.createdAt, "MMM dd, yyyy")}
-                          <br />
-                          <span className="text-xs text-muted-foreground">
-                            {format(order.createdAt, "h:mm a")}
-                          </span>
+                          <div className="text-sm">
+                            <div>{format(order.createdAt, "MMM dd, yyyy")}</div>
+                            <div className="text-muted-foreground">{format(order.createdAt, "h:mm a")}</div>
+                          </div>
                         </TableCell>
                       )}
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
+                      {visibleColumns.actions && (
+                        <TableCell>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/dashboard/orders/${order.id}`);
-                            }}
+                            size="sm"
+                            onClick={() => router.push(`/dashboard/orders/${order.id}`)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Select
-                            value={order.orderStatus}
-                            onValueChange={(value) =>
-                              handleStatusChange(
-                                order.id,
-                                value as EnumOrderStatus
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-[140px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="RECEIVED">Received</SelectItem>
-                              <SelectItem value="PARTIALLY_FULFILLED">
-                                Partially Fulfilled
-                              </SelectItem>
-                              <SelectItem value="FULFILLED">
-                                Fulfilled
-                              </SelectItem>
-                              <SelectItem value="CANCELLED">
-                                Cancelled
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
-          )}
+          </div>
         </CardContent>
       </Card>
-
-      {/* Order Details Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription>{selectedOrder?.orderID}</DialogDescription>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Customer Information</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Name: {selectedOrder.shippingName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Email: {selectedOrder.shippingEmail}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Phone: {selectedOrder.shippingPhone}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Shipping Address</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedOrder.shippingLine1}
-                  </p>
-                  {selectedOrder.shippingLine2 && (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedOrder.shippingLine2}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {selectedOrder.shippingCity}, {selectedOrder.shippingState}{" "}
-                    {selectedOrder.shippingPostalCode}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedOrder.shippingCountry}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Order Summary</h4>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
-                    <span>£{selectedOrder.totalAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Discount:</span>
-                    <span>-£{selectedOrder.discountAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>£{selectedOrder.payableAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Status Change Confirmation Dialog */}
-      <AlertDialog open={statusChangeDialog} onOpenChange={setStatusChangeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the order status to{" "}
-              <span className="font-semibold">
-                {pendingStatusChange?.newStatus.replace(/_/g, " ")}
-              </span>
-              ? This action will update the order.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmStatusChange}>
-              Confirm Change
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

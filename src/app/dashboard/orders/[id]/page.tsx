@@ -43,6 +43,9 @@ import {
   Trash2,
   Check,
   ExternalLink,
+  Copy,
+  Edit,
+  X,
 } from "lucide-react";
 import {
   Order,
@@ -87,6 +90,24 @@ export default function OrderDetailPage({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [addressValidation, setAddressValidation] = useState<ReturnType<typeof validateAddress> | null>(null);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemValues, setEditingItemValues] = useState<{
+    quantity: number;
+    customisationString?: string;
+    customisationPrice: number;
+  }>({ quantity: 1, customisationPrice: 0 });
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressValues, setAddressValues] = useState({
+    shippingName: "",
+    shippingLine1: "",
+    shippingLine2: "",
+    shippingCity: "",
+    shippingState: "",
+    shippingPostalCode: "",
+    shippingCountry: "",
+    shippingPhone: "",
+    shippingEmail: ""
+  });
 
   useEffect(() => {
     // Mock data - replace with actual API call
@@ -402,35 +423,127 @@ export default function OrderDetailPage({
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-2">
-                          <div>
-                            <p className="font-medium">
-                              €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
-                              {item.quantity}
-                            </p>
-                            <p className="text-sm font-semibold">
-                              €
-                              {(
-                                (item.productVariant?.sellPrice || 0) *
-                                item.quantity
-                              ).toFixed(2)}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              if (!order) return;
-                              const updatedItems = order.orderItems?.map(i =>
-                                i.id === item.id ? { ...i, noStockStatus: EnumNoStockStatus.OUT_OF_STOCK } : i
-                              );
-                              setOrder({ ...order, orderItems: updatedItems });
-                              toast.success("Item marked as cancelled");
-                            }}
-                            title="Mark item as cancelled"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {editingItemId === item.id ? (
+                            <div className="space-y-2">
+                              <div className="flex gap-2 items-center">
+                                <Label className="text-xs">Qty:</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={editingItemValues.quantity}
+                                  onChange={(e) => setEditingItemValues({
+                                    ...editingItemValues,
+                                    quantity: parseInt(e.target.value) || 1
+                                  })}
+                                  className="w-16 h-8"
+                                />
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <Label className="text-xs">Custom:</Label>
+                                <Input
+                                  value={editingItemValues.customisationString || ""}
+                                  onChange={(e) => setEditingItemValues({
+                                    ...editingItemValues,
+                                    customisationString: e.target.value
+                                  })}
+                                  className="w-24 h-8"
+                                  placeholder="Custom"
+                                />
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <Label className="text-xs">Price:</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editingItemValues.customisationPrice}
+                                  onChange={(e) => setEditingItemValues({
+                                    ...editingItemValues,
+                                    customisationPrice: parseFloat(e.target.value) || 0
+                                  })}
+                                  className="w-20 h-8"
+                                />
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!order) return;
+                                    const updatedItems = order.orderItems?.map(i =>
+                                      i.id === item.id ? {
+                                        ...i,
+                                        quantity: editingItemValues.quantity,
+                                        customisationString: editingItemValues.customisationString,
+                                        customisationPrice: editingItemValues.customisationPrice
+                                      } : i
+                                    );
+                                    setOrder({ ...order, orderItems: updatedItems });
+                                    setEditingItemId(null);
+                                    toast.success("Item updated successfully");
+                                  }}
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingItemId(null)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <p className="font-medium">
+                                  €{item.productVariant?.sellPrice.toFixed(2)} × {item.quantity}
+                                </p>
+                                <p className="text-sm font-semibold">
+                                  €{((item.productVariant?.sellPrice || 0) * item.quantity).toFixed(2)}
+                                </p>
+                                {(item.customisationPrice || 0) > 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    +€{(item.customisationPrice || 0).toFixed(2)} custom
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    setEditingItemId(item.id);
+                                    setEditingItemValues({
+                                      quantity: item.quantity,
+                                      customisationString: item.customisationString,
+                                      customisationPrice: item.customisationPrice || 0
+                                    });
+                                  }}
+                                  title="Edit item"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    if (!order) return;
+                                    const updatedItems = order.orderItems?.map(i =>
+                                      i.id === item.id ? { ...i, noStockStatus: EnumNoStockStatus.OUT_OF_STOCK } : i
+                                    );
+                                    setOrder({ ...order, orderItems: updatedItems });
+                                    toast.success("Item marked as cancelled");
+                                  }}
+                                  title="Mark item as cancelled"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                       {index < (order.orderItems?.length || 0) - 1 && (
@@ -439,16 +552,29 @@ export default function OrderDetailPage({
                     </div>
                   ))}
                   
-                  {/* Add Item Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => setShowAddItemDialog(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Item
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddItemDialog(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Item
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (order) {
+                          router.push(`/dashboard/orders/new?duplicate=${order.id}`);
+                        }
+                      }}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate Order
+                    </Button>
+                  </div>
                 </div>
 
                 <Separator />
@@ -733,17 +859,142 @@ export default function OrderDetailPage({
               </div>
               <Separator />
               <div>
-                <p className="text-sm font-medium mb-1">Shipping address</p>
-                <div className="text-sm text-muted-foreground space-y-0.5">
-                  <p>{order.shippingName}</p>
-                  <p>{order.shippingLine1}</p>
-                  {order.shippingLine2 && <p>{order.shippingLine2}</p>}
-                  <p>
-                    {order.shippingPostalCode} {order.shippingCity}
-                  </p>
-                  <p>{order.shippingCountry}</p>
-                  <p>{order.shippingPhone}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">Shipping address</p>
+                  {!editingAddress ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingAddress(true);
+                        setAddressValues({
+                          shippingName: order.shippingName,
+                          shippingLine1: order.shippingLine1,
+                          shippingLine2: order.shippingLine2 || "",
+                          shippingCity: order.shippingCity,
+                          shippingState: order.shippingState,
+                          shippingPostalCode: order.shippingPostalCode,
+                          shippingCountry: order.shippingCountry,
+                          shippingPhone: order.shippingPhone || "",
+                          shippingEmail: order.shippingEmail
+                        });
+                      }}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setOrder({
+                            ...order,
+                            ...addressValues,
+                            updatedAt: new Date()
+                          });
+                          setEditingAddress(false);
+                          toast.success("Address updated successfully");
+                          
+                          // Re-validate address
+                          const addressToValidate = {
+                            line1: addressValues.shippingLine1,
+                            line2: addressValues.shippingLine2,
+                            city: addressValues.shippingCity,
+                            state: addressValues.shippingState,
+                            postalCode: addressValues.shippingPostalCode,
+                            country: addressValues.shippingCountry,
+                            name: addressValues.shippingName,
+                          };
+                          const validation = validateAddress(addressToValidate);
+                          setAddressValidation(validation);
+                        }}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingAddress(false)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
+                
+                {editingAddress ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={addressValues.shippingName}
+                      onChange={(e) => setAddressValues({...addressValues, shippingName: e.target.value})}
+                      placeholder="Full Name"
+                      className="text-sm"
+                    />
+                    <Input
+                      value={addressValues.shippingLine1}
+                      onChange={(e) => setAddressValues({...addressValues, shippingLine1: e.target.value})}
+                      placeholder="Address Line 1"
+                      className="text-sm"
+                    />
+                    <Input
+                      value={addressValues.shippingLine2}
+                      onChange={(e) => setAddressValues({...addressValues, shippingLine2: e.target.value})}
+                      placeholder="Address Line 2 (Optional)"
+                      className="text-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={addressValues.shippingPostalCode}
+                        onChange={(e) => setAddressValues({...addressValues, shippingPostalCode: e.target.value})}
+                        placeholder="Postal Code"
+                        className="text-sm"
+                      />
+                      <Input
+                        value={addressValues.shippingCity}
+                        onChange={(e) => setAddressValues({...addressValues, shippingCity: e.target.value})}
+                        placeholder="City"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={addressValues.shippingState}
+                        onChange={(e) => setAddressValues({...addressValues, shippingState: e.target.value})}
+                        placeholder="State/Province"
+                        className="text-sm"
+                      />
+                      <Input
+                        value={addressValues.shippingCountry}
+                        onChange={(e) => setAddressValues({...addressValues, shippingCountry: e.target.value})}
+                        placeholder="Country"
+                        className="text-sm"
+                      />
+                    </div>
+                    <Input
+                      value={addressValues.shippingPhone}
+                      onChange={(e) => setAddressValues({...addressValues, shippingPhone: e.target.value})}
+                      placeholder="Phone Number"
+                      className="text-sm"
+                    />
+                    <Input
+                      value={addressValues.shippingEmail}
+                      onChange={(e) => setAddressValues({...addressValues, shippingEmail: e.target.value})}
+                      placeholder="Email Address"
+                      className="text-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground space-y-0.5">
+                    <p>{order.shippingName}</p>
+                    <p>{order.shippingLine1}</p>
+                    {order.shippingLine2 && <p>{order.shippingLine2}</p>}
+                    <p>{order.shippingPostalCode} {order.shippingCity}</p>
+                    <p>{order.shippingState}, {order.shippingCountry}</p>
+                    <p>{order.shippingPhone}</p>
+                    <p className="text-blue-600">{order.shippingEmail}</p>
+                  </div>
+                )}
                 
                 {/* Address Validation Results */}
                 {addressValidation && (
@@ -910,13 +1161,21 @@ export default function OrderDetailPage({
           }} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="product">Product</Label>
-              <Input 
-                id="product" 
-                name="product"
-                placeholder="2004 Portugal 2a Equipacion" 
-                defaultValue="2004 Portugal 2a Equipacion"
-                required 
-              />
+              <Select name="product" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="portugal-2004-away">2004 Portugal 2a Equipacion</SelectItem>
+                  <SelectItem value="spain-2010-home">2010 Spain Home Jersey</SelectItem>
+                  <SelectItem value="brazil-2002-home">2002 Brazil Home Jersey</SelectItem>
+                  <SelectItem value="france-1998-home">1998 France Home Jersey</SelectItem>
+                  <SelectItem value="italy-2006-home">2006 Italy Home Jersey</SelectItem>
+                  <SelectItem value="germany-2014-home">2014 Germany Home Jersey</SelectItem>
+                  <SelectItem value="argentina-1986-home">1986 Argentina Home Jersey</SelectItem>
+                  <SelectItem value="netherlands-1988-home">1988 Netherlands Home Jersey</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

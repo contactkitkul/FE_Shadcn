@@ -37,7 +37,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Package, Upload, Copy } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Package,
+  Edit,
+  MoreHorizontal,
+  Copy,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Upload,
+  Trash2,
+} from "lucide-react";
 import {
   Product,
   EnumProductStatus,
@@ -48,7 +60,11 @@ import {
 } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { getAllTeams, getLeagueForTeam, formatTeamName } from "@/lib/team-league-mapping";
+import {
+  getAllTeams,
+  getLeagueForTeam,
+  formatTeamName,
+} from "@/lib/team-league-mapping";
 import { VariantManager } from "@/components/products/variant-manager";
 import {
   AlertDialog,
@@ -69,9 +85,26 @@ export default function ProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>("");
-  const [autoLeague, setAutoLeague] = useState<EnumLeague | undefined>(undefined);
+  const [autoLeague, setAutoLeague] = useState<EnumLeague | undefined>(
+    undefined
+  );
+  const [formData, setFormData] = useState({
+    name: "",
+    sku: "",
+    team: "",
+    year: "2023",
+    yearEnd: 2024,
+    league: "",
+    homeAway: "HOME" as EnumHomeAway,
+    status: "ACTIVE" as EnumProductStatus,
+    shirtType: "NORMAL" as EnumShirtType,
+    productType: "SHIRT" as EnumProductType,
+  });
   const [variantManagerOpen, setVariantManagerOpen] = useState(false);
-  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] =
+    useState<Product | null>(null);
+  const [sortColumn, setSortColumn] = useState<string>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     productId: string;
     newStatus: EnumProductStatus;
@@ -90,15 +123,16 @@ export default function ProductsPage() {
           sku: "MU-HOME-23-24",
           productStatus: EnumProductStatus.ACTIVE,
           year: "2023/24",
+          yearEnd: 2024,
           team: "Manchester_United_FC",
+          teamIdentifier: "MANU",
           league: EnumLeague.PREMIER_LEAGUE,
+          leagueIdentifier: "PL",
           productType: EnumProductType.SHIRT,
-          featuresShirt: EnumShirtType.NORMAL,
-          featuresCurrentSeason: true,
-          featuresLongSleeve: false,
+          shirtType: EnumShirtType.NORMAL,
           name: "Manchester United Home Shirt 2023/24",
           homeAway: EnumHomeAway.HOME,
-          productVariantId: "var1",
+          description: "Official Manchester United home shirt",
         },
         {
           id: "2",
@@ -107,31 +141,161 @@ export default function ProductsPage() {
           sku: "RM-AWAY-23-24",
           productStatus: EnumProductStatus.ACTIVE,
           year: "2023/24",
+          yearEnd: 2024,
           team: "Real_Madrid_CF",
+          teamIdentifier: "REAL",
           league: EnumLeague.LA_LIGA,
+          leagueIdentifier: "LL",
           productType: EnumProductType.SHIRT,
-          featuresShirt: EnumShirtType.PLAYER,
-          featuresCurrentSeason: true,
-          featuresLongSleeve: false,
+          shirtType: EnumShirtType.PLAYER,
           name: "Real Madrid Away Shirt 2023/24",
           homeAway: EnumHomeAway.AWAY,
-          productVariantId: "var2",
+          description: "Official Real Madrid away shirt",
         },
       ];
       // Sort by newest first (createdAt DESC)
-      const sortedProducts = mockProducts.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      const sortedProducts = mockProducts.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setProducts(sortedProducts);
       setLoading(false);
     }, 1000);
   }, []);
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Auto-generation functions
+  const generateSKU = (): string => {
+    return Math.random().toString(36).substr(2, 6).toUpperCase();
+  };
+
+  const getTeamIdentifier = (team: string): string => {
+    // Create 4-letter team identifiers
+    const teamMap: Record<string, string> = {
+      REAL_MADRID: "REAL",
+      FC_BARCELONA: "BARCA",
+      MANCHESTER_UNITED: "MANU",
+      MANCHESTER_CITY: "MACI",
+      LIVERPOOL: "LIVE",
+      CHELSEA: "CHEL",
+      ARSENAL: "ARSE",
+      TOTTENHAM: "TOTT",
+      BAYERN_MUNICH: "BAYE",
+      BORUSSIA_DORTMUND: "DORT",
+      JUVENTUS: "JUVE",
+      AC_MILAN: "MILA",
+      INTER_MILAN: "INTE",
+      PSG: "PSG_",
+      ATLETICO_MADRID: "ATLE",
+    };
+    return teamMap[team] || team.substring(0, 4).toUpperCase();
+  };
+
+  const getLeagueIdentifier = (league: EnumLeague): string => {
+    const leagueMap: Record<string, string> = {
+      PREMIER_LEAGUE: "PL",
+      LA_LIGA: "LL",
+      BUNDESLIGA: "BL",
+      SERIE_A: "SA",
+      LIGUE_1: "L1",
+    };
+    return leagueMap[league] || "XX";
+  };
+
+  const generateProductName = (
+    team: string,
+    year: string,
+    homeAway: EnumHomeAway,
+    league: EnumLeague
+  ): string => {
+    const teamId = getTeamIdentifier(team);
+    const yearStart = year.split("/")[0]?.substring(2) || "24"; // Get last 2 digits of start year
+    const homeAwayCode = homeAway.substring(0, 1); // H, A, T, G
+    const leagueId = getLeagueIdentifier(league);
+
+    return `${teamId}${yearStart}${homeAwayCode}${leagueId}`;
+  };
+
+  const updateFormData = (field: string, value: any) => {
+    const newFormData = { ...formData, [field]: value };
+
+    // Auto-generate name when key fields change
+    if (field === "team" || field === "year" || field === "homeAway") {
+      if (newFormData.team && newFormData.year && autoLeague) {
+        newFormData.name = generateProductName(
+          newFormData.team,
+          newFormData.year,
+          newFormData.homeAway,
+          autoLeague
+        );
+      }
+    }
+
+    setFormData(newFormData);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      sku: generateSKU(),
+      team: "",
+      year: "2023/24",
+      yearEnd: 2024,
+      league: "",
+      homeAway: "HOME" as EnumHomeAway,
+      status: "ACTIVE" as EnumProductStatus,
+      shirtType: "NORMAL" as EnumShirtType,
+      productType: "SHIRT" as EnumProductType,
+    });
+    setSelectedTeam("");
+    setAutoLeague(undefined);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  const filteredAndSortedProducts = products
+    .filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      let aValue: any = a[sortColumn as keyof Product];
+      let bValue: any = b[sortColumn as keyof Product];
+
+      if (sortColumn === "createdAt") {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (sortDirection === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
 
   const getStatusBadge = (status: EnumProductStatus) => {
     const variants: Record<
@@ -165,6 +329,20 @@ export default function ProductsPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      sku: product.sku,
+      team: (product.team as string) || "",
+      year: product.year,
+      yearEnd: product.yearEnd,
+      league: (product.league as string) || "",
+      homeAway: (product.homeAway as EnumHomeAway) || ("HOME" as EnumHomeAway),
+      status: product.productStatus,
+      shirtType: (product.shirtType as EnumShirtType) || ("NORMAL" as EnumShirtType),
+      productType: product.productType
+    });
+    setSelectedTeam((product.team as string) || "");
+    setAutoLeague(product.league);
     setIsDialogOpen(true);
   };
 
@@ -194,7 +372,12 @@ export default function ProductsPage() {
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingProduct(null)}>
+              <Button
+                onClick={() => {
+                  setEditingProduct(null);
+                  resetForm();
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Product
               </Button>
@@ -211,55 +394,100 @@ export default function ProductsPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" placeholder="Enter product name" />
+                    <Label htmlFor="name">Product Name (Auto-generated)</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => updateFormData("name", e.target.value)}
+                      placeholder="Auto-generated from team, year, type"
+                      className="bg-muted"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sku">SKU</Label>
-                    <Input id="sku" placeholder="Enter SKU" />
+                    <Label htmlFor="sku">SKU (Auto-generated)</Label>
+                    <Input
+                      id="sku"
+                      value={formData.sku}
+                      onChange={(e) => updateFormData("sku", e.target.value)}
+                      placeholder="6-digit unique ID"
+                      className="bg-muted"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="team">Team</Label>
-                    <Select 
-                      value={selectedTeam}
+                    <Label htmlFor="team">Team *</Label>
+                    <Select
+                      value={formData.team}
                       onValueChange={(value) => {
+                        updateFormData("team", value);
                         setSelectedTeam(value);
                         const league = getLeagueForTeam(value);
                         setAutoLeague(league);
+                        updateFormData("league", league);
                       }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select team" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
-                        {getAllTeams().sort().map((team) => (
-                          <SelectItem key={team} value={team}>
-                            {formatTeamName(team)}
-                          </SelectItem>
-                        ))}
+                        {getAllTeams()
+                          .sort()
+                          .map((team) => (
+                            <SelectItem key={team} value={team}>
+                              {formatTeamName(team)}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="year">Year</Label>
-                    <Input id="year" placeholder="2023/24" />
+                    <Label htmlFor="year">Year *</Label>
+                    <Input
+                      id="year"
+                      value={formData.year}
+                      onChange={(e) => {
+                        updateFormData("year", e.target.value);
+                        // Auto-calculate yearEnd based on year
+                        const yearStart = parseInt(e.target.value.split('/')[0] || "2023");
+                        updateFormData("yearEnd", yearStart + 1);
+                      }}
+                      placeholder="2023/24"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="yearEnd">Year End</Label>
+                    <Input
+                      id="yearEnd"
+                      type="number"
+                      value={formData.yearEnd}
+                      onChange={(e) => updateFormData("yearEnd", parseInt(e.target.value) || 2024)}
+                      placeholder="2024"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="league">League (Auto-assigned)</Label>
-                    <Input 
-                      id="league" 
-                      value={autoLeague ? autoLeague.replace(/_/g, " ") : "Select a team first"}
+                    <Input
+                      id="league"
+                      value={
+                        autoLeague
+                          ? autoLeague.replace(/_/g, " ")
+                          : "Select a team first"
+                      }
                       disabled
                       className="bg-muted"
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="homeAway">Type</Label>
-                    <Select>
+                    <Label htmlFor="homeAway">Type *</Label>
+                    <Select 
+                      value={formData.homeAway}
+                      onValueChange={(value) => updateFormData('homeAway', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -271,44 +499,26 @@ export default function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select defaultValue="ACTIVE">
+                    <Select 
+                      value={formData.status}
+                      onValueChange={(value) => updateFormData('status', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ACTIVE">Active</SelectItem>
                         <SelectItem value="INACTIVE">Inactive</SelectItem>
-                        <SelectItem value="OUT_OF_STOCK">
-                          Out of Stock
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shirtType">Shirt Type</Label>
-                    <Select defaultValue="NORMAL">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select shirt type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NORMAL">Normal</SelectItem>
-                        <SelectItem value="PLAYER">Player</SelectItem>
-                        <SelectItem value="RETRO">Retro</SelectItem>
-                        <SelectItem value="KID">Kid</SelectItem>
+                        <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button onClick={handleSave}>Save Product</Button>
@@ -348,18 +558,81 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>League</TableHead>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("sku")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      SKU
+                      {getSortIcon("sku")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("name")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Name
+                      {getSortIcon("name")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("team")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Team
+                      {getSortIcon("team")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("league")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      League
+                      {getSortIcon("league")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("year")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Year
+                      {getSortIcon("year")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("productType")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Type
+                      {getSortIcon("productType")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("productStatus")}
+                      className="h-auto p-0 font-semibold"
+                    >
+                      Status
+                      {getSortIcon("productStatus")}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.length === 0 ? (
+                {filteredAndSortedProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8">
                       <Package className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
@@ -367,7 +640,7 @@ export default function ProductsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => (
+                  filteredAndSortedProducts.map((product: Product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">
                         {product.sku}
@@ -439,32 +712,49 @@ export default function ProductsPage() {
       )}
 
       {/* Status Change Confirmation Dialog */}
-      <AlertDialog open={!!pendingStatusChange} onOpenChange={() => setPendingStatusChange(null)}>
+      <AlertDialog
+        open={!!pendingStatusChange}
+        onOpenChange={() => setPendingStatusChange(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to change the status of{" "}
-              <span className="font-semibold">{pendingStatusChange?.productName}</span> to{" "}
               <span className="font-semibold">
-                {pendingStatusChange?.newStatus.replace(/_/g, " ").toLowerCase()}
-              </span>?
+                {pendingStatusChange?.productName}
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold">
+                {pendingStatusChange?.newStatus
+                  .replace(/_/g, " ")
+                  .toLowerCase()}
+              </span>
+              ?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (!pendingStatusChange) return;
-              setProducts(products.map(product => 
-                product.id === pendingStatusChange.productId 
-                  ? { ...product, productStatus: pendingStatusChange.newStatus, updatedAt: new Date() }
-                  : product
-              ));
-              toast.success("Product status updated successfully");
-              setPendingStatusChange(null);
-            }}>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingStatusChange) return;
+                setProducts(
+                  products.map((product) =>
+                    product.id === pendingStatusChange.productId
+                      ? {
+                          ...product,
+                          productStatus: pendingStatusChange.newStatus,
+                          updatedAt: new Date(),
+                        }
+                      : product
+                  )
+                );
+                toast.success("Product status updated successfully");
+                setPendingStatusChange(null);
+              }}
+            >
               Confirm
             </AlertDialogAction>
           </AlertDialogFooter>

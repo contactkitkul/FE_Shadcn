@@ -24,6 +24,12 @@ export enum EnumPatch {
   LEAGUE = "LEAGUE",
 }
 
+export enum EnumAddVerificationStatus {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED_GOOD = "VERIFIED_GOOD",
+  VEIFIED_BAD = "VEIFIED_BAD",
+}
+
 export enum EnumProductType {
   SHIRT = "SHIRT",
   CUSTOMISATION = "CUSTOMISATION",
@@ -140,16 +146,20 @@ export interface Product {
   updatedAt: Date
   sku: string
   productStatus: EnumProductStatus
-  year?: string
+  year: string
+  yearEnd: number
   team?: string
+  teamIdentifier?: string
   league?: EnumLeague
+  leagueIdentifier?: string
   productType: EnumProductType
-  featuresShirt: EnumShirtType
-  featuresCurrentSeason?: boolean
-  featuresLongSleeve?: boolean
+  shirtType?: EnumShirtType
   name: string
   homeAway?: EnumHomeAway
-  productVariantId: string
+  description?: string
+  features?: string
+  featuresMore?: string
+  featuresMore2?: string
   ProductImage?: ProductImage[]
   ProductVariant?: ProductVariant[]
 }
@@ -208,6 +218,9 @@ export interface Order {
   currencyPayment: EnumCurrency
   riskChargeback: EnumRiskChargeback
   notes?: string
+  tag?: string
+  addressVerified?: EnumAddVerificationStatus
+  shippingFees?: number
   orderItems?: OrderItem[]
   payments?: Payment[]
   shipments?: Shipment[]
