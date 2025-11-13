@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { api } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -19,19 +21,37 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Validation
     if (password !== confirmPassword) {
-      alert("Passwords don't match!")
+      toast.error("Passwords don't match!")
+      return
+    }
+    
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters")
       return
     }
     
     setIsLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await api.auth.register({ email, password })
+      
+      if (response.success) {
+        toast.success("Account created successfully! Please check your email to verify your account.")
+        // Redirect to login page after successful registration
+        setTimeout(() => {
+          router.push("/login")
+        }, 2000)
+      } else {
+        toast.error(response.error || "Registration failed")
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error)
+      toast.error(error.message || "Registration failed. Please try again.")
+    } finally {
       setIsLoading(false)
-      // Navigate to dashboard on successful signup
-      router.push("/dashboard")
-    }, 1000)
+    }
   }
 
   return (

@@ -23,6 +23,7 @@ import { Search, Users, Eye, ShoppingBag, Calendar, Edit, ArrowUpDown, ArrowUp, 
 import { Customer } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
+import { api } from "@/lib/api"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import {
@@ -67,8 +68,50 @@ export default function CustomersPage() {
     {firstName: "", lastName: "", email: ""}
   )
 
+  // Fetch customers from API
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.customers.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setCustomers(response.data);
+      } else {
+        toast.error("Failed to load customers");
+      }
+    } catch (error: any) {
+      console.error("Error fetching customers:", error);
+      toast.error(error.message || "Failed to load customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data with order information
+    fetchCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortColumn, sortDirection]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchCustomers();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Old mock data (keeping for reference, can be removed)
+  const oldMockEffect = () => {
     setTimeout(() => {
       const mockCustomers: CustomerWithOrders[] = [
         {

@@ -3,14 +3,33 @@
 import { subDays, subMonths, startOfMonth, endOfMonth, format } from "date-fns";
 
 interface OverviewProps {
+  data?: Array<{
+    date: Date | string;
+    revenue: number;
+    orders: number;
+  }>;
   dateFilter?: string;
   dashboardType?: string;
   isComparison?: boolean;
 }
 
-export function Overview({ dateFilter = "7days", dashboardType = "days", isComparison = false }: OverviewProps) {
+export function Overview({ data: apiData, dateFilter = "7days", dashboardType = "days", isComparison = false }: OverviewProps) {
   const generateData = () => {
-    const data = [];
+    // If real data is provided, use it
+    if (apiData && apiData.length > 0) {
+      return apiData.map(item => ({
+        name: format(new Date(item.date), "MMM dd"),
+        revenue: item.revenue,
+        orders: item.orders,
+        shirts: item.orders * 1.5, // Estimate shirts from orders
+        comparisonRevenue: item.revenue * 0.85, // Mock comparison data
+        comparisonOrders: item.orders * 0.9,
+        comparisonShirts: item.orders * 1.35,
+      }));
+    }
+
+    // Otherwise, generate mock data
+    const mockData = [];
     let periods = 14;
     let dateFormat = "MMM dd";
     let subtractFn = subDays;
@@ -51,14 +70,14 @@ export function Overview({ dateFilter = "7days", dashboardType = "days", isCompa
       const baseOrders = dashboardType === "months" ? 500 : 50;
       const baseShirts = dashboardType === "months" ? 800 : 80;
       
-      data.push({
+      mockData.push({
         date: format(date, dateFormat),
         revenue: Math.floor(Math.random() * baseRevenue + baseRevenue),
         orders: Math.floor(Math.random() * baseOrders + baseOrders),
         shirts: Math.floor(Math.random() * baseShirts + baseShirts),
       });
     }
-    return data;
+    return mockData;
   };
 
   const generateComparisonData = () => {

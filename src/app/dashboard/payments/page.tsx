@@ -30,6 +30,7 @@ import { Search, CreditCard, TrendingUp, DollarSign, AlertCircle } from "lucide-
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { api } from "@/lib/api"
 
 interface Payment {
   id: string
@@ -51,8 +52,48 @@ export default function PaymentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
+  // Fetch payments from API
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const response = await api.payments.getAll({
+        page: 1,
+        limit: 100,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setPayments(response.data);
+      } else {
+        toast.error("Failed to load payments");
+      }
+    } catch (error: any) {
+      console.error("Error fetching payments:", error);
+      toast.error(error.message || "Failed to load payments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data - replace with actual API call
+    fetchPayments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchPayments();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Old mock data
+  const oldMockEffect = () => {
     setTimeout(() => {
       const mockPayments: Payment[] = [
         {

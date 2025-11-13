@@ -46,6 +46,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 interface Refund {
   id: string;
@@ -70,8 +71,48 @@ export default function RefundsPage() {
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
 
+  // Fetch refunds from API
+  const fetchRefunds = async () => {
+    try {
+      setLoading(true);
+      const response = await api.refunds.getAll({
+        page: 1,
+        limit: 100,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setRefunds(response.data);
+      } else {
+        toast.error("Failed to load refunds");
+      }
+    } catch (error: any) {
+      console.error("Error fetching refunds:", error);
+      toast.error(error.message || "Failed to load refunds");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data
+    fetchRefunds();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchRefunds();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Old mock data
+  const oldMockEffect = () => {
     setTimeout(() => {
       const mockRefunds: Refund[] = [
         {

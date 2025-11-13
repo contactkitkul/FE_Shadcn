@@ -31,6 +31,7 @@ import { Shipment, EnumShipmentStatus } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import { api } from "@/lib/api"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,8 +56,50 @@ export default function ShipmentsPage() {
     shipmentNumber: string;
   } | null>(null)
 
+  // Fetch shipments from API
+  const fetchShipments = async () => {
+    try {
+      setLoading(true);
+      const response = await api.shipments.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setShipments(response.data);
+      } else {
+        toast.error("Failed to load shipments");
+      }
+    } catch (error: any) {
+      console.error("Error fetching shipments:", error);
+      toast.error(error.message || "Failed to load shipments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data
+    fetchShipments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortColumn, sortDirection]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchShipments();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Old mock data
+  const oldMockEffect = () => {
     setTimeout(() => {
       const mockShipments: Shipment[] = [
         {

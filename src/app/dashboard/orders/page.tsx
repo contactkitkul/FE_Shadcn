@@ -37,6 +37,7 @@ import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { api } from "@/lib/api";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -56,13 +57,47 @@ export default function OrdersPage() {
     actions: true,
   });
 
-  useEffect(() => {
-    // No orders - empty state
-    setTimeout(() => {
-      setOrders([]);
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await api.orders.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setOrders(response.data);
+      } else {
+        toast.error("Failed to load orders");
+      }
+    } catch (error: any) {
+      console.error("Error fetching orders:", error);
+      toast.error(error.message || "Failed to load orders");
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortColumn, sortDirection]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchOrders();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { api } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,12 +20,24 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await api.auth.login(email, password)
+      
+      if (response.success) {
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+        
+        toast.success("Login successful!")
+        router.push("/dashboard")
+      } else {
+        toast.error(response.error || "Login failed")
+      }
+    } catch (error: any) {
+      console.error("Login error:", error)
+      toast.error(error.message || "Login failed. Please try again.")
+    } finally {
       setIsLoading(false)
-      // Navigate to dashboard on successful login
-      router.push("/dashboard")
-    }, 1000)
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,15 +12,50 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MobileNav } from "./mobile-nav";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+interface User {
+  id: string;
+  email: string;
+  roleName: string;
+  priority: number;
+}
 
 export function Navbar() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
 
-  const handleLogout = () => {
-    router.push("/login");
+  useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Failed to parse user:", error);
+      }
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout();
+      localStorage.removeItem('user');
+      toast.success("Logged out successfully");
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Logout failed");
+    }
+  };
+
+  // Get user initials for avatar
+  const getInitials = (email: string) => {
+    return email.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -56,21 +92,26 @@ export function Navbar() {
                 className="relative h-10 w-10 rounded-full"
               >
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback>UN</AvatarFallback>
+                  <AvatarFallback>
+                    {user ? getInitials(user.email) : "UN"}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">shadcn</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.roleName || "User"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    m@example.com
+                    {user?.email || "user@example.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -66,6 +66,7 @@ import {
   formatTeamName,
 } from "@/lib/team-league-mapping";
 import { VariantManager } from "@/components/products/variant-manager";
+import { api } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,57 +112,47 @@ export default function ProductsPage() {
     productName: string;
   } | null>(null);
 
-  // Mock data for demonstration
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockProducts: Product[] = [
-        {
-          id: "1",
-          createdAt: new Date("2024-11-10"),
-          updatedAt: new Date(),
-          sku: "MU-HOME-23-24",
-          productStatus: EnumProductStatus.ACTIVE,
-          year: "2023/24",
-          yearEnd: 2024,
-          team: "Manchester_United_FC",
-          teamIdentifier: "MANU",
-          league: EnumLeague.PREMIER_LEAGUE,
-          leagueIdentifier: "PL",
-          productType: EnumProductType.SHIRT,
-          shirtType: EnumShirtType.NORMAL,
-          name: "Manchester United Home Shirt 2023/24",
-          homeAway: EnumHomeAway.HOME,
-          description: "Official Manchester United home shirt",
-        },
-        {
-          id: "2",
-          createdAt: new Date("2024-11-11"),
-          updatedAt: new Date(),
-          sku: "RM-AWAY-23-24",
-          productStatus: EnumProductStatus.ACTIVE,
-          year: "2023/24",
-          yearEnd: 2024,
-          team: "Real_Madrid_CF",
-          teamIdentifier: "REAL",
-          league: EnumLeague.LA_LIGA,
-          leagueIdentifier: "LL",
-          productType: EnumProductType.SHIRT,
-          shirtType: EnumShirtType.PLAYER,
-          name: "Real Madrid Away Shirt 2023/24",
-          homeAway: EnumHomeAway.AWAY,
-          description: "Official Real Madrid away shirt",
-        },
-      ];
-      // Sort by newest first (createdAt DESC)
-      const sortedProducts = mockProducts.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setProducts(sortedProducts);
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.products.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setProducts(response.data);
+      } else {
+        toast.error("Failed to load products");
+      }
+    } catch (error: any) {
+      console.error("Error fetching products:", error);
+      toast.error(error.message || "Failed to load products");
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortColumn, sortDirection]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchProducts();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   // Auto-generation functions
   const generateSKU = (): string => {
@@ -309,9 +300,15 @@ export default function ProductsPage() {
     return <Badge variant={variants[status]}>{status}</Badge>;
   };
 
-  const handleDelete = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
-    toast.success("Product deleted successfully");
+  const handleDelete = async (id: string) => {
+    try {
+      await api.products.delete(id);
+      toast.success("Product deleted successfully");
+      fetchProducts(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      toast.error(error.message || "Failed to delete product");
+    }
   };
 
   const handleDuplicate = (product: Product) => {

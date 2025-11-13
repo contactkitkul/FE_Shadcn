@@ -57,6 +57,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api";
 
 export default function DiscountsPage() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -69,8 +70,50 @@ export default function DiscountsPage() {
   const [sortColumn, setSortColumn] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // Fetch discounts from API
+  const fetchDiscounts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.discounts.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: searchTerm,
+      });
+
+      if (response.success) {
+        setDiscounts(response.data);
+      } else {
+        toast.error("Failed to load discounts");
+      }
+    } catch (error: any) {
+      console.error("Error fetching discounts:", error);
+      toast.error(error.message || "Failed to load discounts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Mock data
+    fetchDiscounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortColumn, sortDirection]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== "") {
+        fetchDiscounts();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Old mock data
+  const oldMockEffect = () => {
     setTimeout(() => {
       const mockDiscounts: Discount[] = [
         {
