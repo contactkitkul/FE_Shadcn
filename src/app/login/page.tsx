@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { supabase } from "@/lib/supabase"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 
@@ -21,7 +22,19 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const response = await api.auth.login(email, password)
+      // Login with Supabase directly (sets session cookie automatically)
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError || !authData.user) {
+        toast.error("Invalid email or password")
+        return
+      }
+
+      // Fetch user role from backend
+      const response = await api.auth.me()
       
       if (response.success) {
         // Store user data in localStorage
@@ -30,7 +43,7 @@ export default function LoginPage() {
         toast.success("Login successful!")
         router.push("/dashboard")
       } else {
-        toast.error(response.error || "Login failed")
+        toast.error("Failed to fetch user data")
       }
     } catch (error: any) {
       console.error("Login error:", error)

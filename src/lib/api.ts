@@ -1,17 +1,8 @@
 // API utility functions for backend integration
-// TODO: Install @supabase/supabase-js package and uncomment below
-// import { createClient } from '@supabase/supabase-js'
+import { supabase } from './supabase'
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-
-// TODO: Initialize Supabase client once package is installed
-// const supabase = typeof window !== 'undefined'
-//   ? createClient(
-//       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-//       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-//     )
-//   : null
 
 interface PaginationParams {
   page?: number;
@@ -22,14 +13,11 @@ interface PaginationParams {
 }
 
 export async function getAuthToken() {
-  // TODO: Uncomment when Supabase is set up
-  // if (supabase) {
-  //   const { data } = await supabase.auth.getSession()
-  //   return data.session?.access_token || null
-  // }
-  return typeof window !== "undefined"
-    ? localStorage.getItem("authToken")
-    : null;
+  if (typeof window !== 'undefined') {
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token || null
+  }
+  return null;
 }
 
 export async function fetchAPI(endpoint: string, options?: RequestInit) {
@@ -38,6 +26,7 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
+      credentials: 'include',
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -46,10 +35,11 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
     });
 
     if (!response.ok) {
-      const error = await response
+      const errorData = await response
         .json()
-        .catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || `API Error: ${response.statusText}`);
+        .catch(() => ({ error: response.statusText }));
+      // Backend returns { success: false, error: "message" }
+      throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`);
     }
 
     return response.json();
@@ -64,11 +54,11 @@ export async function fetchAPIWithFormData(
   endpoint: string,
   formData: FormData
 ) {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+  const token = await getAuthToken();
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
+    credentials: 'include',
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
     },
@@ -76,10 +66,11 @@ export async function fetchAPIWithFormData(
   });
 
   if (!response.ok) {
-    const error = await response
+    const errorData = await response
       .json()
-      .catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || `API Error: ${response.statusText}`);
+      .catch(() => ({ error: response.statusText }));
+    // Backend returns { success: false, error: "message" }
+    throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`);
   }
 
   return response.json();

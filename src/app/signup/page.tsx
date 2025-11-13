@@ -1,64 +1,74 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { api } from "@/lib/api"
-import { toast } from "sonner"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function SignupPage() {
-  const router = useRouter()
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Validation
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match!")
-      return
+      toast.error("Passwords don't match!");
+      return;
     }
-    
+
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters")
-      return
+      toast.error("Password must be at least 6 characters");
+      return;
     }
-    
-    setIsLoading(true)
-    
+
+    setIsLoading(true);
+
     try {
-      const response = await api.auth.register({ email, password })
-      
+      const response = await api.auth.register({ email, password });
+
       if (response.success) {
-        toast.success("Account created successfully! Please check your email to verify your account.")
+        toast.success("Account created successfully!");
         // Redirect to login page after successful registration
         setTimeout(() => {
-          router.push("/login")
-        }, 2000)
+          router.push("/login");
+        }, 2000);
       } else {
-        toast.error(response.error || "Registration failed")
+        toast.error(response.error || "Registration failed");
       }
     } catch (error: any) {
-      console.error("Registration error:", error)
-      toast.error(error.message || "Registration failed. Please try again.")
+      console.error("Registration error:", error);
+      toast.error(error.message || "Registration failed. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Create an account
+          </CardTitle>
           <CardDescription className="text-center">
             Enter your information to get started
           </CardDescription>
@@ -117,12 +127,15 @@ export default function SignupPage() {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link
+              href="/login"
+              className="text-primary hover:underline font-medium"
+            >
               Sign in
             </Link>
           </div>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
