@@ -391,23 +391,23 @@ export default function ProductsPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Product Name (Auto-generated)</Label>
+                    <Label htmlFor="name">Product Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => updateFormData("name", e.target.value)}
-                      placeholder="Auto-generated from team, year, type"
-                      className="bg-muted"
+                      placeholder="Real Madrid FC 2024-25 Home Shirt"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sku">SKU (Auto-generated)</Label>
+                    <Label htmlFor="sku">SKU *</Label>
                     <Input
                       id="sku"
                       value={formData.sku}
                       onChange={(e) => updateFormData("sku", e.target.value)}
-                      placeholder="6-digit unique ID"
-                      className="bg-muted"
+                      placeholder="Enter 6-digit SKU"
+                      required
                     />
                   </div>
                 </div>
@@ -513,6 +513,52 @@ export default function ProductsPage() {
                     </Select>
                   </div>
                 </div>
+                
+                {/* Cloudflare Image URLs */}
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrls">Cloudflare Image URLs</Label>
+                  <Input
+                    id="imageUrls"
+                    value={formData.imageUrls || ""}
+                    onChange={(e) => updateFormData("imageUrls", e.target.value)}
+                    placeholder="https://imagedelivery.net/account/image-id/public (comma-separated for multiple)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter Cloudflare image URLs separated by commas
+                  </p>
+                </div>
+                
+                {/* Generate Variants Button */}
+                {editingProduct && (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label>Product Variants</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={async () => {
+                        try {
+                          const response = await api.products.generateVariants(
+                            editingProduct.id,
+                            formData.productType === "RETRO"
+                          );
+                          if (response.success) {
+                            toast.success(`Generated ${response.data.count} variants successfully!`);
+                          } else {
+                            toast.error("Failed to generate variants");
+                          }
+                        } catch (error: any) {
+                          toast.error(error.message || "Failed to generate variants");
+                        }
+                      }}
+                    >
+                      Generate 15 Default Variants (5 sizes × 3 patches)
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Generates: XXL, XL, L, M, S with Champions League, No Patch, and League Patch options
+                    </p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
