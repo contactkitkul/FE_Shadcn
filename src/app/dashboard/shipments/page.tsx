@@ -138,11 +138,11 @@ export default function ShipmentsPage() {
           provider: "ROYAL_MAIL",
           status: EnumShipmentStatus.IN_TRANSIT,
         },
-      ]
-      setShipments(mockShipments)
-      setLoading(false)
-    }, 1000)
-  }, [])
+      ];
+      setShipments(mockShipments);
+      setLoading(false);
+    }, 1000);
+  };
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

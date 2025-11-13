@@ -206,11 +206,11 @@ export default function CustomersPage() {
             { id: "o16", orderID: "FUTGY@44595", date: new Date("2024-09-28"), amount: 60.00, status: "FULFILLED" },
           ],
         },
-      ]
-      setCustomers(mockCustomers)
-      setLoading(false)
-    }, 1000)
-  }, [])
+      ];
+      setCustomers(mockCustomers);
+      setLoading(false);
+    }, 1000);
+  };
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

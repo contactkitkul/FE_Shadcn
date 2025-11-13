@@ -117,6 +117,11 @@ export const api = {
         method: "DELETE",
         body: JSON.stringify({ ids }),
       }),
+    bulkCreate: (products: any[]) =>
+      fetchAPI("/products/bulk", {
+        method: "POST",
+        body: JSON.stringify({ products }),
+      }),
     generateSKU: () => fetchAPI("/products/generate/sku", { method: "POST" }),
     generateName: (data: {
       team: string;

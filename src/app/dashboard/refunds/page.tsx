@@ -167,7 +167,7 @@ export default function RefundsPage() {
       setRefunds(mockRefunds);
       setLoading(false);
     }, 1000);
-  }, []);
+  };
 
   const filteredRefunds = refunds.filter((refund) => {
     const matchesSearch =

@@ -161,11 +161,11 @@ export default function PaymentsPage() {
           amountPaid: 52.0,
           currency: "EUR",
         },
-      ]
-      setPayments(mockPayments)
-      setLoading(false)
-    }, 500)
-  }, [])
+      ];
+      setPayments(mockPayments);
+      setLoading(false);
+    }, 500);
+  };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { variant: any; label: string; className: string }> = {

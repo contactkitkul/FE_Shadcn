@@ -100,6 +100,7 @@ export default function ProductsPage() {
     status: "ACTIVE" as EnumProductStatus,
     shirtType: "NORMAL" as EnumShirtType,
     productType: "SHIRT" as EnumProductType,
+    imageUrls: "",
   });
   const [variantManagerOpen, setVariantManagerOpen] = useState(false);
   const [selectedProductForVariants, setSelectedProductForVariants] =
@@ -236,6 +237,7 @@ export default function ProductsPage() {
       status: "ACTIVE" as EnumProductStatus,
       shirtType: "NORMAL" as EnumShirtType,
       productType: "SHIRT" as EnumProductType,
+      imageUrls: "",
     });
     setSelectedTeam("");
     setAutoLeague(undefined);
@@ -336,7 +338,8 @@ export default function ProductsPage() {
       homeAway: (product.homeAway as EnumHomeAway) || ("HOME" as EnumHomeAway),
       status: product.productStatus,
       shirtType: (product.shirtType as EnumShirtType) || ("NORMAL" as EnumShirtType),
-      productType: product.productType
+      productType: product.productType,
+      imageUrls: "",
     });
     setSelectedTeam((product.team as string) || "");
     setAutoLeague(product.league);
@@ -540,7 +543,7 @@ export default function ProductsPage() {
                         try {
                           const response = await api.products.generateVariants(
                             editingProduct.id,
-                            formData.productType === "RETRO"
+                            false // isRetro - can be determined from product type if needed
                           );
                           if (response.success) {
                             toast.success(`Generated ${response.data.count} variants successfully!`);

@@ -162,7 +162,7 @@ export default function DiscountsPage() {
       setDiscounts(mockDiscounts);
       setLoading(false);
     }, 1000);
-  }, []);
+  };
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

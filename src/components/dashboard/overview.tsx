@@ -297,7 +297,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
               className="text-xs fill-gray-500"
               transform={`rotate(-45 ${x} 190)`}
             >
-              {item.date}
+              {'date' in item ? item.date : item.name}
             </text>
           );
         })}
