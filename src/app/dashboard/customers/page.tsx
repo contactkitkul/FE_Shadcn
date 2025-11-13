@@ -24,6 +24,8 @@ import { Customer } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
 import { api } from "@/lib/api"
+import { useDebounce } from "@/hooks/useDebounce"
+import { getEntityMessages } from "@/config/messages"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import {
@@ -59,6 +61,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerWithOrders[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearch = useDebounce(searchTerm, 500)
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithOrders | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [sortColumn, setSortColumn] = useState<string>("createdAt")
@@ -81,13 +84,13 @@ export default function CustomersPage() {
       });
 
       if (response.success) {
-        setCustomers(response.data);
+        setCustomers(response.data.data || []);
       } else {
-        toast.error("Failed to load customers");
+        toast.error(getEntityMessages('customers').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching customers:", error);
-      toast.error(error.message || "Failed to load customers");
+      toast.error(error.message || getEntityMessages('customers').loadError);
     } finally {
       setLoading(false);
     }
@@ -96,19 +99,7 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchCustomers();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [sortColumn, sortDirection, debouncedSearch]);
 
   // Old mock data (keeping for reference, can be removed)
   const oldMockEffect = () => {

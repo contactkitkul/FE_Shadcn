@@ -47,6 +47,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
+import { getEntityMessages } from "@/config/messages";
 
 interface Refund {
   id: string;
@@ -65,6 +67,7 @@ export default function RefundsPage() {
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedRefund, setSelectedRefund] = useState<Refund | null>(null);
   const [isProcessOpen, setIsProcessOpen] = useState(false);
@@ -82,13 +85,13 @@ export default function RefundsPage() {
       });
 
       if (response.success) {
-        setRefunds(response.data);
+        setRefunds(response.data.data || []);
       } else {
-        toast.error("Failed to load refunds");
+        toast.error(getEntityMessages('refunds').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching refunds:", error);
-      toast.error(error.message || "Failed to load refunds");
+      toast.error(error.message || getEntityMessages('refunds').loadError);
     } finally {
       setLoading(false);
     }
@@ -97,19 +100,7 @@ export default function RefundsPage() {
   useEffect(() => {
     fetchRefunds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchRefunds();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [debouncedSearch]);
 
   // Old mock data
   const oldMockEffect = () => {

@@ -38,12 +38,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
+import { getEntityMessages } from "@/config/messages";
 
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<string>("createdAt");
@@ -70,13 +73,13 @@ export default function OrdersPage() {
       });
 
       if (response.success) {
-        setOrders(response.data);
+        setOrders(response.data.data || []);
       } else {
-        toast.error("Failed to load orders");
+        toast.error(getEntityMessages('orders').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching orders:", error);
-      toast.error(error.message || "Failed to load orders");
+      toast.error(error.message || getEntityMessages('orders').loadError);
     } finally {
       setLoading(false);
     }
@@ -85,19 +88,7 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchOrders();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [sortColumn, sortDirection, debouncedSearch]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

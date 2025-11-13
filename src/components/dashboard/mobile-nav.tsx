@@ -6,60 +6,9 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  FileText, 
-  BarChart3,
-  Package,
-  ShoppingCart,
-  CreditCard,
-  Menu
-} from "lucide-react"
-
-const routes = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    label: "Orders",
-    icon: ShoppingCart,
-    href: "/dashboard/orders",
-  },
-  {
-    label: "Products",
-    icon: Package,
-    href: "/dashboard/products",
-  },
-  {
-    label: "Customers",
-    icon: Users,
-    href: "/dashboard/customers",
-  },
-  {
-    label: "Analytics",
-    icon: BarChart3,
-    href: "/dashboard/analytics",
-  },
-  {
-    label: "Reports",
-    icon: FileText,
-    href: "/dashboard/reports",
-  },
-  {
-    label: "Payments",
-    icon: CreditCard,
-    href: "/dashboard/payments",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    href: "/dashboard/settings",
-  },
-]
+import { Menu } from "lucide-react"
+import { dashboardRoutes } from "@/config/routes"
+import { siteConfig } from "@/config/site"
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -76,10 +25,10 @@ export function MobileNav() {
         <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white">
           <div className="px-3 py-2 flex-1">
             <Link href="/dashboard" className="flex items-center pl-3 mb-14" onClick={() => setOpen(false)}>
-              <h1 className="text-2xl font-bold">Acme Inc</h1>
+              <h1 className="text-2xl font-bold">{siteConfig.name}</h1>
             </Link>
             <div className="space-y-1">
-              {routes.map((route) => (
+              {dashboardRoutes.map((route) => (
                 <Link
                   key={route.href}
                   href={route.href}

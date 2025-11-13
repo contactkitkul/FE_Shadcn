@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,47 +10,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Bell, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MobileNav } from "./mobile-nav";
-import { api } from "@/lib/api";
-import { toast } from "sonner";
-
-interface User {
-  id: string;
-  email: string;
-  roleName: string;
-  priority: number;
-}
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { logout, getUser } = useAuth();
+  const [user, setUser] = useState(getUser());
 
   useEffect(() => {
-    // Get user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse user:", error);
-      }
-    }
+    setUser(getUser());
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await api.auth.logout();
-      localStorage.removeItem('user');
-      toast.success("Logged out successfully");
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Logout failed");
-    }
-  };
 
   // Get user initials for avatar
   const getInitials = (email: string) => {
@@ -110,7 +81,7 @@ export function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>

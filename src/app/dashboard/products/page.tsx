@@ -60,6 +60,8 @@ import {
 } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
+import { TOAST_MESSAGES, getEntityMessages } from "@/config/messages";
 import {
   getAllTeams,
   getLeagueForTeam,
@@ -83,6 +85,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string>("");
@@ -126,13 +129,13 @@ export default function ProductsPage() {
       });
 
       if (response.success) {
-        setProducts(response.data);
+        setProducts(response.data.data || []);
       } else {
-        toast.error("Failed to load products");
+        toast.error(getEntityMessages('products').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching products:", error);
-      toast.error(error.message || "Failed to load products");
+      toast.error(error.message || getEntityMessages('products').loadError);
     } finally {
       setLoading(false);
     }
@@ -141,19 +144,7 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchProducts();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [sortColumn, sortDirection, debouncedSearch]);
 
   // Auto-generation functions
   const generateSKU = (): string => {

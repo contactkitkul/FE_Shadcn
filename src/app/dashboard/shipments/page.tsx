@@ -32,6 +32,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { api } from "@/lib/api"
+import { useDebounce } from "@/hooks/useDebounce"
+import { getEntityMessages } from "@/config/messages"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +49,7 @@ export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearch = useDebounce(searchTerm, 500)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortColumn, setSortColumn] = useState<string>("createdAt")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
@@ -69,13 +72,13 @@ export default function ShipmentsPage() {
       });
 
       if (response.success) {
-        setShipments(response.data);
+        setShipments(response.data.data || []);
       } else {
-        toast.error("Failed to load shipments");
+        toast.error(getEntityMessages('shipments').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching shipments:", error);
-      toast.error(error.message || "Failed to load shipments");
+      toast.error(error.message || getEntityMessages('shipments').loadError);
     } finally {
       setLoading(false);
     }
@@ -84,19 +87,7 @@ export default function ShipmentsPage() {
   useEffect(() => {
     fetchShipments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchShipments();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [sortColumn, sortDirection, debouncedSearch]);
 
   // Old mock data
   const oldMockEffect = () => {

@@ -10,9 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/lib/supabase"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
+import { TOAST_MESSAGES } from "@/config/messages"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { setUser } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -20,7 +23,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     try {
       // Login with Supabase directly (sets session cookie automatically)
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -29,25 +32,25 @@ export default function LoginPage() {
       })
 
       if (authError || !authData.user) {
-        toast.error("Invalid email or password")
+        toast.error(TOAST_MESSAGES.error.invalidCredentials)
         return
       }
 
       // Fetch user role from backend
       const response = await api.auth.me()
-      
+
       if (response.success) {
         // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+        setUser(response.data.user)
         
-        toast.success("Login successful!")
+        toast.success(TOAST_MESSAGES.success.login)
         router.push("/dashboard")
       } else {
-        toast.error("Failed to fetch user data")
+        toast.error(TOAST_MESSAGES.error.fetchUserData)
       }
     } catch (error: any) {
       console.error("Login error:", error)
-      toast.error(error.message || "Login failed. Please try again.")
+      toast.error(error.message || TOAST_MESSAGES.error.login)
     } finally {
       setIsLoading(false)
     }

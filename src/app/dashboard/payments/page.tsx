@@ -27,10 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, CreditCard, TrendingUp, DollarSign, AlertCircle } from "lucide-react"
-import { format } from "date-fns"
-import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import { format } from "date-fns"
 import { api } from "@/lib/api"
+import { useDebounce } from "@/hooks/useDebounce"
+import { getEntityMessages } from "@/config/messages"
 
 interface Payment {
   id: string
@@ -50,6 +52,7 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearch = useDebounce(searchTerm, 500)
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
   // Fetch payments from API
@@ -63,13 +66,13 @@ export default function PaymentsPage() {
       });
 
       if (response.success) {
-        setPayments(response.data);
+        setPayments(response.data.data || []);
       } else {
-        toast.error("Failed to load payments");
+        toast.error(getEntityMessages('payments').loadError);
       }
     } catch (error: any) {
       console.error("Error fetching payments:", error);
-      toast.error(error.message || "Failed to load payments");
+      toast.error(error.message || getEntityMessages('payments').loadError);
     } finally {
       setLoading(false);
     }
@@ -78,19 +81,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     fetchPayments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm !== "") {
-        fetchPayments();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  }, [debouncedSearch]);
 
   // Old mock data
   const oldMockEffect = () => {
