@@ -50,35 +50,30 @@ const DEFAULT_VARIANTS: Omit<
     patch: EnumPatch.NO_PATCH,
     sellPrice: 19.99,
     costPrice: 10.0,
-    stockQty: 50,
   },
   {
     size: EnumSize.M,
     patch: EnumPatch.NO_PATCH,
     sellPrice: 19.99,
     costPrice: 10.0,
-    stockQty: 50,
   },
   {
     size: EnumSize.L,
     patch: EnumPatch.NO_PATCH,
     sellPrice: 19.99,
     costPrice: 10.0,
-    stockQty: 50,
   },
   {
     size: EnumSize.XL,
     patch: EnumPatch.NO_PATCH,
     sellPrice: 19.99,
     costPrice: 10.0,
-    stockQty: 50,
   },
   {
     size: EnumSize.XXL,
     patch: EnumPatch.NO_PATCH,
     sellPrice: 19.99,
     costPrice: 10.0,
-    stockQty: 50,
   },
 ];
 
@@ -98,7 +93,6 @@ export function VariantManager({
       patch: EnumPatch.NO_PATCH,
       sellPrice: 19.99,
       costPrice: 10.0,
-      stockQty: 50,
     },
     {
       id: "2",
@@ -109,7 +103,6 @@ export function VariantManager({
       patch: EnumPatch.NO_PATCH,
       sellPrice: 19.99,
       costPrice: 10.0,
-      stockQty: 50,
     },
   ]);
 
@@ -282,18 +275,7 @@ export function VariantManager({
                           className="w-[100px]"
                         />
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={variant.stockQty}
-                          onChange={(e) =>
-                            updateVariant(variant.id, {
-                              stockQty: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-[80px]"
-                        />
-                      </TableCell>
+
                       <TableCell>
                         <Button
                           variant="ghost"
@@ -344,7 +326,6 @@ export function VariantManager({
                 patch: formData.get("patch") as EnumPatch,
                 sellPrice: parseFloat(formData.get("sellPrice") as string),
                 costPrice: parseFloat(formData.get("costPrice") as string),
-                stockQty: parseInt(formData.get("stockQty") as string),
               });
             }}
             className="space-y-4"
@@ -402,16 +383,6 @@ export function VariantManager({
                   required
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="stockQty">Stock Quantity</Label>
-              <Input
-                id="stockQty"
-                name="stockQty"
-                type="number"
-                defaultValue="50"
-                required
-              />
             </div>
             <DialogFooter>
               <Button

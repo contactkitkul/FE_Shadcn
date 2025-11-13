@@ -35,23 +35,29 @@ export async function getAuthToken() {
 export async function fetchAPI(endpoint: string, options?: RequestInit) {
   const token = await getAuthToken();
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options?.headers,
-    },
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options?.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || `API Error: ${response.statusText}`);
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
+      throw new Error(error.message || `API Error: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    // Network error or fetch failed
+    console.error("Fetch error:", error);
+    throw new Error(error.message || "Failed to connect to server");
   }
-
-  return response.json();
 }
 
 export async function fetchAPIWithFormData(

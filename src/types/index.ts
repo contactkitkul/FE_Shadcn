@@ -141,144 +141,143 @@ export enum EnumNoStockStatus {
 }
 
 export interface Product {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  sku: string
-  productStatus: EnumProductStatus
-  year: string
-  yearEnd: number
-  team?: string
-  teamIdentifier?: string
-  league?: EnumLeague
-  leagueIdentifier?: string
-  productType: EnumProductType
-  shirtType?: EnumShirtType
-  name: string
-  homeAway?: EnumHomeAway
-  description?: string
-  features?: string
-  featuresMore?: string
-  featuresMore2?: string
-  ProductImage?: ProductImage[]
-  ProductVariant?: ProductVariant[]
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  sku: string;
+  productStatus: EnumProductStatus;
+  year: string;
+  yearEnd: number;
+  team?: string;
+  teamIdentifier?: string;
+  league?: EnumLeague;
+  leagueIdentifier?: string;
+  productType: EnumProductType;
+  shirtType?: EnumShirtType;
+  name: string;
+  homeAway?: EnumHomeAway;
+  description?: string;
+  features?: string;
+  featuresMore?: string;
+  featuresMore2?: string;
+  ProductImage?: ProductImage[];
+  ProductVariant?: ProductVariant[];
 }
 
 export interface ProductVariant {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  productId: string
-  size: EnumSize
-  patch: EnumPatch
-  sellPrice: number
-  costPrice: number
-  stockQty: number
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  productId: string;
+  size: EnumSize;
+  patch: EnumPatch;
+  sellPrice: number;
+  costPrice: number;
 }
 
 export interface ProductImage {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  productId: string
-  imageUrl: string
-  cloudflareId?: string
-  position: number
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  productId: string;
+  imageUrl: string;
+  cloudflareId?: string;
+  position: number;
 }
 
 export interface Customer {
-  id: string
-  firstName: string
-  lastName?: string
-  phone: string
-  countryCode: string
+  id: string;
+  firstName: string;
+  lastName?: string;
+  phone: string;
+  countryCode: string;
 }
 
 export interface Order {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  shippingName: string
-  shippingPhone?: string
-  shippingLine1: string
-  shippingLine2?: string
-  shippingCity: string
-  shippingState: string
-  shippingPostalCode: string
-  shippingCountry: string
-  shippingEmail: string
-  orderID: string
-  orderStatus: EnumOrderStatus
-  customerId: string
-  customer?: Customer
-  discountId?: string
-  totalAmount: number
-  discountAmount: number
-  payableAmount: number
-  currencyPayment: EnumCurrency
-  riskChargeback: EnumRiskChargeback
-  notes?: string
-  tag?: string
-  addressVerified?: EnumAddVerificationStatus
-  shippingFees?: number
-  orderItems?: OrderItem[]
-  payments?: Payment[]
-  shipments?: Shipment[]
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  shippingName: string;
+  shippingPhone?: string;
+  shippingLine1: string;
+  shippingLine2?: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingPostalCode: string;
+  shippingCountry: string;
+  shippingEmail: string;
+  orderID: string;
+  orderStatus: EnumOrderStatus;
+  customerId: string;
+  customer?: Customer;
+  discountId?: string;
+  totalAmount: number;
+  discountAmount: number;
+  payableAmount: number;
+  currencyPayment: EnumCurrency;
+  riskChargeback: EnumRiskChargeback;
+  notes?: string;
+  tag?: string;
+  addressVerified?: EnumAddVerificationStatus;
+  shippingFees?: number;
+  orderItems?: OrderItem[];
+  payments?: Payment[];
+  shipments?: Shipment[];
 }
 
 export interface OrderItem {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  orderId: string
-  productVariantId: string
-  productVariant?: ProductVariant
-  customisationString?: string
-  customisationPrice?: number
-  noStockStatus: EnumNoStockStatus
-  quantity: number
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  orderId: string;
+  productVariantId: string;
+  productVariant?: ProductVariant;
+  customisationString?: string;
+  customisationPrice?: number;
+  noStockStatus: EnumNoStockStatus;
+  quantity: number;
 }
 
 export interface Payment {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  orderId: string
-  paymentMethod: string
-  paymentStatus: EnumPaymentStatus
-  transactionId: string
-  paymentGateway: string
-  amountPaid: number
-  currencyPaid: EnumCurrency
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  orderId: string;
+  paymentMethod: string;
+  paymentStatus: EnumPaymentStatus;
+  transactionId: string;
+  paymentGateway: string;
+  amountPaid: number;
+  currencyPaid: EnumCurrency;
 }
 
 export interface Shipment {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  trackingNumber: string
-  orderId: string
-  provider: string
-  status: EnumShipmentStatus
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  trackingNumber: string;
+  orderId: string;
+  provider: string;
+  status: EnumShipmentStatus;
 }
 
 export interface Discount {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  code: string
-  status: EnumDiscountStatus
-  expiryDate: Date
-  usageLimit: number
-  maxDiscountAmount?: number
-  minCartValue?: number
-  minQty?: number
-  description?: string
-  discountType: EnumDiscountType
-  discountReason?: EnumDiscountReason
-  timesUsed: number
-  discountPercentage?: number
-  discountAmount?: number
-  offerFreeQty?: number
-  offerBuyQty?: number
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  code: string;
+  status: EnumDiscountStatus;
+  expiryDate: Date;
+  usageLimit: number;
+  maxDiscountAmount?: number;
+  minCartValue?: number;
+  minQty?: number;
+  description?: string;
+  discountType: EnumDiscountType;
+  discountReason?: EnumDiscountReason;
+  timesUsed: number;
+  discountPercentage?: number;
+  discountAmount?: number;
+  offerFreeQty?: number;
+  offerBuyQty?: number;
 }

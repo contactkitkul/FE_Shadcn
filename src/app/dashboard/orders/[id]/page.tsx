@@ -85,10 +85,14 @@ export default function OrderDetailPage({
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
-  const [trackingRows, setTrackingRows] = useState([{ provider: "", trackingNumber: "" }]);
+  const [trackingRows, setTrackingRows] = useState([
+    { provider: "", trackingNumber: "" },
+  ]);
   const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [addressValidation, setAddressValidation] = useState<ReturnType<typeof validateAddress> | null>(null);
+  const [addressValidation, setAddressValidation] = useState<ReturnType<
+    typeof validateAddress
+  > | null>(null);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemValues, setEditingItemValues] = useState<{
@@ -106,7 +110,7 @@ export default function OrderDetailPage({
     shippingPostalCode: "",
     shippingCountry: "",
     shippingPhone: "",
-    shippingEmail: ""
+    shippingEmail: "",
   });
 
   useEffect(() => {
@@ -153,7 +157,6 @@ export default function OrderDetailPage({
               patch: "NO_PATCH" as any,
               sellPrice: 19.9,
               costPrice: 10.0,
-              stockQty: 50,
             },
           },
         ],
@@ -173,7 +176,7 @@ export default function OrderDetailPage({
         ],
       };
       setOrder(mockOrder);
-      
+
       // Validate address
       const addressToValidate: Address = {
         line1: mockOrder.shippingLine1,
@@ -186,13 +189,13 @@ export default function OrderDetailPage({
       };
       const validation = validateAddress(addressToValidate);
       setAddressValidation(validation);
-      
+
       if (!validation.isValid) {
         toast.error("Address validation failed - please review");
       } else if (validation.warnings.length > 0) {
         toast.warning("Address has warnings - please review");
       }
-      
+
       setLoading(false);
     }, 500);
   }, [params.id]);
@@ -269,14 +272,20 @@ export default function OrderDetailPage({
     setTrackingRows(trackingRows.filter((_, i) => i !== index));
   };
 
-  const handleTrackingChange = (index: number, field: "provider" | "trackingNumber", value: string) => {
+  const handleTrackingChange = (
+    index: number,
+    field: "provider" | "trackingNumber",
+    value: string
+  ) => {
     const updated = [...trackingRows];
     updated[index][field] = value;
     setTrackingRows(updated);
   };
 
   const handleSaveTracking = () => {
-    const validTracking = trackingRows.filter(row => row.provider && row.trackingNumber);
+    const validTracking = trackingRows.filter(
+      (row) => row.provider && row.trackingNumber
+    );
     if (validTracking.length > 0) {
       toast.success(`${validTracking.length} tracking detail(s) saved`);
     } else {
@@ -296,9 +305,13 @@ export default function OrderDetailPage({
   };
 
   const handleMarkAsFulfilled = () => {
-    const validTracking = trackingRows.filter(row => row.provider && row.trackingNumber);
+    const validTracking = trackingRows.filter(
+      (row) => row.provider && row.trackingNumber
+    );
     if (validTracking.length === 0) {
-      toast.error("Please add tracking information before marking as fulfilled");
+      toast.error(
+        "Please add tracking information before marking as fulfilled"
+      );
       return;
     }
     setShowFulfillDialog(true);
@@ -334,7 +347,9 @@ export default function OrderDetailPage({
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold">{order.orderID}</h2>
             <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
-            <Badge variant="outline" className="bg-green-100 text-green-800">Paid</Badge>
+            <Badge variant="outline" className="bg-green-100 text-green-800">
+              Paid
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {format(new Date(order.createdAt), "MMMM d, yyyy 'at' h:mm a")} from
@@ -342,15 +357,15 @@ export default function OrderDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setShowCancelDialog(true)}
           >
             Cancel Order
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => toast.info("Refund functionality")}
           >
@@ -377,7 +392,14 @@ export default function OrderDetailPage({
                 {/* Order Items */}
                 <div className="space-y-3">
                   {order.orderItems?.map((item, index) => (
-                    <div key={item.id} className={item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK ? "opacity-50" : ""}>
+                    <div
+                      key={item.id}
+                      className={
+                        item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK
+                          ? "opacity-50"
+                          : ""
+                      }
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3">
                           <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
@@ -386,8 +408,11 @@ export default function OrderDetailPage({
                           <div>
                             <p className="font-medium">
                               2004 Portugal 2a Equipacion
-                              {item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK && (
-                                <Badge variant="destructive" className="ml-2">Cancelled</Badge>
+                              {item.noStockStatus ===
+                                EnumNoStockStatus.OUT_OF_STOCK && (
+                                <Badge variant="destructive" className="ml-2">
+                                  Cancelled
+                                </Badge>
                               )}
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -404,10 +429,20 @@ export default function OrderDetailPage({
                                 value={item.noStockStatus}
                                 onValueChange={(value) => {
                                   if (!order) return;
-                                  const updatedItems = order.orderItems?.map(i =>
-                                    i.id === item.id ? { ...i, noStockStatus: value as EnumNoStockStatus } : i
+                                  const updatedItems = order.orderItems?.map(
+                                    (i) =>
+                                      i.id === item.id
+                                        ? {
+                                            ...i,
+                                            noStockStatus:
+                                              value as EnumNoStockStatus,
+                                          }
+                                        : i
                                   );
-                                  setOrder({ ...order, orderItems: updatedItems });
+                                  setOrder({
+                                    ...order,
+                                    orderItems: updatedItems,
+                                  });
                                   toast.success("Stock status updated");
                                 }}
                               >
@@ -415,8 +450,12 @@ export default function OrderDetailPage({
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="NONE">Stock: None</SelectItem>
-                                  <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                                  <SelectItem value="NONE">
+                                    Stock: None
+                                  </SelectItem>
+                                  <SelectItem value="OUT_OF_STOCK">
+                                    Out of Stock
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -431,21 +470,27 @@ export default function OrderDetailPage({
                                   type="number"
                                   min="1"
                                   value={editingItemValues.quantity}
-                                  onChange={(e) => setEditingItemValues({
-                                    ...editingItemValues,
-                                    quantity: parseInt(e.target.value) || 1
-                                  })}
+                                  onChange={(e) =>
+                                    setEditingItemValues({
+                                      ...editingItemValues,
+                                      quantity: parseInt(e.target.value) || 1,
+                                    })
+                                  }
                                   className="w-16 h-8"
                                 />
                               </div>
                               <div className="flex gap-2 items-center">
                                 <Label className="text-xs">Custom:</Label>
                                 <Input
-                                  value={editingItemValues.customisationString || ""}
-                                  onChange={(e) => setEditingItemValues({
-                                    ...editingItemValues,
-                                    customisationString: e.target.value
-                                  })}
+                                  value={
+                                    editingItemValues.customisationString || ""
+                                  }
+                                  onChange={(e) =>
+                                    setEditingItemValues({
+                                      ...editingItemValues,
+                                      customisationString: e.target.value,
+                                    })
+                                  }
                                   className="w-24 h-8"
                                   placeholder="Custom"
                                 />
@@ -457,10 +502,13 @@ export default function OrderDetailPage({
                                   step="0.01"
                                   min="0"
                                   value={editingItemValues.customisationPrice}
-                                  onChange={(e) => setEditingItemValues({
-                                    ...editingItemValues,
-                                    customisationPrice: parseFloat(e.target.value) || 0
-                                  })}
+                                  onChange={(e) =>
+                                    setEditingItemValues({
+                                      ...editingItemValues,
+                                      customisationPrice:
+                                        parseFloat(e.target.value) || 0,
+                                    })
+                                  }
                                   className="w-20 h-8"
                                 />
                               </div>
@@ -469,15 +517,24 @@ export default function OrderDetailPage({
                                   size="sm"
                                   onClick={() => {
                                     if (!order) return;
-                                    const updatedItems = order.orderItems?.map(i =>
-                                      i.id === item.id ? {
-                                        ...i,
-                                        quantity: editingItemValues.quantity,
-                                        customisationString: editingItemValues.customisationString,
-                                        customisationPrice: editingItemValues.customisationPrice
-                                      } : i
+                                    const updatedItems = order.orderItems?.map(
+                                      (i) =>
+                                        i.id === item.id
+                                          ? {
+                                              ...i,
+                                              quantity:
+                                                editingItemValues.quantity,
+                                              customisationString:
+                                                editingItemValues.customisationString,
+                                              customisationPrice:
+                                                editingItemValues.customisationPrice,
+                                            }
+                                          : i
                                     );
-                                    setOrder({ ...order, orderItems: updatedItems });
+                                    setOrder({
+                                      ...order,
+                                      orderItems: updatedItems,
+                                    });
                                     setEditingItemId(null);
                                     toast.success("Item updated successfully");
                                   }}
@@ -497,14 +554,21 @@ export default function OrderDetailPage({
                             <>
                               <div>
                                 <p className="font-medium">
-                                  €{item.productVariant?.sellPrice.toFixed(2)} × {item.quantity}
+                                  €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
+                                  {item.quantity}
                                 </p>
                                 <p className="text-sm font-semibold">
-                                  €{((item.productVariant?.sellPrice || 0) * item.quantity).toFixed(2)}
+                                  €
+                                  {(
+                                    (item.productVariant?.sellPrice || 0) *
+                                    item.quantity
+                                  ).toFixed(2)}
                                 </p>
                                 {(item.customisationPrice || 0) > 0 && (
                                   <p className="text-xs text-muted-foreground">
-                                    +€{(item.customisationPrice || 0).toFixed(2)} custom
+                                    +€
+                                    {(item.customisationPrice || 0).toFixed(2)}{" "}
+                                    custom
                                   </p>
                                 )}
                               </div>
@@ -517,8 +581,10 @@ export default function OrderDetailPage({
                                     setEditingItemId(item.id);
                                     setEditingItemValues({
                                       quantity: item.quantity,
-                                      customisationString: item.customisationString,
-                                      customisationPrice: item.customisationPrice || 0
+                                      customisationString:
+                                        item.customisationString,
+                                      customisationPrice:
+                                        item.customisationPrice || 0,
                                     });
                                   }}
                                   title="Edit item"
@@ -531,10 +597,20 @@ export default function OrderDetailPage({
                                   className="h-8 w-8"
                                   onClick={() => {
                                     if (!order) return;
-                                    const updatedItems = order.orderItems?.map(i =>
-                                      i.id === item.id ? { ...i, noStockStatus: EnumNoStockStatus.OUT_OF_STOCK } : i
+                                    const updatedItems = order.orderItems?.map(
+                                      (i) =>
+                                        i.id === item.id
+                                          ? {
+                                              ...i,
+                                              noStockStatus:
+                                                EnumNoStockStatus.OUT_OF_STOCK,
+                                            }
+                                          : i
                                     );
-                                    setOrder({ ...order, orderItems: updatedItems });
+                                    setOrder({
+                                      ...order,
+                                      orderItems: updatedItems,
+                                    });
                                     toast.success("Item marked as cancelled");
                                   }}
                                   title="Mark item as cancelled"
@@ -551,7 +627,7 @@ export default function OrderDetailPage({
                       )}
                     </div>
                   ))}
-                  
+
                   {/* Action Buttons */}
                   <div className="flex gap-2 mt-4">
                     <Button
@@ -567,7 +643,9 @@ export default function OrderDetailPage({
                       size="sm"
                       onClick={() => {
                         if (order) {
-                          router.push(`/dashboard/orders/new?duplicate=${order.id}`);
+                          router.push(
+                            `/dashboard/orders/new?duplicate=${order.id}`
+                          );
                         }
                       }}
                     >
@@ -581,12 +659,16 @@ export default function OrderDetailPage({
 
                 {/* Tracking Information */}
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">Tracking Information</Label>
+                  <Label className="text-sm font-medium">
+                    Tracking Information
+                  </Label>
                   {trackingRows.map((row, index) => (
                     <div key={index} className="flex gap-2">
                       <Select
                         value={row.provider}
-                        onValueChange={(value) => handleTrackingChange(index, "provider", value)}
+                        onValueChange={(value) =>
+                          handleTrackingChange(index, "provider", value)
+                        }
                       >
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Provider" />
@@ -603,14 +685,25 @@ export default function OrderDetailPage({
                       <Input
                         placeholder="Tracking number"
                         value={row.trackingNumber}
-                        onChange={(e) => handleTrackingChange(index, "trackingNumber", e.target.value)}
+                        onChange={(e) =>
+                          handleTrackingChange(
+                            index,
+                            "trackingNumber",
+                            e.target.value
+                          )
+                        }
                         className="flex-1"
                       />
                       {row.provider && row.trackingNumber && (
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => window.open(getTrackingUrl(row.provider, row.trackingNumber), "_blank")}
+                          onClick={() =>
+                            window.open(
+                              getTrackingUrl(row.provider, row.trackingNumber),
+                              "_blank"
+                            )
+                          }
                           title="Track shipment"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -646,10 +739,7 @@ export default function OrderDetailPage({
                   >
                     Save Tracking
                   </Button>
-                  <Button
-                    onClick={handleMarkAsFulfilled}
-                    className="flex-1"
-                  >
+                  <Button onClick={handleMarkAsFulfilled} className="flex-1">
                     <Check className="h-4 w-4 mr-2" />
                     Mark as Fulfilled
                   </Button>
@@ -691,15 +781,28 @@ export default function OrderDetailPage({
                     <Separator />
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Transaction ID</span>
-                        <span className="font-mono">{order.payments[0].transactionId}</span>
+                        <span className="text-muted-foreground">
+                          Transaction ID
+                        </span>
+                        <span className="font-mono">
+                          {order.payments[0].transactionId}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Payment Date</span>
-                        <span>{format(new Date(order.payments[0].createdAt), "MMM d, yyyy h:mm a")}</span>
+                        <span className="text-muted-foreground">
+                          Payment Date
+                        </span>
+                        <span>
+                          {format(
+                            new Date(order.payments[0].createdAt),
+                            "MMM d, yyyy h:mm a"
+                          )}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Payment Method</span>
+                        <span className="text-muted-foreground">
+                          Payment Method
+                        </span>
                         <span>{order.payments[0].paymentGateway}</span>
                       </div>
                     </div>
@@ -876,7 +979,7 @@ export default function OrderDetailPage({
                           shippingPostalCode: order.shippingPostalCode,
                           shippingCountry: order.shippingCountry,
                           shippingPhone: order.shippingPhone || "",
-                          shippingEmail: order.shippingEmail
+                          shippingEmail: order.shippingEmail,
                         });
                       }}
                     >
@@ -891,11 +994,11 @@ export default function OrderDetailPage({
                           setOrder({
                             ...order,
                             ...addressValues,
-                            updatedAt: new Date()
+                            updatedAt: new Date(),
                           });
                           setEditingAddress(false);
                           toast.success("Address updated successfully");
-                          
+
                           // Re-validate address
                           const addressToValidate = {
                             line1: addressValues.shippingLine1,
@@ -922,37 +1025,62 @@ export default function OrderDetailPage({
                     </div>
                   )}
                 </div>
-                
+
                 {editingAddress ? (
                   <div className="space-y-2">
                     <Input
                       value={addressValues.shippingName}
-                      onChange={(e) => setAddressValues({...addressValues, shippingName: e.target.value})}
+                      onChange={(e) =>
+                        setAddressValues({
+                          ...addressValues,
+                          shippingName: e.target.value,
+                        })
+                      }
                       placeholder="Full Name"
                       className="text-sm"
                     />
                     <Input
                       value={addressValues.shippingLine1}
-                      onChange={(e) => setAddressValues({...addressValues, shippingLine1: e.target.value})}
+                      onChange={(e) =>
+                        setAddressValues({
+                          ...addressValues,
+                          shippingLine1: e.target.value,
+                        })
+                      }
                       placeholder="Address Line 1"
                       className="text-sm"
                     />
                     <Input
                       value={addressValues.shippingLine2}
-                      onChange={(e) => setAddressValues({...addressValues, shippingLine2: e.target.value})}
+                      onChange={(e) =>
+                        setAddressValues({
+                          ...addressValues,
+                          shippingLine2: e.target.value,
+                        })
+                      }
                       placeholder="Address Line 2 (Optional)"
                       className="text-sm"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <Input
                         value={addressValues.shippingPostalCode}
-                        onChange={(e) => setAddressValues({...addressValues, shippingPostalCode: e.target.value})}
+                        onChange={(e) =>
+                          setAddressValues({
+                            ...addressValues,
+                            shippingPostalCode: e.target.value,
+                          })
+                        }
                         placeholder="Postal Code"
                         className="text-sm"
                       />
                       <Input
                         value={addressValues.shippingCity}
-                        onChange={(e) => setAddressValues({...addressValues, shippingCity: e.target.value})}
+                        onChange={(e) =>
+                          setAddressValues({
+                            ...addressValues,
+                            shippingCity: e.target.value,
+                          })
+                        }
                         placeholder="City"
                         className="text-sm"
                       />
@@ -960,26 +1088,46 @@ export default function OrderDetailPage({
                     <div className="grid grid-cols-2 gap-2">
                       <Input
                         value={addressValues.shippingState}
-                        onChange={(e) => setAddressValues({...addressValues, shippingState: e.target.value})}
+                        onChange={(e) =>
+                          setAddressValues({
+                            ...addressValues,
+                            shippingState: e.target.value,
+                          })
+                        }
                         placeholder="State/Province"
                         className="text-sm"
                       />
                       <Input
                         value={addressValues.shippingCountry}
-                        onChange={(e) => setAddressValues({...addressValues, shippingCountry: e.target.value})}
+                        onChange={(e) =>
+                          setAddressValues({
+                            ...addressValues,
+                            shippingCountry: e.target.value,
+                          })
+                        }
                         placeholder="Country"
                         className="text-sm"
                       />
                     </div>
                     <Input
                       value={addressValues.shippingPhone}
-                      onChange={(e) => setAddressValues({...addressValues, shippingPhone: e.target.value})}
+                      onChange={(e) =>
+                        setAddressValues({
+                          ...addressValues,
+                          shippingPhone: e.target.value,
+                        })
+                      }
                       placeholder="Phone Number"
                       className="text-sm"
                     />
                     <Input
                       value={addressValues.shippingEmail}
-                      onChange={(e) => setAddressValues({...addressValues, shippingEmail: e.target.value})}
+                      onChange={(e) =>
+                        setAddressValues({
+                          ...addressValues,
+                          shippingEmail: e.target.value,
+                        })
+                      }
                       placeholder="Email Address"
                       className="text-sm"
                     />
@@ -989,40 +1137,55 @@ export default function OrderDetailPage({
                     <p>{order.shippingName}</p>
                     <p>{order.shippingLine1}</p>
                     {order.shippingLine2 && <p>{order.shippingLine2}</p>}
-                    <p>{order.shippingPostalCode} {order.shippingCity}</p>
-                    <p>{order.shippingState}, {order.shippingCountry}</p>
+                    <p>
+                      {order.shippingPostalCode} {order.shippingCity}
+                    </p>
+                    <p>
+                      {order.shippingState}, {order.shippingCountry}
+                    </p>
                     <p>{order.shippingPhone}</p>
                     <p className="text-blue-600">{order.shippingEmail}</p>
                   </div>
                 )}
-                
+
                 {/* Address Validation Results */}
                 {addressValidation && (
                   <div className="mt-3 space-y-2">
                     {addressValidation.errors.length > 0 && (
                       <div className="rounded-md bg-destructive/10 p-2">
-                        <p className="text-xs font-medium text-destructive mb-1">Address Errors:</p>
+                        <p className="text-xs font-medium text-destructive mb-1">
+                          Address Errors:
+                        </p>
                         {addressValidation.errors.map((error, idx) => (
-                          <p key={idx} className="text-xs text-destructive">• {error}</p>
+                          <p key={idx} className="text-xs text-destructive">
+                            • {error}
+                          </p>
                         ))}
                       </div>
                     )}
                     {addressValidation.warnings.length > 0 && (
                       <div className="rounded-md bg-yellow-50 p-2">
-                        <p className="text-xs font-medium text-yellow-800 mb-1">Address Warnings:</p>
+                        <p className="text-xs font-medium text-yellow-800 mb-1">
+                          Address Warnings:
+                        </p>
                         {addressValidation.warnings.map((warning, idx) => (
-                          <p key={idx} className="text-xs text-yellow-700">• {warning}</p>
+                          <p key={idx} className="text-xs text-yellow-700">
+                            • {warning}
+                          </p>
                         ))}
                       </div>
                     )}
-                    {addressValidation.isValid && addressValidation.warnings.length === 0 && (
-                      <div className="rounded-md bg-green-50 p-2">
-                        <p className="text-xs text-green-700">✓ Address validated successfully</p>
-                      </div>
-                    )}
+                    {addressValidation.isValid &&
+                      addressValidation.warnings.length === 0 && (
+                        <div className="rounded-md bg-green-50 p-2">
+                          <p className="text-xs text-green-700">
+                            ✓ Address validated successfully
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
-                
+
                 <Button variant="link" className="h-auto p-0 text-sm mt-2">
                   View map
                 </Button>
@@ -1084,7 +1247,6 @@ export default function OrderDetailPage({
               </p>
             </CardContent>
           </Card>
-
         </div>
       </div>
 
@@ -1094,8 +1256,8 @@ export default function OrderDetailPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Mark Order as Fulfilled?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark the order as fulfilled and notify the customer with tracking information.
-              This action can be reversed if needed.
+              This will mark the order as fulfilled and notify the customer with
+              tracking information. This action can be reversed if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1113,13 +1275,16 @@ export default function OrderDetailPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this order? This action will notify the customer
-              and may trigger a refund process.
+              Are you sure you want to cancel this order? This action will
+              notify the customer and may trigger a refund process.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Go Back</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancellation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmCancellation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Cancel Order
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1135,30 +1300,35 @@ export default function OrderDetailPage({
               Add a new item to order #{order?.orderID}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const newItem = {
-              id: `new-${Date.now()}`,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              orderId: order?.id || "",
-              productVariantId: "variant-1", // This would come from product selection
-              customisationString: formData.get("customisation") as string || undefined,
-              customisationPrice: parseFloat(formData.get("customisationPrice") as string) || 0,
-              noStockStatus: "NONE" as any,
-              quantity: parseInt(formData.get("quantity") as string) || 1,
-            };
-            
-            if (order) {
-              setOrder({
-                ...order,
-                orderItems: [...(order.orderItems || []), newItem]
-              });
-              toast.success("Item added to order successfully");
-              setShowAddItemDialog(false);
-            }
-          }} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const newItem = {
+                id: `new-${Date.now()}`,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                orderId: order?.id || "",
+                productVariantId: "variant-1", // This would come from product selection
+                customisationString:
+                  (formData.get("customisation") as string) || undefined,
+                customisationPrice:
+                  parseFloat(formData.get("customisationPrice") as string) || 0,
+                noStockStatus: "NONE" as any,
+                quantity: parseInt(formData.get("quantity") as string) || 1,
+              };
+
+              if (order) {
+                setOrder({
+                  ...order,
+                  orderItems: [...(order.orderItems || []), newItem],
+                });
+                toast.success("Item added to order successfully");
+                setShowAddItemDialog(false);
+              }
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="product">Product</Label>
               <Select name="product" required>
@@ -1166,14 +1336,30 @@ export default function OrderDetailPage({
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="portugal-2004-away">2004 Portugal 2a Equipacion</SelectItem>
-                  <SelectItem value="spain-2010-home">2010 Spain Home Jersey</SelectItem>
-                  <SelectItem value="brazil-2002-home">2002 Brazil Home Jersey</SelectItem>
-                  <SelectItem value="france-1998-home">1998 France Home Jersey</SelectItem>
-                  <SelectItem value="italy-2006-home">2006 Italy Home Jersey</SelectItem>
-                  <SelectItem value="germany-2014-home">2014 Germany Home Jersey</SelectItem>
-                  <SelectItem value="argentina-1986-home">1986 Argentina Home Jersey</SelectItem>
-                  <SelectItem value="netherlands-1988-home">1988 Netherlands Home Jersey</SelectItem>
+                  <SelectItem value="portugal-2004-away">
+                    2004 Portugal 2a Equipacion
+                  </SelectItem>
+                  <SelectItem value="spain-2010-home">
+                    2010 Spain Home Jersey
+                  </SelectItem>
+                  <SelectItem value="brazil-2002-home">
+                    2002 Brazil Home Jersey
+                  </SelectItem>
+                  <SelectItem value="france-1998-home">
+                    1998 France Home Jersey
+                  </SelectItem>
+                  <SelectItem value="italy-2006-home">
+                    2006 Italy Home Jersey
+                  </SelectItem>
+                  <SelectItem value="germany-2014-home">
+                    2014 Germany Home Jersey
+                  </SelectItem>
+                  <SelectItem value="argentina-1986-home">
+                    1986 Argentina Home Jersey
+                  </SelectItem>
+                  <SelectItem value="netherlands-1988-home">
+                    1988 Netherlands Home Jersey
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1195,37 +1381,43 @@ export default function OrderDetailPage({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity</Label>
-                <Input 
-                  id="quantity" 
+                <Input
+                  id="quantity"
                   name="quantity"
-                  type="number" 
-                  min="1" 
+                  type="number"
+                  min="1"
                   defaultValue="1"
-                  required 
+                  required
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="customisation">Customisation (Optional)</Label>
-              <Input 
-                id="customisation" 
+              <Input
+                id="customisation"
                 name="customisation"
-                placeholder="Player name, number, etc." 
+                placeholder="Player name, number, etc."
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="customisationPrice">Customisation Price (€)</Label>
-              <Input 
-                id="customisationPrice" 
+              <Label htmlFor="customisationPrice">
+                Customisation Price (€)
+              </Label>
+              <Input
+                id="customisationPrice"
                 name="customisationPrice"
-                type="number" 
+                type="number"
                 step="0.01"
                 min="0"
                 defaultValue="0"
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAddItemDialog(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddItemDialog(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Add Item</Button>
