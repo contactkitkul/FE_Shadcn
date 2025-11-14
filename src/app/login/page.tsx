@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { supabase } from "@/lib/supabase"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
@@ -25,28 +24,20 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Login with Supabase directly (sets session cookie automatically)
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // Login via BE_Internal API
+      const response = await api.auth.login(email, password)
 
-      if (authError || !authData.user) {
-        toast.error(TOAST_MESSAGES.error.invalidCredentials)
-        return
-      }
-
-      // Fetch user role from backend
-      const response = await api.auth.me()
-
-      if (response.success) {
-        // Store user data in localStorage
+      if (response.success && response.data) {
+        // Store auth token
+        localStorage.setItem('auth_token', response.data.token)
+        
+        // Store user data
         setUser(response.data.user)
         
         toast.success(TOAST_MESSAGES.success.login)
         router.push("/dashboard")
       } else {
-        toast.error(TOAST_MESSAGES.error.fetchUserData)
+        toast.error(response.error || TOAST_MESSAGES.error.invalidCredentials)
       }
     } catch (error: any) {
       console.error("Login error:", error)

@@ -1,5 +1,5 @@
 // API utility functions for backend integration
-import { supabase } from './supabase'
+// No Supabase - all auth goes through BE_Internal
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -14,10 +14,58 @@ interface PaginationParams {
 
 export async function getAuthToken() {
   if (typeof window !== 'undefined') {
-    const { data } = await supabase.auth.getSession()
-    return data.session?.access_token || null
+    return localStorage.getItem('auth_token');
   }
   return null;
+}
+
+/**
+ * Fetch team identifiers from API and cache in localStorage
+ * Cache expires after 24 hours
+ */
+export async function fetchTeamIdentifiers() {
+  if (typeof window === 'undefined') return null;
+
+  const cached = localStorage.getItem('team_identifiers');
+  if (cached) {
+    try {
+      const { data, timestamp } = JSON.parse(cached);
+      // Cache for 24 hours
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+        return data;
+      }
+    } catch (error) {
+      console.error('Error parsing cached identifiers:', error);
+    }
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/team-identifiers`);
+    const result = await response.json();
+    
+    if (result.success) {
+      localStorage.setItem('team_identifiers', JSON.stringify({
+        data: result.data,
+        timestamp: Date.now()
+      }));
+      
+      return result.data;
+    }
+  } catch (error) {
+    console.error('Error fetching team identifiers:', error);
+  }
+  
+  return null;
+}
+
+/**
+ * Clear team identifiers cache
+ * Call this after updating identifiers in admin panel
+ */
+export function clearTeamIdentifiersCache() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('team_identifiers');
+  }
 }
 
 export async function fetchAPI(endpoint: string, options?: RequestInit) {
@@ -118,6 +166,8 @@ export const api = {
         body: JSON.stringify({ products }),
       }),
     generateSKU: () => fetchAPI("/products/generate/sku", { method: "POST" }),
+    validateSKU: (team: string, year: string) => 
+      fetchAPI(`/products/validate-sku?team=${team}&year=${year}`, { method: "GET" }),
     generateName: (data: {
       team: string;
       year: string;

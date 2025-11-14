@@ -66,6 +66,7 @@ import {
   getAllTeams,
   getLeagueForTeam,
   formatTeamName,
+  getTeamIdentifier,
 } from "@/lib/team-league-mapping";
 import { VariantManager } from "@/components/products/variant-manager";
 import { api } from "@/lib/api";
@@ -96,14 +97,13 @@ export default function ProductsPage() {
     name: "",
     sku: "",
     team: "",
-    year: "2023",
-    yearEnd: 2024,
+    year: "2025",
+    yearEnd: 26,
     league: "",
     homeAway: "HOME" as EnumHomeAway,
     status: "ACTIVE" as EnumProductStatus,
     shirtType: "NORMAL" as EnumShirtType,
     productType: "SHIRT" as EnumProductType,
-    imageUrls: "",
   });
   const [variantManagerOpen, setVariantManagerOpen] = useState(false);
   const [selectedProductForVariants, setSelectedProductForVariants] =
@@ -131,11 +131,11 @@ export default function ProductsPage() {
       if (response.success) {
         setProducts(response.data.data || []);
       } else {
-        toast.error(getEntityMessages('products').loadError);
+        toast.error(getEntityMessages("products").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching products:", error);
-      toast.error(error.message || getEntityMessages('products').loadError);
+      toast.error(error.message || getEntityMessages("products").loadError);
     } finally {
       setLoading(false);
     }
@@ -147,8 +147,40 @@ export default function ProductsPage() {
   }, [sortColumn, sortDirection, debouncedSearch]);
 
   // Auto-generation functions
-  const generateSKU = (): string => {
-    return Math.random().toString(36).substr(2, 6).toUpperCase();
+  const generateSKU = async (team: string, year: string): Promise<string> => {
+    // Generate SKU format: MANU250001 (team identifier + last 2 digits of year + 4-digit sequential)
+    // Uses /api/products/validate-sku endpoint for sequential numbering per team-year
+    
+    try {
+      const response = await api.products.validateSKU(team, year);
+      if (response.success && response.data.sku) {
+        return response.data.sku; // Returns: MANU250001, MANU250002, etc.
+      }
+    } catch (error) {
+      console.error("Failed to validate SKU from API:", error);
+      
+      // Fallback: Use old endpoint
+      try {
+        const teamIdentifier = getTeamIdentifier(team);
+        const yearCode = year.substring(year.length - 2); // Last 2 digits
+        const fallbackResponse = await api.products.generateSKU();
+        
+        if (fallbackResponse.success && fallbackResponse.data.sku) {
+          const randomPart = fallbackResponse.data.sku.substring(
+            fallbackResponse.data.sku.length - 4
+          );
+          return `${teamIdentifier}${yearCode}${randomPart}`;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback SKU generation failed:", fallbackError);
+      }
+    }
+
+    // Final fallback: generate random SKU
+    const teamIdentifier = getTeamIdentifier(team);
+    const yearCode = year.substring(year.length - 2);
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `${teamIdentifier}${yearCode}${randomNum}`;
   };
 
   const getTeamIdentifier = (team: string): string => {
@@ -187,28 +219,56 @@ export default function ProductsPage() {
   const generateProductName = (
     team: string,
     year: string,
-    homeAway: EnumHomeAway,
-    league: EnumLeague
+    yearEnd: number,
+    homeAway: EnumHomeAway
   ): string => {
-    const teamId = getTeamIdentifier(team);
-    const yearStart = year.split("/")[0]?.substring(2) || "24"; // Get last 2 digits of start year
-    const homeAwayCode = homeAway.substring(0, 1); // H, A, T, G
-    const leagueId = getLeagueIdentifier(league);
+    // Format: "Manchester United 2023-24 Home Shirt"
+    const teamName = formatTeamName(team);
+    const yearFormatted = `${year}-${yearEnd.toString().padStart(2, "0")}`;
+    const homeAwayText = homeAway.charAt(0) + homeAway.slice(1).toLowerCase();
 
-    return `${teamId}${yearStart}${homeAwayCode}${leagueId}`;
+    return `${teamName} ${yearFormatted} ${homeAwayText} Shirt`;
   };
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = async (field: string, value: any) => {
     const newFormData = { ...formData, [field]: value };
 
+    // Auto-calculate yearEnd when year changes
+    if (field === "year" && value) {
+      const yearNum = parseInt(value);
+      if (!isNaN(yearNum)) {
+        // Get last 2 digits of next year (handles 1999 -> 00, 2025 -> 26)
+        const nextYear = yearNum + 1;
+        newFormData.yearEnd = nextYear % 100;
+      }
+    }
+
+    // Auto-generate SKU when team or year changes
+    if (
+      (field === "team" || field === "year") &&
+      newFormData.team &&
+      newFormData.year
+    ) {
+      const generatedSKU = await generateSKU(
+        newFormData.team,
+        newFormData.year
+      );
+      newFormData.sku = generatedSKU;
+    }
+
     // Auto-generate name when key fields change
-    if (field === "team" || field === "year" || field === "homeAway") {
-      if (newFormData.team && newFormData.year && autoLeague) {
+    if (
+      field === "team" ||
+      field === "year" ||
+      field === "yearEnd" ||
+      field === "homeAway"
+    ) {
+      if (newFormData.team && newFormData.year && newFormData.yearEnd) {
         newFormData.name = generateProductName(
           newFormData.team,
           newFormData.year,
-          newFormData.homeAway,
-          autoLeague
+          newFormData.yearEnd,
+          newFormData.homeAway
         );
       }
     }
@@ -219,16 +279,15 @@ export default function ProductsPage() {
   const resetForm = () => {
     setFormData({
       name: "",
-      sku: generateSKU(),
+      sku: "",
       team: "",
-      year: "2023/24",
-      yearEnd: 2024,
+      year: "2025",
+      yearEnd: 26,
       league: "",
       homeAway: "HOME" as EnumHomeAway,
       status: "ACTIVE" as EnumProductStatus,
       shirtType: "NORMAL" as EnumShirtType,
       productType: "SHIRT" as EnumProductType,
-      imageUrls: "",
     });
     setSelectedTeam("");
     setAutoLeague(undefined);
@@ -328,9 +387,9 @@ export default function ProductsPage() {
       league: (product.league as string) || "",
       homeAway: (product.homeAway as EnumHomeAway) || ("HOME" as EnumHomeAway),
       status: product.productStatus,
-      shirtType: (product.shirtType as EnumShirtType) || ("NORMAL" as EnumShirtType),
+      shirtType:
+        (product.shirtType as EnumShirtType) || ("NORMAL" as EnumShirtType),
       productType: product.productType,
-      imageUrls: "",
     });
     setSelectedTeam((product.team as string) || "");
     setAutoLeague(product.league);
@@ -383,29 +442,8 @@ export default function ProductsPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Product Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => updateFormData("name", e.target.value)}
-                      placeholder="Real Madrid FC 2024-25 Home Shirt"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sku">SKU *</Label>
-                    <Input
-                      id="sku"
-                      value={formData.sku}
-                      onChange={(e) => updateFormData("sku", e.target.value)}
-                      placeholder="Enter 6-digit SKU"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* First Row: Team, Type, Year, Year End */}
+                <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="team">Team *</Label>
                     <Select
@@ -433,51 +471,12 @@ export default function ProductsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="year">Year *</Label>
-                    <Input
-                      id="year"
-                      value={formData.year}
-                      onChange={(e) => {
-                        updateFormData("year", e.target.value);
-                        // Auto-calculate yearEnd based on year
-                        const yearStart = parseInt(e.target.value.split('/')[0] || "2023");
-                        updateFormData("yearEnd", yearStart + 1);
-                      }}
-                      placeholder="2023/24"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="yearEnd">Year End</Label>
-                    <Input
-                      id="yearEnd"
-                      type="number"
-                      value={formData.yearEnd}
-                      onChange={(e) => updateFormData("yearEnd", parseInt(e.target.value) || 2024)}
-                      placeholder="2024"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="league">League (Auto-assigned)</Label>
-                    <Input
-                      id="league"
-                      value={
-                        autoLeague
-                          ? autoLeague.replace(/_/g, " ")
-                          : "Select a team first"
-                      }
-                      disabled
-                      className="bg-muted"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
                     <Label htmlFor="homeAway">Type *</Label>
-                    <Select 
+                    <Select
                       value={formData.homeAway}
-                      onValueChange={(value) => updateFormData('homeAway', value)}
+                      onValueChange={(value) =>
+                        updateFormData("homeAway", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
@@ -491,10 +490,88 @@ export default function ProductsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="year">Year *</Label>
+                    <Input
+                      id="year"
+                      value={formData.year}
+                      onChange={(e) => updateFormData("year", e.target.value)}
+                      placeholder="2025"
+                      pattern="[0-9]{4}"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="yearEnd">Year End *</Label>
+                    <Input
+                      id="yearEnd"
+                      type="text"
+                      value={formData.yearEnd}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow only 1-2 digits
+                        if (value === '' || /^\d{1,2}$/.test(value)) {
+                          updateFormData("yearEnd", parseInt(value) || 0);
+                        }
+                      }}
+                      placeholder="26"
+                      maxLength={2}
+                    />
+                  </div>
+                </div>
+
+                {/* Second Row: Auto-generated Name and SKU */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Product Name{" "}
+                      <span className="text-muted-foreground">
+                        (Auto-generated, editable)
+                      </span>
+                    </Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Manchester United 2025-26 Home Shirt"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sku">
+                      SKU{" "}
+                      <span className="text-muted-foreground">
+                        (Auto-generated, editable)
+                      </span>
+                    </Label>
+                    <Input
+                      id="sku"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      placeholder="MANU251234"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Third Row: League and Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="league">League (Auto-assigned)</Label>
+                    <Input
+                      id="league"
+                      value={
+                        autoLeague
+                          ? autoLeague.replace(/_/g, " ")
+                          : "Select a team first"
+                      }
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select 
+                    <Select
                       value={formData.status}
-                      onValueChange={(value) => updateFormData('status', value)}
+                      onValueChange={(value) => updateFormData("status", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -502,26 +579,14 @@ export default function ProductsPage() {
                       <SelectContent>
                         <SelectItem value="ACTIVE">Active</SelectItem>
                         <SelectItem value="INACTIVE">Inactive</SelectItem>
-                        <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                        <SelectItem value="OUT_OF_STOCK">
+                          Out of Stock
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                
-                {/* Cloudflare Image URLs */}
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrls">Cloudflare Image URLs</Label>
-                  <Input
-                    id="imageUrls"
-                    value={formData.imageUrls || ""}
-                    onChange={(e) => updateFormData("imageUrls", e.target.value)}
-                    placeholder="https://imagedelivery.net/account/image-id/public (comma-separated for multiple)"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter Cloudflare image URLs separated by commas
-                  </p>
-                </div>
-                
+
                 {/* Generate Variants Button */}
                 {editingProduct && (
                   <div className="space-y-2 border-t pt-4">
@@ -537,25 +602,33 @@ export default function ProductsPage() {
                             false // isRetro - can be determined from product type if needed
                           );
                           if (response.success) {
-                            toast.success(`Generated ${response.data.count} variants successfully!`);
+                            toast.success(
+                              `Generated ${response.data.count} variants successfully!`
+                            );
                           } else {
                             toast.error("Failed to generate variants");
                           }
                         } catch (error: any) {
-                          toast.error(error.message || "Failed to generate variants");
+                          toast.error(
+                            error.message || "Failed to generate variants"
+                          );
                         }
                       }}
                     >
                       Generate 15 Default Variants (5 sizes × 3 patches)
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Generates: XXL, XL, L, M, S with Champions League, No Patch, and League Patch options
+                      Generates: XXL, XL, L, M, S with Champions League, No
+                      Patch, and League Patch options
                     </p>
                   </div>
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleSave}>Save Product</Button>

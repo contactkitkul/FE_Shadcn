@@ -193,9 +193,10 @@ export default function BulkUploadPage() {
   }
 
   const downloadTemplate = () => {
-    const template = `sku,productStatus,year,team,league,productType,featuresShirt,featuresCurrentSeason,featuresLongSleeve,name,homeAway,productVariantId
-MU-HOME-23-24,ACTIVE,2023/24,Manchester_United_FC,PREMIER_LEAGUE,SHIRT,NORMAL,true,false,Manchester United Home Shirt 2023/24,HOME,variant-id-1
-RM-AWAY-23-24,ACTIVE,2023/24,Real_Madrid_CF,LA_LIGA,SHIRT,PLAYER,true,false,Real Madrid Away Shirt 2023/24,AWAY,variant-id-2`
+    const template = `team,homeAway,year,yearEnd,name,sku,league,status,shirtType,productType
+Manchester_United_FC,HOME,2025,26,Manchester United 2025-26 Home Shirt,MANU251234,PREMIER_LEAGUE,ACTIVE,NORMAL,SHIRT
+Real_Madrid_CF,AWAY,2025,26,Real Madrid 2025-26 Away Shirt,REAL252345,LA_LIGA,ACTIVE,PLAYER,SHIRT
+Chelsea_FC,THIRD,2025,26,Chelsea 2025-26 Third Shirt,CHEL253456,PREMIER_LEAGUE,ACTIVE,NORMAL,SHIRT`
 
     const blob = new Blob([template], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -288,7 +289,7 @@ RM-AWAY-23-24,ACTIVE,2023/24,Real_Madrid_CF,LA_LIGA,SHIRT,PLAYER,true,false,Real
                   <Label htmlFor="json-data">JSON Data</Label>
                   <Textarea
                     id="json-data"
-                    placeholder='[{"sku": "MU-HOME-23-24", "productStatus": "ACTIVE", ...}]'
+                    placeholder='[{"team": "Manchester_United_FC", "homeAway": "HOME", "year": "2025", "yearEnd": 26, "name": "Manchester United 2025-26 Home Shirt", "sku": "MANU251234", "league": "PREMIER_LEAGUE", "status": "ACTIVE", "shirtType": "NORMAL", "productType": "SHIRT"}]'
                     value={jsonData}
                     onChange={(e) => setJsonData(e.target.value)}
                     disabled={uploading}
@@ -358,15 +359,26 @@ RM-AWAY-23-24,ACTIVE,2023/24,Real_Madrid_CF,LA_LIGA,SHIRT,PLAYER,true,false,Real
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Required Fields</h4>
-                <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li>sku</li>
-                  <li>productStatus</li>
-                  <li>productType</li>
-                  <li>featuresShirt</li>
-                  <li>name</li>
-                  <li>productVariantId</li>
-                </ul>
+                <h4 className="font-semibold mb-2">Field Order</h4>
+                <p className="text-muted-foreground text-xs mb-2">Enter fields in this order:</p>
+                <ol className="list-decimal list-inside text-muted-foreground space-y-1 text-xs">
+                  <li>team - Team name (e.g., Manchester_United_FC)</li>
+                  <li>homeAway - HOME/AWAY/THIRD/GOALKEEPER</li>
+                  <li>year - 4-digit year (e.g., 2025)</li>
+                  <li>yearEnd - 2-digit year end (e.g., 26)</li>
+                  <li>name - Auto-generated: "Team 2025-26 Type Shirt"</li>
+                  <li>sku - Auto-generated: MANU251234 (4-letter team code)</li>
+                  <li>league - League enum (PREMIER_LEAGUE, LA_LIGA, etc.)</li>
+                  <li>status - ACTIVE/INACTIVE/OUT_OF_STOCK</li>
+                  <li>shirtType - NORMAL/PLAYER/RETRO</li>
+                  <li>productType - SHIRT</li>
+                </ol>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2 mt-3">Auto-Generation</h4>
+                <p className="text-muted-foreground text-xs">
+                  Name and SKU are auto-generated based on team, year, and type. You can override them in the CSV/JSON.
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,45 @@
 import { EnumLeague } from "@/types";
 
+// TODO: Remove this after migrating to database-backed identifiers
+// Team identifiers will be fetched from /api/team-identifiers
+// This is a temporary fallback until frontend is updated
+const TEAM_IDENTIFIERS_FALLBACK: Record<string, string> = {
+  Real_Madrid_CF: "REAL",
+  FC_Barcelona: "BARC",
+  Manchester_United_FC: "MANU",
+  Liverpool_FC: "LIVE",
+  Chelsea_FC: "CHEL",
+  Arsenal_FC: "ARSE",
+  Manchester_City_FC: "MACI",
+  Tottenham_Hotspur_FC: "TOTT",
+  Juventus_FC: "JUVE",
+  Inter_Milan: "INTE",
+  AC_Milan: "MILA",
+  Bayern_Munich: "BAYE",
+  Borussia_Dortmund: "DORT",
+  Paris_Saint_Germain: "PARI",
+  Atletico_de_Madrid: "ATLE",
+  Sevilla_FC: "SEVI",
+  Valencia_CF: "VALE",
+  SSC_Napoli: "NAPO",
+  AS_Roma: "ROMA",
+  SS_Lazio: "LAZI",
+  AFC_Ajax: "AJAX",
+  PSV_Eindhoven: "PSV_",
+  SL_Benfica: "BENF",
+  FC_Porto: "PORT",
+  Sporting_CP: "SPOR",
+};
+
+/**
+ * Get team identifier (4-letter code)
+ * TEMPORARY: Uses local fallback until API integration is complete
+ * TODO: Fetch from /api/team-identifiers and cache in localStorage
+ */
+export function getTeamIdentifier(team: string): string {
+  return TEAM_IDENTIFIERS_FALLBACK[team] || team.substring(0, 4).toUpperCase().replace(/_/g, '');
+}
+
 // Mapping of teams to their respective leagues
 export const TEAM_LEAGUE_MAP: Record<string, EnumLeague> = {
   // Premier League
