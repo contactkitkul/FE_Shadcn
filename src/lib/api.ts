@@ -2,7 +2,7 @@
 import { supabase } from './supabase'
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 interface PaginationParams {
   page?: number;
@@ -26,7 +26,6 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      credentials: 'include',
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -58,7 +57,6 @@ export async function fetchAPIWithFormData(
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
-    credentials: 'include',
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
     },
