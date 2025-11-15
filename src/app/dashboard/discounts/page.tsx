@@ -73,6 +73,23 @@ export default function DiscountsPage() {
   const [sortColumn, setSortColumn] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // Form state
+  const [formData, setFormData] = useState({
+    code: "",
+    discountType: EnumDiscountType.FIXED_AMOUNT,
+    discountPercentage: 0,
+    maxDiscountAmount: 0,
+    discountAmount: 0,
+    offerBuyQty: 0,
+    offerFreeQty: 0,
+    minCartValue: 50,
+    usageLimit: 1,
+    expiryDate: "",
+    status: EnumDiscountStatus.ACTIVE,
+    discountReason: EnumDiscountReason.OTHERS,
+    description: "",
+  });
+
   // Fetch discounts from API
   const fetchDiscounts = async () => {
     try {
@@ -88,11 +105,11 @@ export default function DiscountsPage() {
       if (response.success) {
         setDiscounts(response.data.data || []);
       } else {
-        toast.error(getEntityMessages('discounts').loadError);
+        toast.error(getEntityMessages("discounts").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching discounts:", error);
-      toast.error(error.message || getEntityMessages('discounts').loadError);
+      toast.error(error.message || getEntityMessages("discounts").loadError);
     } finally {
       setLoading(false);
     }
@@ -222,17 +239,66 @@ export default function DiscountsPage() {
 
   const handleEdit = (discount: Discount) => {
     setEditingDiscount(discount);
+    setFormData({
+      code: discount.code,
+      discountType: discount.discountType,
+      discountPercentage: discount.discountPercentage || 0,
+      maxDiscountAmount: discount.maxDiscountAmount || 0,
+      discountAmount: discount.discountAmount || 0,
+      offerBuyQty: discount.offerBuyQty || 0,
+      offerFreeQty: discount.offerFreeQty || 0,
+      minCartValue: discount.minCartValue || 50,
+      usageLimit: discount.usageLimit,
+      expiryDate: new Date(discount.expiryDate).toISOString().split("T")[0],
+      status: discount.status,
+      discountReason: discount.discountReason || EnumDiscountReason.OTHERS,
+      description: discount.description || "",
+    });
+    setSelectedDiscountType(discount.discountType);
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    toast.success(
-      editingDiscount
-        ? "Discount updated successfully"
-        : "Discount created successfully"
-    );
-    setIsDialogOpen(false);
-    setEditingDiscount(null);
+  const resetForm = () => {
+    setFormData({
+      code: "",
+      discountType: EnumDiscountType.FIXED_AMOUNT,
+      discountPercentage: 0,
+      maxDiscountAmount: 0,
+      discountAmount: 0,
+      offerBuyQty: 0,
+      offerFreeQty: 0,
+      minCartValue: 50,
+      usageLimit: 1,
+      expiryDate: "",
+      status: EnumDiscountStatus.ACTIVE,
+      discountReason: EnumDiscountReason.OTHERS,
+      description: "",
+    });
+    setSelectedDiscountType(EnumDiscountType.FIXED_AMOUNT);
+  };
+
+  const handleSave = async () => {
+    try {
+      if (editingDiscount) {
+        // Update existing discount
+        await api.discounts.update(editingDiscount.id, formData);
+        toast.success("Discount updated successfully");
+      } else {
+        // Create new discount
+        await api.discounts.create(formData);
+        toast.success("Discount created successfully");
+      }
+
+      // Refresh the list
+      await fetchDiscounts();
+
+      setIsDialogOpen(false);
+      setEditingDiscount(null);
+      resetForm();
+    } catch (error: any) {
+      console.error("Error saving discount:", error);
+      toast.error(error.message || "Failed to save discount");
+    }
   };
 
   return (
@@ -246,7 +312,12 @@ export default function DiscountsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingDiscount(null)}>
+            <Button
+              onClick={() => {
+                setEditingDiscount(null);
+                resetForm();
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Discount
             </Button>
@@ -264,15 +335,24 @@ export default function DiscountsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">Discount Code</Label>
-                  <Input id="code" placeholder="e.g., SUMMER2024" />
+                  <Input
+                    id="code"
+                    placeholder="e.g., SUMMER2024"
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Discount Type</Label>
                   <Select
-                    value={selectedDiscountType}
-                    onValueChange={(value) =>
-                      setSelectedDiscountType(value as EnumDiscountType)
-                    }
+                    value={formData.discountType}
+                    onValueChange={(value) => {
+                      const type = value as EnumDiscountType;
+                      setSelectedDiscountType(type);
+                      setFormData({ ...formData, discountType: type });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
@@ -299,11 +379,29 @@ export default function DiscountsPage() {
                       placeholder="20"
                       min="0"
                       max="100"
+                      value={formData.discountPercentage}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          discountPercentage: parseFloat(e.target.value) || 0,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maxDiscount">Max Discount Amount (€)</Label>
-                    <Input id="maxDiscount" type="number" placeholder="50" />
+                    <Input
+                      id="maxDiscount"
+                      type="number"
+                      placeholder="50"
+                      value={formData.maxDiscountAmount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          maxDiscountAmount: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
                   </div>
                 </div>
               )}
@@ -311,7 +409,18 @@ export default function DiscountsPage() {
               {selectedDiscountType === EnumDiscountType.FIXED_AMOUNT && (
                 <div className="space-y-2">
                   <Label htmlFor="fixedAmount">Discount Amount (€)</Label>
-                  <Input id="fixedAmount" type="number" placeholder="10" />
+                  <Input
+                    id="fixedAmount"
+                    type="number"
+                    placeholder="10"
+                    value={formData.discountAmount}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        discountAmount: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
                 </div>
               )}
 
@@ -320,11 +429,35 @@ export default function DiscountsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="buyQty">Buy Quantity (X)</Label>
-                    <Input id="buyQty" type="number" placeholder="2" min="1" />
+                    <Input
+                      id="buyQty"
+                      type="number"
+                      placeholder="2"
+                      min="1"
+                      value={formData.offerBuyQty}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          offerBuyQty: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="freeQty">Get Free Quantity (Y)</Label>
-                    <Input id="freeQty" type="number" placeholder="1" min="1" />
+                    <Input
+                      id="freeQty"
+                      type="number"
+                      placeholder="1"
+                      min="1"
+                      value={formData.offerFreeQty}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          offerFreeQty: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
                   </div>
                 </div>
               )}
@@ -332,7 +465,17 @@ export default function DiscountsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minCartValue">Min Cart Value (€)</Label>
-                  <Input id="minCartValue" type="number" defaultValue={50} />
+                  <Input
+                    id="minCartValue"
+                    type="number"
+                    value={formData.minCartValue}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        minCartValue: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="usageLimit">Usage Limit</Label>
@@ -340,18 +483,39 @@ export default function DiscountsPage() {
                     id="usageLimit"
                     type="number"
                     placeholder="1"
-                    defaultValue={1}
+                    value={formData.usageLimit}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        usageLimit: parseInt(e.target.value) || 1,
+                      })
+                    }
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="expiryDate">Expiry Date</Label>
-                  <Input id="expiryDate" type="date" />
+                  <Input
+                    id="expiryDate"
+                    type="date"
+                    value={formData.expiryDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, expiryDate: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select defaultValue={EnumDiscountStatus.ACTIVE}>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        status: value as EnumDiscountStatus,
+                      })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -364,7 +528,15 @@ export default function DiscountsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reason">Discount Reason</Label>
-                <Select defaultValue={EnumDiscountReason.OTHERS}>
+                <Select
+                  value={formData.discountReason}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      discountReason: value as EnumDiscountReason,
+                    })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -386,6 +558,10 @@ export default function DiscountsPage() {
                   id="description"
                   placeholder="Enter discount description"
                   rows={3}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                 />
               </div>
             </div>

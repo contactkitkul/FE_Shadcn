@@ -150,7 +150,7 @@ export default function ProductsPage() {
   const generateSKU = async (team: string, year: string): Promise<string> => {
     // Generate SKU format: MANU250001 (team identifier + last 2 digits of year + 4-digit sequential)
     // Uses /api/products/validate-sku endpoint for sequential numbering per team-year
-    
+
     try {
       const response = await api.products.validateSKU(team, year);
       if (response.success && response.data.sku) {
@@ -158,13 +158,13 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error("Failed to validate SKU from API:", error);
-      
+
       // Fallback: Use old endpoint
       try {
         const teamIdentifier = getTeamIdentifier(team);
         const yearCode = year.substring(year.length - 2); // Last 2 digits
         const fallbackResponse = await api.products.generateSKU();
-        
+
         if (fallbackResponse.success && fallbackResponse.data.sku) {
           const randomPart = fallbackResponse.data.sku.substring(
             fallbackResponse.data.sku.length - 4
@@ -233,21 +233,22 @@ export default function ProductsPage() {
   const updateFormData = async (field: string, value: any) => {
     const newFormData = { ...formData, [field]: value };
 
-    // Auto-calculate yearEnd when year changes
-    if (field === "year" && value) {
+    // Auto-calculate yearEnd when year changes (only for complete 4-digit years)
+    if (field === "year" && value && value.length === 4) {
       const yearNum = parseInt(value);
-      if (!isNaN(yearNum)) {
+      if (!isNaN(yearNum) && yearNum >= 1900 && yearNum <= 2100) {
         // Get last 2 digits of next year (handles 1999 -> 00, 2025 -> 26)
         const nextYear = yearNum + 1;
         newFormData.yearEnd = nextYear % 100;
       }
     }
 
-    // Auto-generate SKU when team or year changes
+    // Auto-generate SKU when team or year changes (only for complete years)
     if (
       (field === "team" || field === "year") &&
       newFormData.team &&
-      newFormData.year
+      newFormData.year &&
+      newFormData.year.length === 4
     ) {
       const generatedSKU = await generateSKU(
         newFormData.team,
@@ -256,14 +257,19 @@ export default function ProductsPage() {
       newFormData.sku = generatedSKU;
     }
 
-    // Auto-generate name when key fields change
+    // Auto-generate name when key fields change (only for complete data)
     if (
       field === "team" ||
       field === "year" ||
       field === "yearEnd" ||
       field === "homeAway"
     ) {
-      if (newFormData.team && newFormData.year && newFormData.yearEnd) {
+      if (
+        newFormData.team &&
+        newFormData.year &&
+        newFormData.year.length === 4 &&
+        newFormData.yearEnd
+      ) {
         newFormData.name = generateProductName(
           newFormData.team,
           newFormData.year,
@@ -508,7 +514,7 @@ export default function ProductsPage() {
                       onChange={(e) => {
                         const value = e.target.value;
                         // Allow only 1-2 digits
-                        if (value === '' || /^\d{1,2}$/.test(value)) {
+                        if (value === "" || /^\d{1,2}$/.test(value)) {
                           updateFormData("yearEnd", parseInt(value) || 0);
                         }
                       }}
@@ -530,7 +536,9 @@ export default function ProductsPage() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="Manchester United 2025-26 Home Shirt"
                       required
                     />
@@ -545,7 +553,9 @@ export default function ProductsPage() {
                     <Input
                       id="sku"
                       value={formData.sku}
-                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sku: e.target.value })
+                      }
                       placeholder="MANU251234"
                       required
                     />

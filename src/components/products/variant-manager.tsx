@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,9 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { EnumSize, EnumPatch, type ProductVariant } from "@/types";
+import { api } from "@/lib/api";
 
 interface VariantManagerProps {
   productId: string;
@@ -83,76 +84,119 @@ export function VariantManager({
   open,
   onOpenChange,
 }: VariantManagerProps) {
-  const [variants, setVariants] = useState<ProductVariant[]>([
-    {
-      id: "1",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      productId,
-      size: EnumSize.S,
-      patch: EnumPatch.NO_PATCH,
-      sellPrice: 19.99,
-      costPrice: 10.0,
-    },
-    {
-      id: "2",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      productId,
-      size: EnumSize.M,
-      patch: EnumPatch.NO_PATCH,
-      sellPrice: 19.99,
-      costPrice: 10.0,
-    },
-  ]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(
     null
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const addDefaultVariants = () => {
-    const newVariants: ProductVariant[] = DEFAULT_VARIANTS.map((v, idx) => ({
-      ...v,
-      id: `new-${Date.now()}-${idx}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      productId,
-    }));
-    setVariants([...variants, ...newVariants]);
-    toast.success(`Added ${newVariants.length} default variants`);
+  // Fetch variants when dialog opens
+  useEffect(() => {
+    if (open && productId) {
+      fetchVariants();
+    }
+  }, [open, productId]);
+
+  const fetchVariants = async () => {
+    try {
+      setLoading(true);
+      const response = await api.productVariants.getAll({
+        productId,
+        limit: 100,
+      } as any);
+      if (response.success && response.data) {
+        setVariants(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch variants:", error);
+      toast.error("Failed to load variants");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addCustomVariant = (
+  const addDefaultVariants = async () => {
+    try {
+      // Call backend to generate default variants
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/products/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ productId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to generate variants");
+      }
+
+      const data = await response.json();
+      toast.success(`Added ${data.data.count} default variants`);
+      await fetchVariants(); // Refresh list
+    } catch (error) {
+      console.error("Failed to add default variants:", error);
+      toast.error("Failed to add default variants");
+    }
+  };
+
+  const addCustomVariant = async (
     variant: Omit<
       ProductVariant,
       "id" | "createdAt" | "updatedAt" | "productId"
     >
   ) => {
-    const newVariant: ProductVariant = {
-      ...variant,
-      id: `new-${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      productId,
-    };
-    setVariants([...variants, newVariant]);
-    toast.success("Variant added successfully");
-    setIsAddDialogOpen(false);
+    try {
+      await api.productVariants.create({
+        ...variant,
+        productId,
+      });
+      toast.success("Variant added successfully");
+      setIsAddDialogOpen(false);
+      await fetchVariants(); // Refresh list
+    } catch (error) {
+      console.error("Failed to add variant:", error);
+      toast.error("Failed to add variant");
+    }
   };
 
-  const updateVariant = (id: string, updates: Partial<ProductVariant>) => {
-    setVariants(
-      variants.map((v) =>
-        v.id === id ? { ...v, ...updates, updatedAt: new Date() } : v
-      )
-    );
-    toast.success("Variant updated");
+  const updateVariant = async (
+    id: string,
+    updates: Partial<ProductVariant>
+  ) => {
+    try {
+      // Optimistically update UI
+      setVariants(
+        variants.map((v) =>
+          v.id === id ? { ...v, ...updates, updatedAt: new Date() } : v
+        )
+      );
+
+      // Save to backend
+      await api.productVariants.update(id, updates);
+    } catch (error) {
+      console.error("Failed to update variant:", error);
+      toast.error("Failed to update variant");
+      // Revert on error
+      await fetchVariants();
+    }
   };
 
-  const deleteVariant = (id: string) => {
-    setVariants(variants.filter((v) => v.id !== id));
-    toast.success("Variant deleted");
+  const deleteVariant = async (id: string) => {
+    try {
+      await api.productVariants.delete(id);
+      setVariants(variants.filter((v) => v.id !== id));
+      toast.success("Variant deleted");
+    } catch (error) {
+      console.error("Failed to delete variant:", error);
+      toast.error("Failed to delete variant");
+    }
   };
 
   return (
@@ -167,142 +211,147 @@ export function VariantManager({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex gap-2">
-              <Button onClick={addDefaultVariants} variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Default Variants (S, M, L, XL, XXL)
-              </Button>
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Custom Variant
-              </Button>
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading variants...</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={addDefaultVariants}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Default Variants (S, M, L, XL, XXL)
+                  </Button>
+                  <Button
+                    onClick={() => setIsAddDialogOpen(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Custom Variant
+                  </Button>
+                </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Patch</TableHead>
-                  <TableHead>Sell Price</TableHead>
-                  <TableHead>Cost Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {variants.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-muted-foreground"
-                    >
-                      No variants added yet. Click - Add Default Variants - to
-                      get started.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  variants.map((variant) => (
-                    <TableRow key={variant.id}>
-                      <TableCell>
-                        <Select
-                          value={variant.size}
-                          onValueChange={(value) =>
-                            updateVariant(variant.id, {
-                              size: value as EnumSize,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="w-[100px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DEFAULT_SIZES.map((size) => (
-                              <SelectItem key={size} value={size}>
-                                {size}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={variant.patch}
-                          onValueChange={(value) =>
-                            updateVariant(variant.id, {
-                              patch: value as EnumPatch,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DEFAULT_PATCHES.map((patch) => (
-                              <SelectItem key={patch} value={patch}>
-                                {patch.replace(/_/g, " ")}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={variant.sellPrice}
-                          onChange={(e) =>
-                            updateVariant(variant.id, {
-                              sellPrice: parseFloat(e.target.value),
-                            })
-                          }
-                          className="w-[100px]"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={variant.costPrice}
-                          onChange={(e) =>
-                            updateVariant(variant.id, {
-                              costPrice: parseFloat(e.target.value),
-                            })
-                          }
-                          className="w-[100px]"
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteVariant(variant.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Patch</TableHead>
+                      <TableHead>Sell Price</TableHead>
+                      <TableHead>Cost Price</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {variants.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center text-muted-foreground"
+                        >
+                          No variants added yet. Click - Add Default Variants -
+                          to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      variants.map((variant) => (
+                        <TableRow key={variant.id}>
+                          <TableCell>
+                            <Select
+                              value={variant.size}
+                              onValueChange={(value) =>
+                                updateVariant(variant.id, {
+                                  size: value as EnumSize,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-[100px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DEFAULT_SIZES.map((size) => (
+                                  <SelectItem key={size} value={size}>
+                                    {size}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={variant.patch}
+                              onValueChange={(value) =>
+                                updateVariant(variant.id, {
+                                  patch: value as EnumPatch,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DEFAULT_PATCHES.map((patch) => (
+                                  <SelectItem key={patch} value={patch}>
+                                    {patch.replace(/_/g, " ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.sellPrice}
+                              onChange={(e) =>
+                                updateVariant(variant.id, {
+                                  sellPrice: parseFloat(e.target.value),
+                                })
+                              }
+                              className="w-[100px]"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.costPrice}
+                              onChange={(e) =>
+                                updateVariant(variant.id, {
+                                  costPrice: parseFloat(e.target.value),
+                                })
+                              }
+                              className="w-[100px]"
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteVariant(variant.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                toast.success("Variants saved successfully");
-                onOpenChange(false);
-              }}
-            >
-              Save Variants
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

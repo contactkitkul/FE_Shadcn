@@ -4,7 +4,7 @@
  * No direct Supabase access - all auth/data goes through BE_Internal
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 interface ApiRequestOptions extends RequestInit {
   requireAuth?: boolean;
@@ -18,20 +18,19 @@ export async function apiRequest<T = any>(
   options: ApiRequestOptions = {}
 ): Promise<T> {
   const { requireAuth = true, ...fetchOptions } = options;
-  
+
   // Get auth token from localStorage
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('auth_token') 
-    : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
   // Build headers
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   // Add auth token if required and available
   if (requireAuth && token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   // Merge with provided headers
@@ -47,8 +46,16 @@ export async function apiRequest<T = any>(
 
   // Handle errors
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ 
-      message: response.statusText 
+    // If 401, clear token and redirect to login
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        window.location.href = "/login";
+      }
+    }
+
+    const error = await response.json().catch(() => ({
+      message: response.statusText,
     }));
     throw new Error(error.message || `API Error: ${response.status}`);
   }
@@ -66,19 +73,19 @@ export const auth = {
    */
   login: async (email: string, password: string) => {
     const response = await apiRequest<{ token: string; user: any }>(
-      '/auth/login',
+      "/auth/login",
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ email, password }),
         requireAuth: false,
       }
     );
-    
+
     // Store token
     if (response.token) {
-      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem("auth_token", response.token);
     }
-    
+
     return response;
   },
 
@@ -86,20 +93,22 @@ export const auth = {
    * Logout
    */
   logout: () => {
-    localStorage.removeItem('auth_token');
-    window.location.href = '/login';
+    localStorage.removeItem("auth_token");
+    window.location.href = "/login";
   },
 
   /**
    * Get current user
    */
-  getUser: () => apiRequest<{ user: any }>('/auth/me'),
+  getUser: () => apiRequest<{ user: any }>("/auth/me"),
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated: () => {
-    return typeof window !== 'undefined' && !!localStorage.getItem('auth_token');
+    return (
+      typeof window !== "undefined" && !!localStorage.getItem("auth_token")
+    );
   },
 };
 
@@ -110,24 +119,23 @@ export const products = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/products?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/products/${id}`),
+  getById: (id: string) => apiRequest(`/admin/products/${id}`),
 
   create: (data: any) =>
-    apiRequest('/admin/products', {
-      method: 'POST',
+    apiRequest("/admin/products", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: any) =>
     apiRequest(`/admin/products/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
     apiRequest(`/admin/products/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }),
 };
 
@@ -138,12 +146,11 @@ export const orders = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/orders?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/orders/${id}`),
+  getById: (id: string) => apiRequest(`/admin/orders/${id}`),
 
   updateStatus: (id: string, status: string) =>
     apiRequest(`/admin/orders/${id}/status`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ status }),
     }),
 };
@@ -155,8 +162,7 @@ export const customers = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/customers?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/customers/${id}`),
+  getById: (id: string) => apiRequest(`/admin/customers/${id}`),
 };
 
 /**
@@ -166,24 +172,23 @@ export const discounts = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/discounts?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/discounts/${id}`),
+  getById: (id: string) => apiRequest(`/admin/discounts/${id}`),
 
   create: (data: any) =>
-    apiRequest('/admin/discounts', {
-      method: 'POST',
+    apiRequest("/admin/discounts", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: any) =>
     apiRequest(`/admin/discounts/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
     apiRequest(`/admin/discounts/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }),
 };
 
@@ -194,12 +199,11 @@ export const shipments = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/shipments?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/shipments/${id}`),
+  getById: (id: string) => apiRequest(`/admin/shipments/${id}`),
 
   updateTracking: (id: string, trackingNumber: string, carrier: string) =>
     apiRequest(`/admin/shipments/${id}/tracking`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ trackingNumber, carrier }),
     }),
 };
@@ -211,8 +215,7 @@ export const payments = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/payments?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/payments/${id}`),
+  getById: (id: string) => apiRequest(`/admin/payments/${id}`),
 };
 
 /**
@@ -222,12 +225,11 @@ export const refunds = {
   getAll: (params?: Record<string, any>) =>
     apiRequest(`/admin/refunds?${new URLSearchParams(params)}`),
 
-  getById: (id: string) =>
-    apiRequest(`/admin/refunds/${id}`),
+  getById: (id: string) => apiRequest(`/admin/refunds/${id}`),
 
   create: (data: any) =>
-    apiRequest('/admin/refunds', {
-      method: 'POST',
+    apiRequest("/admin/refunds", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };
@@ -236,8 +238,7 @@ export const refunds = {
  * Analytics API
  */
 export const analytics = {
-  getDashboard: () =>
-    apiRequest('/admin/analytics/dashboard'),
+  getDashboard: () => apiRequest("/admin/analytics/dashboard"),
 
   getSales: (params?: Record<string, any>) =>
     apiRequest(`/admin/analytics/sales?${new URLSearchParams(params)}`),
