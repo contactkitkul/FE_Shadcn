@@ -66,7 +66,6 @@ import {
   getAllTeams,
   getLeagueForTeam,
   formatTeamName,
-  getTeamIdentifier,
 } from "@/lib/team-league-mapping";
 import { VariantManager } from "@/components/products/variant-manager";
 import { api } from "@/lib/api";
@@ -147,75 +146,6 @@ export default function ProductsPage() {
   }, [sortColumn, sortDirection, debouncedSearch]);
 
   // Auto-generation functions
-  const generateSKU = async (team: string, year: string): Promise<string> => {
-    // Generate SKU format: MANU250001 (team identifier + last 2 digits of year + 4-digit sequential)
-    // Uses /api/products/validate-sku endpoint for sequential numbering per team-year
-
-    try {
-      const response = await api.products.validateSKU(team, year);
-      if (response.success && response.data.sku) {
-        return response.data.sku; // Returns: MANU250001, MANU250002, etc.
-      }
-    } catch (error) {
-      console.error("Failed to validate SKU from API:", error);
-
-      // Fallback: Use old endpoint
-      try {
-        const teamIdentifier = getTeamIdentifier(team);
-        const yearCode = year.substring(year.length - 2); // Last 2 digits
-        const fallbackResponse = await api.products.generateSKU();
-
-        if (fallbackResponse.success && fallbackResponse.data.sku) {
-          const randomPart = fallbackResponse.data.sku.substring(
-            fallbackResponse.data.sku.length - 4
-          );
-          return `${teamIdentifier}${yearCode}${randomPart}`;
-        }
-      } catch (fallbackError) {
-        console.error("Fallback SKU generation failed:", fallbackError);
-      }
-    }
-
-    // Final fallback: generate random SKU
-    const teamIdentifier = getTeamIdentifier(team);
-    const yearCode = year.substring(year.length - 2);
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `${teamIdentifier}${yearCode}${randomNum}`;
-  };
-
-  const getTeamIdentifier = (team: string): string => {
-    // Create 4-letter team identifiers
-    const teamMap: Record<string, string> = {
-      REAL_MADRID: "REAL",
-      FC_BARCELONA: "BARCA",
-      MANCHESTER_UNITED: "MANU",
-      MANCHESTER_CITY: "MACI",
-      LIVERPOOL: "LIVE",
-      CHELSEA: "CHEL",
-      ARSENAL: "ARSE",
-      TOTTENHAM: "TOTT",
-      BAYERN_MUNICH: "BAYE",
-      BORUSSIA_DORTMUND: "DORT",
-      JUVENTUS: "JUVE",
-      AC_MILAN: "MILA",
-      INTER_MILAN: "INTE",
-      PSG: "PSG_",
-      ATLETICO_MADRID: "ATLE",
-    };
-    return teamMap[team] || team.substring(0, 4).toUpperCase();
-  };
-
-  const getLeagueIdentifier = (league: EnumLeague): string => {
-    const leagueMap: Record<string, string> = {
-      PREMIER_LEAGUE: "PL",
-      LA_LIGA: "LL",
-      BUNDESLIGA: "BL",
-      SERIE_A: "SA",
-      LIGUE_1: "L1",
-    };
-    return leagueMap[league] || "XX";
-  };
-
   const generateProductName = (
     team: string,
     year: string,
@@ -241,20 +171,6 @@ export default function ProductsPage() {
         const nextYear = yearNum + 1;
         newFormData.yearEnd = nextYear % 100;
       }
-    }
-
-    // Auto-generate SKU when team or year changes (only for complete years)
-    if (
-      (field === "team" || field === "year") &&
-      newFormData.team &&
-      newFormData.year &&
-      newFormData.year.length === 4
-    ) {
-      const generatedSKU = await generateSKU(
-        newFormData.team,
-        newFormData.year
-      );
-      newFormData.sku = generatedSKU;
     }
 
     // Auto-generate name when key fields change (only for complete data)
@@ -546,9 +462,7 @@ export default function ProductsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="sku">
                       SKU{" "}
-                      <span className="text-muted-foreground">
-                        (Auto-generated, editable)
-                      </span>
+                      <span className="text-muted-foreground">(Required)</span>
                     </Label>
                     <Input
                       id="sku"
