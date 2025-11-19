@@ -102,7 +102,7 @@ export default function ProductsPage() {
     league: "",
     homeAway: "HOME" as EnumHomeAway,
     status: "ACTIVE" as EnumProductStatus,
-    shirtType: "NORMAL" as EnumShirtType,
+    shirtType: "FAN" as EnumShirtType,
     productType: "SHIRT" as EnumProductType,
   });
   const [variantManagerOpen, setVariantManagerOpen] = useState(false);
@@ -292,7 +292,7 @@ export default function ProductsPage() {
       league: "",
       homeAway: "HOME" as EnumHomeAway,
       status: "ACTIVE" as EnumProductStatus,
-      shirtType: "NORMAL" as EnumShirtType,
+      shirtType: "FAN" as EnumShirtType,
       productType: "SHIRT" as EnumProductType,
     });
     setSelectedTeam("");
@@ -394,7 +394,7 @@ export default function ProductsPage() {
       homeAway: (product.homeAway as EnumHomeAway) || ("HOME" as EnumHomeAway),
       status: product.productStatus,
       shirtType:
-        (product.shirtType as EnumShirtType) || ("NORMAL" as EnumShirtType),
+        (product.shirtType as EnumShirtType) || ("FAN" as EnumShirtType),
       productType: product.productType,
     });
     setSelectedTeam((product.team as string) || "");

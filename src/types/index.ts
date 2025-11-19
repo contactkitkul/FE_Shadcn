@@ -77,7 +77,7 @@ export enum EnumSize {
 }
 
 export enum EnumShirtType {
-  NORMAL = "NORMAL",
+  FAN = "FAN",
   KID = "KID",
   PLAYER = "PLAYER",
   RETRO = "RETRO",

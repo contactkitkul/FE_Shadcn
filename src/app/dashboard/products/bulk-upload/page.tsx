@@ -107,9 +107,9 @@ export default function BulkUploadPage() {
 
   const downloadTemplate = () => {
     const template = `team,homeAway,year,shirtType,productType
-Manchester_United_FC,HOME,2025,NORMAL,SHIRT
+Manchester_United_FC,HOME,2025,FAN,SHIRT
 Real_Madrid_CF,AWAY,2025,PLAYER,SHIRT
-Chelsea_FC,THIRD,2025,NORMAL,SHIRT`;
+Chelsea_FC,THIRD,2025,FAN,SHIRT`;
 
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -214,7 +214,7 @@ Chelsea_FC,THIRD,2025,NORMAL,SHIRT`;
                     <strong>year</strong> - 4-digit year (e.g., 2025)
                   </li>
                   <li>
-                    <strong>shirtType</strong> - NORMAL, PLAYER, or RETRO
+                    <strong>shirtType</strong> - FAN, PLAYER, or RETRO
                   </li>
                   <li>
                     <strong>productType</strong> - SHIRT
@@ -224,7 +224,7 @@ Chelsea_FC,THIRD,2025,NORMAL,SHIRT`;
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-2">Example Row</h4>
                 <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
-                  Manchester_United_FC,HOME,2025,NORMAL,SHIRT
+                  Manchester_United_FC,HOME,2025,FAN,SHIRT
                 </div>
               </div>
               <div className="border-t pt-4">
