@@ -764,7 +764,7 @@ export default function OrderDetailPage({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>€0.00</span>
+                  <span>€19.90</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">

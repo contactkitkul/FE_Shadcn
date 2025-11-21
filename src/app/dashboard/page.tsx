@@ -41,7 +41,9 @@ interface DashboardStats {
 export default function DashboardPage() {
   const router = useRouter();
   const [dateFilter, setDateFilter] = useState<string>("7days");
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
+  const [customDateRange, setCustomDateRange] = useState<
+    DateRange | undefined
+  >();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -88,7 +90,7 @@ export default function DashboardPage() {
       setLoading(true);
       const { startDate, endDate } = getDateRange();
       const response = await api.dashboard.getStats(startDate, endDate);
-      
+
       if (response.success) {
         setStats(response.data);
       } else {
@@ -125,9 +127,10 @@ export default function DashboardPage() {
   };
 
   // Calculate pending orders count
-  const pendingOrdersCount = stats?.ordersByStatus?.find(
-    (s) => s.status === "RECEIVED" || s.status === "PROCESSING"
-  )?.count || 0;
+  const pendingOrdersCount =
+    stats?.ordersByStatus?.find(
+      (s) => s.status === "RECEIVED" || s.status === "PROCESSING"
+    )?.count || 0;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -170,7 +173,7 @@ export default function DashboardPage() {
             Month to Date
           </Button>
 
-          <CalendarDateRangePicker 
+          <CalendarDateRangePicker
             date={customDateRange}
             onDateChange={handleCustomDateChange}
           />
@@ -215,7 +218,8 @@ export default function DashboardPage() {
                     €{stats?.totalRevenue?.toFixed(2) || "0.00"}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Avg: €{stats?.averageOrderValue?.toFixed(2) || "0.00"} per order
+                    Avg: €{stats?.averageOrderValue?.toFixed(2) || "0.00"} per
+                    order
                   </p>
                 </div>
                 <DollarSign className="h-5 w-5 text-gray-400" />
@@ -236,9 +240,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold text-gray-900">
                     {stats?.totalOrders || 0}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    In selected period
-                  </p>
+                  <p className="text-xs text-gray-500">In selected period</p>
                 </div>
                 <ShoppingCart className="h-5 w-5 text-gray-400" />
               </div>
@@ -252,13 +254,13 @@ export default function DashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Products
+                  </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats?.totalProducts || 0}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    Active products
-                  </p>
+                  <p className="text-xs text-gray-500">Active products</p>
                 </div>
                 <Package className="h-5 w-5 text-gray-400" />
               </div>
@@ -292,7 +294,9 @@ export default function DashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Customers</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Customers
+                  </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats?.totalCustomers || 0}
                   </p>

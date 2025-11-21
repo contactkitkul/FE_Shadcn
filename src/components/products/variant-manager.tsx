@@ -428,7 +428,7 @@ export function VariantManager({
                   name="costPrice"
                   type="number"
                   step="0.01"
-                  defaultValue="10.00"
+                  defaultValue="19.90"
                   required
                 />
               </div>
