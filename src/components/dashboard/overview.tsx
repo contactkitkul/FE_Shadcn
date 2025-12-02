@@ -13,11 +13,16 @@ interface OverviewProps {
   isComparison?: boolean;
 }
 
-export function Overview({ data: apiData, dateFilter = "7days", dashboardType = "days", isComparison = false }: OverviewProps) {
+export function Overview({
+  data: apiData,
+  dateFilter = "7days",
+  dashboardType = "days",
+  isComparison = false,
+}: OverviewProps) {
   const generateData = () => {
     // If real data is provided, use it
     if (apiData && apiData.length > 0) {
-      return apiData.map(item => ({
+      return apiData.map((item) => ({
         name: format(new Date(item.date), "MMM dd"),
         revenue: item.revenue,
         orders: item.orders,
@@ -33,7 +38,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
     let periods = 14;
     let dateFormat = "MMM dd";
     let subtractFn = subDays;
-    
+
     // Determine periods based on filter and type
     if (dashboardType === "months") {
       // Always show 6 months for monthly view
@@ -55,7 +60,10 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
         case "mtd":
           const monthStart = startOfMonth(new Date());
           const today = new Date();
-          periods = Math.ceil((today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          periods =
+            Math.ceil(
+              (today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)
+            ) + 1;
           break;
         default:
           periods = 7;
@@ -69,7 +77,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
       const baseRevenue = dashboardType === "months" ? 15000 : 1000;
       const baseOrders = dashboardType === "months" ? 500 : 50;
       const baseShirts = dashboardType === "months" ? 800 : 80;
-      
+
       mockData.push({
         date: format(date, dateFormat),
         revenue: Math.floor(Math.random() * baseRevenue + baseRevenue),
@@ -83,12 +91,12 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
   const generateComparisonData = () => {
     const currentData = generateData();
     const comparisonData = [];
-    
+
     // For days view, generate comparison data (same period but 30 days before)
     if (dashboardType === "days") {
       const periods = currentData.length;
       const offset = 30; // 30 days before
-      
+
       for (let i = periods - 1; i >= 0; i--) {
         const date = subDays(new Date(), i + offset);
         comparisonData.push({
@@ -99,17 +107,17 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
         });
       }
     }
-    
+
     return { currentData, comparisonData };
   };
 
   const { currentData, comparisonData } = generateComparisonData();
-  
+
   // For Recent Days Performance: show current period data + comparison lines
   // For Comparison Analysis (months): show only monthly data
   let data;
   let showBothPeriods = false;
-  
+
   if (dashboardType === "months") {
     // Monthly data for Comparison Analysis
     data = currentData;
@@ -119,7 +127,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
     data = currentData;
     showBothPeriods = !isComparison; // Show comparison lines only for Recent Days Performance
   }
-  
+
   const maxRevenue = Math.max(...data.map((d) => d.revenue));
   const maxOrders = Math.max(...data.map((d) => d.orders));
   const maxShirts = Math.max(...data.map((d) => d.shirts));
@@ -128,24 +136,40 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
   const createLinePath = (dataPoints: number[], max: number) => {
     return dataPoints
       .map((point, index) => {
-        const x = 50 + (index * 300) / (dataPoints.length - 1);
+        const x = 20 + (index * 300) / (dataPoints.length - 1);
         const y = 170 - (point / max) * 150;
-        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+        return `${index === 0 ? "M" : "L"} ${x} ${y}`;
       })
-      .join(' ');
+      .join(" ");
   };
 
-  const ordersPath = createLinePath(data.map(d => d.orders), maxOrders);
-  const shirtsPath = createLinePath(data.map(d => d.shirts), maxShirts);
-  
+  const ordersPath = createLinePath(
+    data.map((d) => d.orders),
+    maxOrders
+  );
+  const shirtsPath = createLinePath(
+    data.map((d) => d.shirts),
+    maxShirts
+  );
+
   // Create comparison paths if showing both periods
-  let comparisonOrdersPath = '';
-  let comparisonShirtsPath = '';
+  let comparisonOrdersPath = "";
+  let comparisonShirtsPath = "";
   if (showBothPeriods && comparisonData.length > 0) {
-    const maxComparisonOrders = Math.max(...comparisonData.map(d => d.orders));
-    const maxComparisonShirts = Math.max(...comparisonData.map(d => d.shirts));
-    comparisonOrdersPath = createLinePath(comparisonData.map(d => d.orders), maxComparisonOrders);
-    comparisonShirtsPath = createLinePath(comparisonData.map(d => d.shirts), maxComparisonShirts);
+    const maxComparisonOrders = Math.max(
+      ...comparisonData.map((d) => d.orders)
+    );
+    const maxComparisonShirts = Math.max(
+      ...comparisonData.map((d) => d.shirts)
+    );
+    comparisonOrdersPath = createLinePath(
+      comparisonData.map((d) => d.orders),
+      maxComparisonOrders
+    );
+    comparisonShirtsPath = createLinePath(
+      comparisonData.map((d) => d.shirts),
+      maxComparisonShirts
+    );
   }
 
   return (
@@ -153,11 +177,14 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
       <svg className="w-full h-full" viewBox="0 0 400 200">
         {/* Revenue Columns */}
         {data.map((item, index) => {
-          const barWidth = 300 / data.length * 0.6;
-          const barX = 50 + (index * 300) / data.length + (300 / data.length - barWidth) / 2;
+          const barWidth = (300 / data.length) * 0.6;
+          const barX =
+            20 +
+            (index * 300) / data.length +
+            (300 / data.length - barWidth) / 2;
           const barHeight = (item.revenue / maxRevenue) * 150;
           const barY = 170 - barHeight;
-          
+
           return (
             <rect
               key={`bar-${index}`}
@@ -173,57 +200,35 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
             </rect>
           );
         })}
-        
+
         {/* Current Period Orders Line */}
-        <path
-          d={ordersPath}
-          stroke="#3b82f6"
-          strokeWidth="2"
-          fill="none"
-        />
-        
+        <path d={ordersPath} stroke="#3b82f6" strokeWidth="2" fill="none" />
+
         {/* Current Period Orders Points */}
         {data.map((item, index) => {
-          const x = 50 + (index * 300) / (data.length - 1);
+          const x = 20 + (index * 300) / (data.length - 1);
           const y = 170 - (item.orders / maxOrders) * 150;
           return (
-            <circle
-              key={`orders-${index}`}
-              cx={x}
-              cy={y}
-              r="3"
-              fill="#3b82f6"
-            >
+            <circle key={`orders-${index}`} cx={x} cy={y} r="3" fill="#3b82f6">
               <title>Orders: {item.orders}</title>
             </circle>
           );
         })}
-        
+
         {/* Current Period Shirts Line */}
-        <path
-          d={shirtsPath}
-          stroke="#10b981"
-          strokeWidth="2"
-          fill="none"
-        />
-        
+        <path d={shirtsPath} stroke="#10b981" strokeWidth="2" fill="none" />
+
         {/* Current Period Shirts Points */}
         {data.map((item, index) => {
-          const x = 50 + (index * 300) / (data.length - 1);
+          const x = 20 + (index * 300) / (data.length - 1);
           const y = 170 - (item.shirts / maxShirts) * 150;
           return (
-            <circle
-              key={`shirts-${index}`}
-              cx={x}
-              cy={y}
-              r="3"
-              fill="#10b981"
-            >
+            <circle key={`shirts-${index}`} cx={x} cy={y} r="3" fill="#10b981">
               <title>Shirts: {item.shirts}</title>
             </circle>
           );
         })}
-        
+
         {/* Comparison Period Lines (if showing both periods) */}
         {showBothPeriods && comparisonData.length > 0 && (
           <>
@@ -236,11 +241,15 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
               strokeDasharray="5,5"
               opacity="0.6"
             />
-            
+
             {/* Comparison Orders Points */}
             {comparisonData.map((item, index) => {
-              const x = 50 + (index * 300) / (comparisonData.length - 1);
-              const y = 170 - (item.orders / Math.max(...comparisonData.map(d => d.orders))) * 150;
+              const x = 20 + (index * 300) / (comparisonData.length - 1);
+              const y =
+                170 -
+                (item.orders /
+                  Math.max(...comparisonData.map((d) => d.orders))) *
+                  150;
               return (
                 <circle
                   key={`comp-orders-${index}`}
@@ -254,7 +263,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
                 </circle>
               );
             })}
-            
+
             {/* Comparison Shirts Line */}
             <path
               d={comparisonShirtsPath}
@@ -264,11 +273,15 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
               strokeDasharray="5,5"
               opacity="0.6"
             />
-            
+
             {/* Comparison Shirts Points */}
             {comparisonData.map((item, index) => {
-              const x = 50 + (index * 300) / (comparisonData.length - 1);
-              const y = 170 - (item.shirts / Math.max(...comparisonData.map(d => d.shirts))) * 150;
+              const x = 20 + (index * 300) / (comparisonData.length - 1);
+              const y =
+                170 -
+                (item.shirts /
+                  Math.max(...comparisonData.map((d) => d.shirts))) *
+                  150;
               return (
                 <circle
                   key={`comp-shirts-${index}`}
@@ -284,10 +297,10 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
             })}
           </>
         )}
-        
+
         {/* X-axis labels */}
         {data.map((item, index) => {
-          const x = 50 + (index * 300) / (data.length - 1);
+          const x = 20 + (index * 300) / (data.length - 1);
           return (
             <text
               key={`label-${index}`}
@@ -297,7 +310,7 @@ export function Overview({ data: apiData, dateFilter = "7days", dashboardType = 
               className="text-xs fill-gray-500"
               transform={`rotate(-45 ${x} 190)`}
             >
-              {'date' in item ? item.date : item.name}
+              {"date" in item ? item.date : item.name}
             </text>
           );
         })}

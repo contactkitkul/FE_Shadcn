@@ -3,23 +3,32 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (BYPASS_AUTH) {
+      // Dev bypass: treat as authenticated without checking localStorage
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      return;
+    }
+
     // Check if user is logged in
-    const user = localStorage.getItem('user');
-    
+    const user = localStorage.getItem("user");
+
     if (!user) {
       // Not logged in, redirect to login
-      router.push('/login');
+      router.push("/login");
     } else {
       // Logged in, allow access
       setIsAuthenticated(true);
     }
-    
+
     setIsLoading(false);
   }, [router]);
 

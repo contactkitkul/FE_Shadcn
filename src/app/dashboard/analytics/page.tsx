@@ -208,7 +208,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Revenue Trend</CardTitle>
-              <CardDescription>Monthly revenue and order volume</CardDescription>
+              {/* <CardDescription>Monthly revenue and order volume</CardDescription> */}
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
@@ -245,7 +245,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Sales by League</CardTitle>
-                <CardDescription>Distribution of sales across leagues</CardDescription>
+                <CardDescription>
+                  Distribution of sales across leagues
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -367,7 +369,10 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="space-y-4">
                 {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold">
                         {index + 1}
@@ -380,7 +385,9 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">€{product.revenue.toLocaleString()}</p>
+                      <p className="font-semibold">
+                        €{product.revenue.toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -399,7 +406,9 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">11,500</div>
-                <p className="text-xs text-muted-foreground">+19% from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  +19% from last month
+                </p>
               </CardContent>
             </Card>
 
@@ -411,7 +420,9 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">2.3</div>
-                <p className="text-xs text-muted-foreground">+0.2 from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  +0.2 from last month
+                </p>
               </CardContent>
             </Card>
 
@@ -496,7 +507,9 @@ export default function AnalyticsPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{customerMetrics.total}</div>
+                <div className="text-2xl font-bold">
+                  {customerMetrics.total}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   +{customerMetrics.new} this month
                 </p>
@@ -552,7 +565,10 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="space-y-4">
                 {customerMetrics.topCustomers.map((customer, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold">
                         {customer.name.charAt(0)}
@@ -584,16 +600,16 @@ export default function AnalyticsPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{inventoryMetrics.totalProducts}</div>
+                <div className="text-2xl font-bold">
+                  {inventoryMetrics.totalProducts}
+                </div>
                 <p className="text-xs text-muted-foreground">Active SKUs</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Low Stock
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>

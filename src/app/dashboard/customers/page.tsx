@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,60 +16,75 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Search, Users, Eye, ShoppingBag, Calendar, Edit, ArrowUpDown, ArrowUp, ArrowDown, Check, X } from "lucide-react"
-import { Customer } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
-import { format } from "date-fns"
-import { api } from "@/lib/api"
-import { useDebounce } from "@/hooks/useDebounce"
-import { getEntityMessages } from "@/config/messages"
-import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Users,
+  Eye,
+  ShoppingBag,
+  Calendar,
+  Edit,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  X,
+} from "lucide-react";
+import { Customer } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
+import { getEntityMessages } from "@/config/messages";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
-interface CustomerWithOrders extends Omit<Customer, 'countryCode'> {
-  orderCount: number
-  totalSpent: number
-  lastOrderDate?: Date
-  email: string
-  countryId: string
+interface CustomerWithOrders extends Omit<Customer, "countryCode"> {
+  orderCount: number;
+  totalSpent: number;
+  lastOrderDate?: Date;
+  email: string;
+  countryId: string;
   country: {
-    name: string
-    countryCode: string
-  }
-  createdAt: Date
-  updatedAt: Date
+    name: string;
+    countryCode: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
   orders?: Array<{
-    id: string
-    orderID: string
-    date: Date
-    amount: number
-    status: string
-  }>
+    id: string;
+    orderID: string;
+    date: Date;
+    amount: number;
+    status: string;
+  }>;
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<CustomerWithOrders[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const debouncedSearch = useDebounce(searchTerm, 500)
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithOrders | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [sortColumn, setSortColumn] = useState<string>("createdAt")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [editingCustomer, setEditingCustomer] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState<{firstName: string, lastName: string, email: string}>(
-    {firstName: "", lastName: "", email: ""}
-  )
+  const [customers, setCustomers] = useState<CustomerWithOrders[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerWithOrders | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+  }>({ firstName: "", lastName: "", email: "" });
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -86,11 +101,11 @@ export default function CustomersPage() {
       if (response.success) {
         setCustomers(response.data.data || []);
       } else {
-        toast.error(getEntityMessages('customers').loadError);
+        toast.error(getEntityMessages("customers").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching customers:", error);
-      toast.error(error.message || getEntityMessages('customers').loadError);
+      toast.error(error.message || getEntityMessages("customers").loadError);
     } finally {
       setLoading(false);
     }
@@ -113,20 +128,50 @@ export default function CustomersPage() {
           countryId: "1",
           country: {
             name: "United Kingdom",
-            countryCode: "GB"
+            countryCode: "GB",
           },
           email: "john.doe@example.com",
           createdAt: new Date("2024-10-01"),
           updatedAt: new Date(),
           orderCount: 5,
-          totalSpent: 245.50,
+          totalSpent: 245.5,
           lastOrderDate: new Date("2024-11-10"),
           orders: [
-            { id: "o1", orderID: "FUTGY@44615", date: new Date("2024-11-10"), amount: 45.50, status: "FULFILLED" },
-            { id: "o2", orderID: "FUTGY@44610", date: new Date("2024-11-05"), amount: 52.00, status: "FULFILLED" },
-            { id: "o3", orderID: "FUTGY@44605", date: new Date("2024-10-28"), amount: 38.00, status: "FULFILLED" },
-            { id: "o4", orderID: "FUTGY@44600", date: new Date("2024-10-15"), amount: 60.00, status: "FULFILLED" },
-            { id: "o5", orderID: "FUTGY@44595", date: new Date("2024-10-01"), amount: 50.00, status: "FULFILLED" },
+            {
+              id: "o1",
+              orderID: "FUTGY@44615",
+              date: new Date("2024-11-10"),
+              amount: 45.5,
+              status: "FULFILLED",
+            },
+            {
+              id: "o2",
+              orderID: "FUTGY@44610",
+              date: new Date("2024-11-05"),
+              amount: 52.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o3",
+              orderID: "FUTGY@44605",
+              date: new Date("2024-10-28"),
+              amount: 38.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o4",
+              orderID: "FUTGY@44600",
+              date: new Date("2024-10-15"),
+              amount: 60.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o5",
+              orderID: "FUTGY@44595",
+              date: new Date("2024-10-01"),
+              amount: 50.0,
+              status: "FULFILLED",
+            },
           ],
         },
         {
@@ -137,18 +182,36 @@ export default function CustomersPage() {
           countryId: "1",
           country: {
             name: "United Kingdom",
-            countryCode: "GB"
+            countryCode: "GB",
           },
           email: "jane.smith@example.com",
           createdAt: new Date("2024-09-15"),
           updatedAt: new Date(),
           orderCount: 3,
-          totalSpent: 128.90,
+          totalSpent: 128.9,
           lastOrderDate: new Date("2024-11-08"),
           orders: [
-            { id: "o6", orderID: "FUTGY@44612", date: new Date("2024-11-08"), amount: 42.90, status: "FULFILLED" },
-            { id: "o7", orderID: "FUTGY@44608", date: new Date("2024-10-22"), amount: 46.00, status: "FULFILLED" },
-            { id: "o8", orderID: "FUTGY@44602", date: new Date("2024-10-10"), amount: 40.00, status: "FULFILLED" },
+            {
+              id: "o6",
+              orderID: "FUTGY@44612",
+              date: new Date("2024-11-08"),
+              amount: 42.9,
+              status: "FULFILLED",
+            },
+            {
+              id: "o7",
+              orderID: "FUTGY@44608",
+              date: new Date("2024-10-22"),
+              amount: 46.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o8",
+              orderID: "FUTGY@44602",
+              date: new Date("2024-10-10"),
+              amount: 40.0,
+              status: "FULFILLED",
+            },
           ],
         },
         {
@@ -159,16 +222,22 @@ export default function CustomersPage() {
           countryId: "2",
           country: {
             name: "United States",
-            countryCode: "US"
+            countryCode: "US",
           },
           email: "michael.johnson@example.com",
           createdAt: new Date("2024-11-01"),
           updatedAt: new Date(),
           orderCount: 1,
-          totalSpent: 55.00,
+          totalSpent: 55.0,
           lastOrderDate: new Date("2024-11-11"),
           orders: [
-            { id: "o9", orderID: "FUTGY@44613", date: new Date("2024-11-11"), amount: 55.00, status: "RECEIVED" },
+            {
+              id: "o9",
+              orderID: "FUTGY@44613",
+              date: new Date("2024-11-11"),
+              amount: 55.0,
+              status: "RECEIVED",
+            },
           ],
         },
         {
@@ -179,22 +248,64 @@ export default function CustomersPage() {
           countryId: "2",
           country: {
             name: "United States",
-            countryCode: "US"
+            countryCode: "US",
           },
           email: "emily.williams@example.com",
           createdAt: new Date("2024-10-20"),
           updatedAt: new Date(),
           orderCount: 7,
-          totalSpent: 385.00,
+          totalSpent: 385.0,
           lastOrderDate: new Date("2024-11-09"),
           orders: [
-            { id: "o10", orderID: "FUTGY@44611", date: new Date("2024-11-09"), amount: 48.00, status: "FULFILLED" },
-            { id: "o11", orderID: "FUTGY@44609", date: new Date("2024-11-02"), amount: 52.00, status: "FULFILLED" },
-            { id: "o12", orderID: "FUTGY@44607", date: new Date("2024-10-25"), amount: 55.00, status: "FULFILLED" },
-            { id: "o13", orderID: "FUTGY@44604", date: new Date("2024-10-18"), amount: 60.00, status: "FULFILLED" },
-            { id: "o14", orderID: "FUTGY@44601", date: new Date("2024-10-12"), amount: 45.00, status: "FULFILLED" },
-            { id: "o15", orderID: "FUTGY@44598", date: new Date("2024-10-05"), amount: 65.00, status: "FULFILLED" },
-            { id: "o16", orderID: "FUTGY@44595", date: new Date("2024-09-28"), amount: 60.00, status: "FULFILLED" },
+            {
+              id: "o10",
+              orderID: "FUTGY@44611",
+              date: new Date("2024-11-09"),
+              amount: 48.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o11",
+              orderID: "FUTGY@44609",
+              date: new Date("2024-11-02"),
+              amount: 52.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o12",
+              orderID: "FUTGY@44607",
+              date: new Date("2024-10-25"),
+              amount: 55.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o13",
+              orderID: "FUTGY@44604",
+              date: new Date("2024-10-18"),
+              amount: 60.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o14",
+              orderID: "FUTGY@44601",
+              date: new Date("2024-10-12"),
+              amount: 45.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o15",
+              orderID: "FUTGY@44598",
+              date: new Date("2024-10-05"),
+              amount: 65.0,
+              status: "FULFILLED",
+            },
+            {
+              id: "o16",
+              orderID: "FUTGY@44595",
+              date: new Date("2024-09-28"),
+              amount: 60.0,
+              status: "FULFILLED",
+            },
           ],
         },
       ];
@@ -205,53 +316,55 @@ export default function CustomersPage() {
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      setSortColumn(column)
-      setSortDirection("asc")
+      setSortColumn(column);
+      setSortDirection("asc");
     }
-  }
+  };
 
   const getSortIcon = (column: string) => {
     if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
     return sortDirection === "asc" ? (
       <ArrowUp className="ml-2 h-4 w-4" />
     ) : (
       <ArrowDown className="ml-2 h-4 w-4" />
-    )
-  }
+    );
+  };
 
   const handleEdit = (customer: CustomerWithOrders) => {
-    setEditingCustomer(customer.id)
+    setEditingCustomer(customer.id);
     setEditValues({
       firstName: customer.firstName,
       lastName: customer.lastName || "",
       email: customer.email,
-    })
-  }
+    });
+  };
 
   const handleSaveEdit = (customerId: string) => {
-    setCustomers(customers.map(customer => 
-      customer.id === customerId 
-        ? { 
-            ...customer, 
-            firstName: editValues.firstName,
-            lastName: editValues.lastName,
-            email: editValues.email,
-            updatedAt: new Date()
-          }
-        : customer
-    ))
-    setEditingCustomer(null)
-    toast.success("Customer updated successfully")
-  }
+    setCustomers(
+      customers.map((customer) =>
+        customer.id === customerId
+          ? {
+              ...customer,
+              firstName: editValues.firstName,
+              lastName: editValues.lastName,
+              email: editValues.email,
+              updatedAt: new Date(),
+            }
+          : customer
+      )
+    );
+    setEditingCustomer(null);
+    toast.success("Customer updated successfully");
+  };
 
   const handleCancelEdit = () => {
-    setEditingCustomer(null)
-    setEditValues({firstName: "", lastName: "", email: ""})
-  }
+    setEditingCustomer(null);
+    setEditValues({ firstName: "", lastName: "", email: "" });
+  };
 
   const filteredAndSortedCustomers = customers
     .filter(
@@ -262,39 +375,37 @@ export default function CustomersPage() {
         customer.phone.includes(searchTerm)
     )
     .sort((a, b) => {
-      let aValue: any = a[sortColumn as keyof CustomerWithOrders]
-      let bValue: any = b[sortColumn as keyof CustomerWithOrders]
+      let aValue: any = a[sortColumn as keyof CustomerWithOrders];
+      let bValue: any = b[sortColumn as keyof CustomerWithOrders];
 
       if (sortColumn === "createdAt" || sortColumn === "lastOrderDate") {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
       }
 
       if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase()
-        bValue = bValue.toLowerCase()
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
       }
 
       if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1
+        return aValue > bValue ? 1 : -1;
       } else {
-        return aValue < bValue ? 1 : -1
+        return aValue < bValue ? 1 : -1;
       }
-    })
+    });
 
   const handleViewDetails = (customer: CustomerWithOrders) => {
-    setSelectedCustomer(customer)
-    setIsDetailOpen(true)
-  }
+    setSelectedCustomer(customer);
+    setIsDetailOpen(true);
+  };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-          <p className="text-muted-foreground">
-            Manage your customer database
-          </p>
+          <p className="text-muted-foreground">Manage your customer database</p>
         </div>
       </div>
 
@@ -302,31 +413,45 @@ export default function CustomersPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Customers
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{customers.length}</div>
-            <p className="text-xs text-muted-foreground">+15% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              +15% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Customers
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.floor(customers.length * 0.7)}</div>
-            <p className="text-xs text-muted-foreground">Made purchase in last 30 days</p>
+            <div className="text-2xl font-bold">
+              {Math.floor(customers.length * 0.7)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Made purchase in last 30 days
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              New This Month
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.floor(customers.length * 0.2)}</div>
+            <div className="text-2xl font-bold">
+              {Math.floor(customers.length * 0.2)}
+            </div>
             <p className="text-xs text-muted-foreground">First-time buyers</p>
           </CardContent>
         </Card>
@@ -337,7 +462,9 @@ export default function CustomersPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Customer Directory</CardTitle>
-              <CardDescription>View and manage customer information</CardDescription>
+              {/* <CardDescription> */}
+              {/* View and manage customer information */}
+              {/* </CardDescription> */}
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -376,41 +503,56 @@ export default function CustomersPage() {
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No customers found</p>
+                      <p className="text-muted-foreground">
+                        No customers found
+                      </p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAndSortedCustomers.map((customer: CustomerWithOrders) => (
-                    <TableRow 
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleViewDetails(customer)}
-                    >
-                      <TableCell className="font-medium">
-                        {customer.firstName} {customer.lastName}
-                      </TableCell>
-                      <TableCell>+{customer.country.countryCode} {customer.phone}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{customer.orderCount}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-semibold">€{customer.totalSpent.toFixed(2)}</TableCell>
-                      <TableCell>
-                        {customer.lastOrderDate ? format(customer.lastOrderDate, "MMM dd, yyyy") : "N/A"}
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleViewDetails(customer)}
+                  filteredAndSortedCustomers.map(
+                    (customer: CustomerWithOrders) => (
+                      <TableRow
+                        key={customer.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleViewDetails(customer)}
+                      >
+                        <TableCell className="font-medium">
+                          {customer.firstName} {customer.lastName}
+                        </TableCell>
+                        <TableCell>
+                          +{customer.country.countryCode} {customer.phone}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {customer.orderCount}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          €{customer.totalSpent.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          {customer.lastOrderDate
+                            ? format(customer.lastOrderDate, "MMM dd, yyyy")
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewDetails(customer)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )
                 )}
               </TableBody>
             </Table>
@@ -433,15 +575,28 @@ export default function CustomersPage() {
                 <div>
                   <h4 className="font-semibold mb-2">Contact Information</h4>
                   <p className="text-sm text-muted-foreground">
-                    Name: {selectedCustomer.firstName} {selectedCustomer.lastName}
+                    Name: {selectedCustomer.firstName}{" "}
+                    {selectedCustomer.lastName}
                   </p>
-                  <div className="text-sm text-muted-foreground">+{selectedCustomer.country.countryCode} {selectedCustomer.phone}</div>
+                  <div className="text-sm text-muted-foreground">
+                    +{selectedCustomer.country.countryCode}{" "}
+                    {selectedCustomer.phone}
+                  </div>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Statistics</h4>
-                  <p className="text-sm text-muted-foreground">Total Orders: {selectedCustomer.orderCount}</p>
-                  <p className="text-sm text-muted-foreground">Total Spent: €{selectedCustomer.totalSpent.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground">Average Order: €{(selectedCustomer.totalSpent / selectedCustomer.orderCount).toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Total Orders: {selectedCustomer.orderCount}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Total Spent: €{selectedCustomer.totalSpent.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Average Order: €
+                    {(
+                      selectedCustomer.totalSpent / selectedCustomer.orderCount
+                    ).toFixed(2)}
+                  </p>
                 </div>
               </div>
               <Separator />
@@ -451,9 +606,13 @@ export default function CustomersPage() {
                   Order History ({selectedCustomer.orders?.length || 0})
                 </h4>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {selectedCustomer.orders && selectedCustomer.orders.length > 0 ? (
+                  {selectedCustomer.orders &&
+                  selectedCustomer.orders.length > 0 ? (
                     selectedCustomer.orders.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between text-sm p-3 bg-muted rounded hover:bg-muted/80 transition-colors">
+                      <div
+                        key={order.id}
+                        className="flex items-center justify-between text-sm p-3 bg-muted rounded hover:bg-muted/80 transition-colors"
+                      >
                         <div className="flex-1">
                           <p className="font-medium">{order.orderID}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -462,7 +621,9 @@ export default function CustomersPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">€{order.amount.toFixed(2)}</p>
+                          <p className="font-semibold">
+                            €{order.amount.toFixed(2)}
+                          </p>
                           <Badge variant="outline" className="text-xs mt-1">
                             {order.status}
                           </Badge>
@@ -470,7 +631,9 @@ export default function CustomersPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No orders found</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No orders found
+                    </p>
                   )}
                 </div>
               </div>
@@ -479,5 +642,5 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

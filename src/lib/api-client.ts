@@ -5,6 +5,7 @@
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
 
 interface ApiRequestOptions extends RequestInit {
   requireAuth?: boolean;
@@ -17,7 +18,8 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const { requireAuth = true, ...fetchOptions } = options;
+  const { requireAuth: requireAuthOption = true, ...fetchOptions } = options;
+  const requireAuth = BYPASS_AUTH ? false : requireAuthOption;
 
   // Get auth token from localStorage
   const token =
@@ -46,8 +48,8 @@ export async function apiRequest<T = any>(
 
   // Handle errors
   if (!response.ok) {
-    // If 401, clear token and redirect to login
-    if (response.status === 401) {
+    // If 401, clear token and redirect to login (only when auth is not bypassed)
+    if (!BYPASS_AUTH && response.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("auth_token");
         window.location.href = "/login";
@@ -193,22 +195,6 @@ export const discounts = {
 };
 
 /**
- * Shipments API
- */
-export const shipments = {
-  getAll: (params?: Record<string, any>) =>
-    apiRequest(`/admin/shipments?${new URLSearchParams(params)}`),
-
-  getById: (id: string) => apiRequest(`/admin/shipments/${id}`),
-
-  updateTracking: (id: string, trackingNumber: string, carrier: string) =>
-    apiRequest(`/admin/shipments/${id}/tracking`, {
-      method: "PUT",
-      body: JSON.stringify({ trackingNumber, carrier }),
-    }),
-};
-
-/**
  * Payments API
  */
 export const payments = {
@@ -253,7 +239,6 @@ export const api = {
   orders,
   customers,
   discounts,
-  shipments,
   payments,
   refunds,
   analytics,

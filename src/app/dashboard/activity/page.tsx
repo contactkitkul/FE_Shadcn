@@ -279,9 +279,9 @@ export default function ActivityPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Activity Logs</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 Complete audit trail of all order activities
-              </CardDescription>
+              </CardDescription> */}
             </div>
           </div>
         </CardHeader>
@@ -314,9 +314,13 @@ export default function ActivityPage() {
               <SelectContent>
                 <SelectItem value="all">All Events</SelectItem>
                 <SelectItem value="ORDER_CREATED">Order Created</SelectItem>
-                <SelectItem value="PAYMENT_PROCESSED">Payment Processed</SelectItem>
+                <SelectItem value="PAYMENT_PROCESSED">
+                  Payment Processed
+                </SelectItem>
                 <SelectItem value="STATUS_CHANGED">Status Changed</SelectItem>
-                <SelectItem value="SHIPMENT_CREATED">Shipment Created</SelectItem>
+                <SelectItem value="SHIPMENT_CREATED">
+                  Shipment Created
+                </SelectItem>
                 <SelectItem value="ITEM_CANCELLED">Item Cancelled</SelectItem>
                 <SelectItem value="REFUND_ISSUED">Refund Issued</SelectItem>
               </SelectContent>
@@ -345,7 +349,9 @@ export default function ActivityPage() {
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
                       <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No activity logs found</p>
+                      <p className="text-muted-foreground">
+                        No activity logs found
+                      </p>
                     </TableCell>
                   </TableRow>
                 ) : (

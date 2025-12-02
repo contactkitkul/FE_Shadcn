@@ -7,8 +7,7 @@ import {
   Package,
   ShoppingCart,
   CreditCard,
-  Truck,
-  Tag,
+  Percent,
   ShoppingBag,
   RefreshCcw,
   Activity,
@@ -38,39 +37,19 @@ export const dashboardRoutes: Route[] = [
     href: "/dashboard/products",
   },
   {
-    label: "Customers",
-    icon: Users,
-    href: "/dashboard/customers",
-  },
-  {
-    label: "Analytics",
-    icon: BarChart3,
-    href: "/dashboard/analytics",
-  },
-  {
-    label: "Reports",
-    icon: FileText,
-    href: "/dashboard/reports",
-  },
-  {
     label: "Discounts",
-    icon: Tag,
+    icon: Percent,
     href: "/dashboard/discounts",
   },
   {
-    label: "Shipments",
-    icon: Truck,
-    href: "/dashboard/shipments",
+    label: "Shipping Fees",
+    icon: Settings,
+    href: "/dashboard/shipping",
   },
   {
-    label: "Payments",
-    icon: CreditCard,
-    href: "/dashboard/payments",
-  },
-  {
-    label: "Refunds",
-    icon: RefreshCcw,
-    href: "/dashboard/refunds",
+    label: "Customers",
+    icon: Users,
+    href: "/dashboard/customers",
   },
   {
     label: "Abandoned Carts",
@@ -83,8 +62,23 @@ export const dashboardRoutes: Route[] = [
     href: "/dashboard/activity",
   },
   {
-    label: "Settings",
-    icon: Settings,
-    href: "/dashboard/settings",
+    label: "Payments",
+    icon: CreditCard,
+    href: "/dashboard/payments",
+  },
+  {
+    label: "Refunds",
+    icon: RefreshCcw,
+    href: "/dashboard/refunds",
+  },
+  {
+    label: "Analytics",
+    icon: BarChart3,
+    href: "/dashboard/analytics",
+  },
+  {
+    label: "Reports",
+    icon: FileText,
+    href: "/dashboard/reports",
   },
 ];

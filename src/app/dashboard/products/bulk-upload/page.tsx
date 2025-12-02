@@ -140,10 +140,10 @@ Chelsea_FC,THIRD,2025,FAN,SHIRT`;
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Upload Products via CSV</CardTitle>
-            <CardDescription>
+            {/* <CardDescription>
               Upload multiple products at once using a simple CSV file with 5
               fields
-            </CardDescription>
+            </CardDescription> */}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

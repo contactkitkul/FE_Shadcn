@@ -12,20 +12,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Truck } from "lucide-react";
+import { Plus, Truck, Pencil, Trash2 } from "lucide-react";
+import { api, fetchAPI } from "@/lib/api";
 
 // Types
 type ShippingFee = {
   id: string;
-  country: string;
+  countryCode: string; // ISO 3166-1 alpha-2 code, e.g. "DE"
+  countryName: string; // e.g. "Germany"
   amount: number;
 };
 
@@ -43,56 +38,56 @@ export default function SettingsPage() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Form states
-  const [newFee, setNewFee] = useState<Omit<ShippingFee, "id">>({
-    country: "",
-    amount: 0,
-  });
+  // Frontend pagination state (we load all fees once, then paginate client-side)
+  const [page, setPage] = useState(1);
 
   const [newProvider, setNewProvider] = useState<Omit<ShippingProvider, "id">>({
     name: "",
     website: "",
   });
 
-  // Available countries for shipping
-  const countries = [
-    "Germany",
-    "France",
-    "Italy",
-    "Spain",
-    "Netherlands",
-    "Belgium",
-    "Austria",
-    "Switzerland",
-    "United Kingdom",
-    "United States",
-    "Canada",
-    "Australia",
-    "Japan",
-    "China",
-    "India",
-    "Brazil",
-    "Mexico",
-  ];
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number | "">("");
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const [sortKey, setSortKey] = useState<
+    "countryName" | "countryCode" | "amount"
+  >("countryName");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const PAGE_SIZE = 70;
 
   // Load data on component mount
   useEffect(() => {
-    // In a real app, you would fetch this data from your API
     const loadData = async () => {
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        setIsLoading(true);
+        const backendPageSize = 100; // max allowed by backend helpers
+        let apiPage = 1;
+        const allFees: ShippingFee[] = [];
+        let pageFees: any[] = [];
 
-        // Mock data - replace with actual API calls
-        setShippingFees([
-          { id: "1", country: "Germany", amount: 10 },
-          { id: "2", country: "France", amount: 12 },
-        ]);
+        do {
+          const feesResponse = await api.shippingFees.getAll({
+            page: apiPage,
+            limit: backendPageSize,
+          });
 
-        setShippingProviders([
-          { id: "1", name: "DHL", website: "https://www.dhl.com" },
-          { id: "2", name: "UPS", website: "https://www.ups.com" },
-        ]);
+          const apiData = feesResponse?.data;
+          pageFees = apiData?.data || [];
+          const mappedFees: ShippingFee[] = pageFees.map((fee: any) => ({
+            id: fee.id,
+            countryCode: fee.country,
+            countryName: fee.countryName,
+            amount: fee.amount ?? 0,
+          }));
+
+          allFees.push(...mappedFees);
+          apiPage += 1;
+        } while (pageFees.length === backendPageSize);
+
+        setShippingFees(allFees);
+        setPage(1);
       } catch (error) {
         toast.error("Failed to load settings");
         console.error("Error loading settings:", error);
@@ -104,36 +99,79 @@ export default function SettingsPage() {
     loadData();
   }, []);
 
-  // Handle adding a new shipping fee
-  const handleAddFee = () => {
-    if (!newFee.country) {
-      toast.error("Please select a country");
-      return;
+  const sortedFees = [...shippingFees].sort((a, b) => {
+    if (sortKey === "amount") {
+      const comp = a.amount - b.amount;
+      return sortDirection === "asc" ? comp : -comp;
     }
 
-    if (!newFee.amount || newFee.amount <= 0) {
+    const aVal = sortKey === "countryName" ? a.countryName : a.countryCode;
+    const bVal = sortKey === "countryName" ? b.countryName : b.countryCode;
+    const comp = aVal.localeCompare(bVal);
+    return sortDirection === "asc" ? comp : -comp;
+  });
+
+  const totalPages = Math.ceil(sortedFees.length / PAGE_SIZE);
+  const visibleFees = sortedFees.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  const handleSort = (key: "countryName" | "countryCode" | "amount") => {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  };
+
+  const startEdit = (fee: ShippingFee) => {
+    setEditingId(fee.id);
+    setEditAmount(fee.amount);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditAmount("");
+  };
+
+  const saveEdit = async (fee: ShippingFee) => {
+    if (
+      editAmount === "" ||
+      editAmount === null ||
+      editAmount === undefined ||
+      Number.isNaN(editAmount as number) ||
+      (editAmount as number) < 0
+    ) {
       toast.error("Please enter a valid amount");
       return;
     }
 
-    // Check if country already has a fee
-    if (shippingFees.some((fee) => fee.country === newFee.country)) {
-      toast.error("This country already has a shipping fee");
-      return;
+    try {
+      setSavingId(fee.id);
+      await fetchAPI("/shipping/fees", {
+        method: "PUT",
+        body: JSON.stringify({
+          country: fee.countryCode,
+          amount: editAmount,
+          countryName: fee.countryName,
+        }),
+      });
+
+      setShippingFees((prev) =>
+        prev.map((f) =>
+          f.id === fee.id ? { ...f, amount: editAmount as number } : f
+        )
+      );
+      toast.success("Shipping fee updated");
+      cancelEdit();
+    } catch (error) {
+      console.error("Error updating shipping fee:", error);
+      toast.error("Failed to update shipping fee");
+    } finally {
+      setSavingId(null);
     }
-
-    setShippingFees([
-      ...shippingFees,
-      { ...newFee, id: Date.now().toString() },
-    ]);
-    setNewFee({ country: "", amount: 0 });
-    toast.success("Shipping fee added");
-  };
-
-  // Handle removing a shipping fee
-  const handleRemoveFee = (id: string) => {
-    setShippingFees(shippingFees.filter((fee) => fee.id !== id));
-    toast.success("Shipping fee removed");
   };
 
   // Handle adding a new shipping provider
@@ -214,10 +252,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-2xl font-bold tracking-tight">Shipping Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Manage your shipping fees and providers
-        </p>
+        <h3 className="text-2xl font-bold tracking-tight">Settings</h3>
       </div>
 
       <Tabs defaultValue="fees" className="space-y-6">
@@ -228,7 +263,7 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="providers" className="flex items-center gap-2">
             <Truck className="w-4 h-4" />
-            <span>Shipping Providers</span>
+            <span>More Option for Later</span>
           </TabsTrigger>
         </TabsList>
 
@@ -236,113 +271,145 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Shipping Fees by Country</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 Set shipping fees for different countries in EUR. These fees
                 will be applied at checkout.
-              </CardDescription>
+              </CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Select
-                      value={newFee.country}
-                      onValueChange={(value) =>
-                        setNewFee({ ...newFee, country: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries
-                          .filter(
-                            (country) =>
-                              !shippingFees.some(
-                                (fee) => fee.country === country
-                              )
-                          )
-                          .map((country) => (
-                            <SelectItem key={country} value={country}>
-                              {country}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Fee (€)</Label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 sm:text-sm">€</span>
-                      </div>
-                      <Input
-                        id="amount"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={newFee.amount || ""}
-                        onChange={(e) =>
-                          setNewFee({
-                            ...newFee,
-                            amount: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="19.90"
-                        className="pl-7"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      className="w-full"
-                      onClick={handleAddFee}
-                      disabled={!newFee.country || !newFee.amount}
-                    >
-                      <Plus className="w-4 h-4 mr-2" /> Add Fee
-                    </Button>
-                  </div>
-                </div>
-
-                {shippingFees.length > 0 && (
+                {visibleFees.length > 0 && (
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 dark:bg-gray-800 font-medium border-b">
-                      <div className="col-span-8 text-sm font-medium text-gray-500 dark:text-gray-400">
-                        COUNTRY
-                      </div>
-                      <div className="col-span-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <div className="grid grid-cols-12 gap-2 p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
+                      <button
+                        type="button"
+                        className="col-span-6 text-sm font-medium text-gray-500 dark:text-gray-400 text-left flex items-center gap-1"
+                        onClick={() => handleSort("countryName")}
+                      >
+                        COUNTRY NAME
+                        {sortKey === "countryName" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="col-span-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left flex items-center gap-1"
+                        onClick={() => handleSort("countryCode")}
+                      >
+                        CODE
+                        {sortKey === "countryCode" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="col-span-3 text-sm font-medium text-gray-500 dark:text-gray-400 justify-start flex items-center gap-1"
+                        onClick={() => handleSort("amount")}
+                      >
                         FEE (€)
-                      </div>
+                        {sortKey === "amount" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </button>
                       <div className="col-span-1"></div>
                     </div>
                     <div className="divide-y">
-                      {shippingFees.map((fee) => (
+                      {visibleFees.map((fee) => (
                         <div
                           key={fee.id}
-                          className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                          className="grid grid-cols-12 gap-2 p-3 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50"
                         >
-                          <div className="col-span-8 font-medium">
-                            {fee.country}
+                          <div className="col-span-6 font-medium">
+                            {fee.countryName}
+                          </div>
+                          <div className="col-span-2 font-mono text-sm text-gray-600 dark:text-gray-300">
+                            {fee.countryCode}
                           </div>
                           <div className="col-span-3">
-                            €{fee.amount.toFixed(2)}
+                            {editingId === fee.id ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={editAmount === "" ? "" : editAmount}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === "") {
+                                    setEditAmount("");
+                                  } else {
+                                    setEditAmount(parseFloat(value));
+                                  }
+                                }}
+                                className="h-8"
+                              />
+                            ) : (
+                              <>€{fee.amount.toFixed(2)}</>
+                            )}
                           </div>
-                          <div className="col-span-1 flex justify-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-500 hover:text-red-600"
-                              onClick={() => handleRemoveFee(fee.id)}
-                              title="Remove fee"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Remove</span>
-                            </Button>
+                          <div className="col-span-1 flex justify-end gap-1">
+                            {editingId === fee.id ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-green-600 hover:text-green-700"
+                                  onClick={() => saveEdit(fee)}
+                                  disabled={savingId === fee.id}
+                                  title="Save fee"
+                                >
+                                  ✓
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-500 hover:text-gray-600"
+                                  onClick={cancelEdit}
+                                  title="Cancel edit"
+                                >
+                                  ✕
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                                onClick={() => startEdit(fee)}
+                                title="Edit fee"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {totalPages > 1 && (
+                  <div className="flex justify-end items-center gap-2 pt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span>
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                    >
+                      Next
+                    </Button>
                   </div>
                 )}
               </div>
@@ -360,10 +427,10 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Shipping Providers</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 Manage your shipping providers and their websites. These will be
                 shown to customers during checkout.
-              </CardDescription>
+              </CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">

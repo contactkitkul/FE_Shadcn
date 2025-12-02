@@ -51,7 +51,7 @@ export default function ReportsPage() {
     }
 
     setGenerating(true);
-    
+
     // Simulate report generation
     setTimeout(() => {
       toast.success(`${reportType} report generated successfully`);
@@ -141,9 +141,9 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Generate Custom Report</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 Select parameters and generate detailed reports
-              </CardDescription>
+              </CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
@@ -156,10 +156,16 @@ export default function ReportsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sales">Sales Report</SelectItem>
-                      <SelectItem value="inventory">Inventory Report</SelectItem>
-                      <SelectItem value="financial">Financial Report</SelectItem>
+                      <SelectItem value="inventory">
+                        Inventory Report
+                      </SelectItem>
+                      <SelectItem value="financial">
+                        Financial Report
+                      </SelectItem>
                       <SelectItem value="customer">Customer Report</SelectItem>
-                      <SelectItem value="product">Product Performance</SelectItem>
+                      <SelectItem value="product">
+                        Product Performance
+                      </SelectItem>
                       <SelectItem value="shipping">Shipping Report</SelectItem>
                       <SelectItem value="refunds">Refunds Report</SelectItem>
                       <SelectItem value="discounts">Discount Usage</SelectItem>
@@ -297,9 +303,9 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Scheduled Reports</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 Automatically generated reports sent to your email
-              </CardDescription>
+              </CardDescription> */}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -363,9 +369,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Report History</CardTitle>
-              <CardDescription>
-                Previously generated reports
-              </CardDescription>
+              <CardDescription>Previously generated reports</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

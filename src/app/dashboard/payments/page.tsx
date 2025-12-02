@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,44 +16,50 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Search, CreditCard, TrendingUp, DollarSign, AlertCircle } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "sonner"
-import { format } from "date-fns"
-import { api } from "@/lib/api"
-import { useDebounce } from "@/hooks/useDebounce"
-import { getEntityMessages } from "@/config/messages"
+} from "@/components/ui/select";
+import {
+  Search,
+  CreditCard,
+  TrendingUp,
+  DollarSign,
+  AlertCircle,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
+import { getEntityMessages } from "@/config/messages";
 
 interface Payment {
-  id: string
-  createdAt: Date
-  orderId: string
-  orderID: string
-  customerName: string
-  paymentMethod: string
-  paymentStatus: string
-  transactionId: string
-  paymentGateway: string
-  amountPaid: number
-  currency: string
+  id: string;
+  createdAt: Date;
+  orderId: string;
+  orderID: string;
+  customerName: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  transactionId: string;
+  paymentGateway: string;
+  amountPaid: number;
+  currency: string;
 }
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const debouncedSearch = useDebounce(searchTerm, 500)
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Fetch payments from API
   const fetchPayments = async () => {
@@ -68,11 +74,11 @@ export default function PaymentsPage() {
       if (response.success) {
         setPayments(response.data.data || []);
       } else {
-        toast.error(getEntityMessages('payments').loadError);
+        toast.error(getEntityMessages("payments").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching payments:", error);
-      toast.error(error.message || getEntityMessages('payments').loadError);
+      toast.error(error.message || getEntityMessages("payments").loadError);
     } finally {
       setLoading(false);
     }
@@ -159,7 +165,10 @@ export default function PaymentsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: any; label: string; className: string }> = {
+    const config: Record<
+      string,
+      { variant: any; label: string; className: string }
+    > = {
       SUCCESS: {
         variant: "default",
         label: "Success",
@@ -185,9 +194,9 @@ export default function PaymentsPage() {
         label: "Partially Refunded",
         className: "bg-blue-100 text-blue-800",
       },
-    }
-    return config[status] || config.PENDING
-  }
+    };
+    return config[status] || config.PENDING;
+  };
 
   const getCurrencySymbol = (currency: string) => {
     const symbols: Record<string, string> = {
@@ -195,37 +204,42 @@ export default function PaymentsPage() {
       GBP: "£",
       USD: "$",
       INR: "₹",
-    }
-    return symbols[currency] || currency
-  }
+    };
+    return symbols[currency] || currency;
+  };
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
       payment.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.transactionId.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || payment.paymentStatus === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      payment.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || payment.paymentStatus === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const totalAmount = payments
     .filter((p) => p.paymentStatus === "SUCCESS")
-    .reduce((sum, p) => sum + p.amountPaid, 0)
+    .reduce((sum, p) => sum + p.amountPaid, 0);
   const pendingAmount = payments
     .filter((p) => p.paymentStatus === "PENDING")
-    .reduce((sum, p) => sum + p.amountPaid, 0)
+    .reduce((sum, p) => sum + p.amountPaid, 0);
   const refundedAmount = payments
-    .filter((p) => p.paymentStatus === "REFUNDED" || p.paymentStatus === "PARTIALLY_REFUNDED")
-    .reduce((sum, p) => sum + p.amountPaid, 0)
+    .filter(
+      (p) =>
+        p.paymentStatus === "REFUNDED" ||
+        p.paymentStatus === "PARTIALLY_REFUNDED"
+    )
+    .reduce((sum, p) => sum + p.amountPaid, 0);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Payments</h2>
-          <p className="text-muted-foreground">
+          {/* <p className="text-muted-foreground">
             Track and manage all payment transactions
-          </p>
+          </p> */}
         </div>
       </div>
 
@@ -233,13 +247,16 @@ export default function PaymentsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Received</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Received
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">€{totalAmount.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentStatus === "SUCCESS").length} successful payments
+              {payments.filter((p) => p.paymentStatus === "SUCCESS").length}{" "}
+              successful payments
             </p>
           </CardContent>
         </Card>
@@ -250,9 +267,12 @@ export default function PaymentsPage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{pendingAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              €{pendingAmount.toFixed(2)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentStatus === "PENDING").length} pending payments
+              {payments.filter((p) => p.paymentStatus === "PENDING").length}{" "}
+              pending payments
             </p>
           </CardContent>
         </Card>
@@ -263,9 +283,18 @@ export default function PaymentsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{refundedAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              €{refundedAmount.toFixed(2)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentStatus === "REFUNDED" || p.paymentStatus === "PARTIALLY_REFUNDED").length} refunds
+              {
+                payments.filter(
+                  (p) =>
+                    p.paymentStatus === "REFUNDED" ||
+                    p.paymentStatus === "PARTIALLY_REFUNDED"
+                ).length
+              }{" "}
+              refunds
             </p>
           </CardContent>
         </Card>
@@ -279,9 +308,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold">
               {payments.filter((p) => p.paymentStatus === "FAILED").length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Failed transactions
-            </p>
+            <p className="text-xs text-muted-foreground">Failed transactions</p>
           </CardContent>
         </Card>
       </div>
@@ -292,9 +319,9 @@ export default function PaymentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Payment Transactions</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 View and manage all payment transactions
-              </CardDescription>
+              </CardDescription> */}
             </div>
           </div>
         </CardHeader>
@@ -352,12 +379,19 @@ export default function PaymentsPage() {
                   </TableRow>
                 ) : (
                   filteredPayments.map((payment) => {
-                    const statusConfig = getStatusBadge(payment.paymentStatus)
+                    const statusConfig = getStatusBadge(payment.paymentStatus);
                     return (
-                      <TableRow key={payment.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell className="font-medium">{payment.orderID}</TableCell>
+                      <TableRow
+                        key={payment.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                      >
+                        <TableCell className="font-medium">
+                          {payment.orderID}
+                        </TableCell>
                         <TableCell>{payment.customerName}</TableCell>
-                        <TableCell className="font-mono text-sm">{payment.transactionId}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {payment.transactionId}
+                        </TableCell>
                         <TableCell>{payment.paymentGateway}</TableCell>
                         <TableCell>
                           {format(new Date(payment.createdAt), "MMM dd, yyyy")}
@@ -376,7 +410,7 @@ export default function PaymentsPage() {
                           </Badge>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })
                 )}
               </TableBody>
@@ -385,5 +419,5 @@ export default function PaymentsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

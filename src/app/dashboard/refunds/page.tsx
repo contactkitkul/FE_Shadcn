@@ -87,11 +87,11 @@ export default function RefundsPage() {
       if (response.success) {
         setRefunds(response.data.data || []);
       } else {
-        toast.error(getEntityMessages('refunds').loadError);
+        toast.error(getEntityMessages("refunds").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching refunds:", error);
-      toast.error(error.message || getEntityMessages('refunds').loadError);
+      toast.error(error.message || getEntityMessages("refunds").loadError);
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,8 @@ export default function RefundsPage() {
       refund.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
       refund.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       refund.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || refund.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || refund.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -228,9 +229,9 @@ export default function RefundsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Refunds</h2>
-          <p className="text-muted-foreground">
+          {/* <p className="text-muted-foreground">
             Manage refund requests and processing
-          </p>
+          </p> */}
         </div>
       </div>
 
@@ -255,7 +256,9 @@ export default function RefundsPage() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{totalRefunded.toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              €{totalRefunded.toFixed(2)}
+            </div>
             <p className="text-xs text-muted-foreground">Processed amount</p>
           </CardContent>
         </Card>
@@ -300,9 +303,9 @@ export default function RefundsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Refund Requests</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 View and process customer refund requests
-              </CardDescription>
+              </CardDescription> */}
             </div>
           </div>
         </CardHeader>

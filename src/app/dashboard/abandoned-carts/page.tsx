@@ -124,16 +124,17 @@ export default function AbandonedCartsPage() {
 
   const totalValue = carts.reduce((sum, cart) => sum + cart.totalPrice, 0);
   const recoveredCount = carts.filter((cart) => cart.recovered).length;
-  const recoveryRate = carts.length > 0 ? (recoveredCount / carts.length) * 100 : 0;
+  const recoveryRate =
+    carts.length > 0 ? (recoveredCount / carts.length) * 100 : 0;
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Abandoned Carts</h2>
-          <p className="text-muted-foreground">
+          {/* <p className="text-muted-foreground">
             Recover lost sales and boost conversions
-          </p>
+          </p> */}
         </div>
       </div>
 
@@ -192,9 +193,9 @@ export default function AbandonedCartsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Abandoned Carts</CardTitle>
-              <CardDescription>
+              {/* <CardDescription>
                 View and recover abandoned shopping carts
-              </CardDescription>
+              </CardDescription> */}
             </div>
           </div>
         </CardHeader>

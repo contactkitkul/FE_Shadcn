@@ -13,8 +13,8 @@ interface PaginationParams {
 }
 
 export async function getAuthToken() {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token");
   }
   return null;
 }
@@ -24,9 +24,9 @@ export async function getAuthToken() {
  * Cache expires after 24 hours
  */
 export async function fetchTeamIdentifiers() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
 
-  const cached = localStorage.getItem('team_identifiers');
+  const cached = localStorage.getItem("team_identifiers");
   if (cached) {
     try {
       const { data, timestamp } = JSON.parse(cached);
@@ -35,26 +35,29 @@ export async function fetchTeamIdentifiers() {
         return data;
       }
     } catch (error) {
-      console.error('Error parsing cached identifiers:', error);
+      console.error("Error parsing cached identifiers:", error);
     }
   }
 
   try {
     const response = await fetch(`${API_BASE_URL}/team-identifiers`);
     const result = await response.json();
-    
+
     if (result.success) {
-      localStorage.setItem('team_identifiers', JSON.stringify({
-        data: result.data,
-        timestamp: Date.now()
-      }));
-      
+      localStorage.setItem(
+        "team_identifiers",
+        JSON.stringify({
+          data: result.data,
+          timestamp: Date.now(),
+        })
+      );
+
       return result.data;
     }
   } catch (error) {
-    console.error('Error fetching team identifiers:', error);
+    console.error("Error fetching team identifiers:", error);
   }
-  
+
   return null;
 }
 
@@ -63,8 +66,8 @@ export async function fetchTeamIdentifiers() {
  * Call this after updating identifiers in admin panel
  */
 export function clearTeamIdentifiersCache() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('team_identifiers');
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("team_identifiers");
   }
 }
 
@@ -86,7 +89,11 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
         .json()
         .catch(() => ({ error: response.statusText }));
       // Backend returns { success: false, error: "message" }
-      throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`);
+      throw new Error(
+        errorData.error ||
+          errorData.message ||
+          `API Error: ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -116,7 +123,11 @@ export async function fetchAPIWithFormData(
       .json()
       .catch(() => ({ error: response.statusText }));
     // Backend returns { success: false, error: "message" }
-    throw new Error(errorData.error || errorData.message || `API Error: ${response.statusText}`);
+    throw new Error(
+      errorData.error ||
+        errorData.message ||
+        `API Error: ${response.statusText}`
+    );
   }
 
   return response.json();
@@ -166,8 +177,10 @@ export const api = {
         body: JSON.stringify({ products }),
       }),
     generateSKU: () => fetchAPI("/products/generate/sku", { method: "POST" }),
-    validateSKU: (team: string, year: string) => 
-      fetchAPI(`/products/validate-sku?team=${team}&year=${year}`, { method: "GET" }),
+    validateSKU: (team: string, year: string) =>
+      fetchAPI(`/products/validate-sku?team=${team}&year=${year}`, {
+        method: "GET",
+      }),
     generateName: (data: {
       team: string;
       year: string;
@@ -285,29 +298,6 @@ export const api = {
         body: JSON.stringify(data),
       }),
     delete: (id: string) => fetchAPI(`/discounts/${id}`, { method: "DELETE" }),
-  },
-
-  // Shipments
-  shipments: {
-    getAll: (params?: PaginationParams) => {
-      const query = params ? `?${buildQueryString(params)}` : "";
-      return fetchAPI(`/shipments${query}`);
-    },
-    getById: (id: string) => fetchAPI(`/shipments/${id}`),
-    getByOrderId: (orderId: string) =>
-      fetchAPI(`/shipments?orderId=${orderId}`),
-    create: (data: any) =>
-      fetchAPI("/shipments", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: any) =>
-      fetchAPI(`/shipments/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
-    updateStatus: (id: string, status: string) =>
-      fetchAPI(`/shipments/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      }),
   },
 
   // Images
