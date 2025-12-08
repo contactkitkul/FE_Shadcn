@@ -159,8 +159,14 @@ export const api = {
         body: JSON.stringify(data),
       }),
     delete: (id: string) => fetchAPI(`/products/${id}`, { method: "DELETE" }),
-    duplicate: (id: string) =>
-      fetchAPI(`/products/${id}/duplicate`, { method: "POST" }),
+    duplicate: (
+      id: string,
+      data: { sku: string; name: string; year: string; yearEnd?: number }
+    ) =>
+      fetchAPI(`/products/${id}/copy`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     bulkUpdate: (data: any) =>
       fetchAPI("/products/bulk", {
         method: "PUT",

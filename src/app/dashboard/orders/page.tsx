@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -32,7 +27,20 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Eye, Package, Download, CheckCircle, AlertCircle, Clock, DollarSign, Settings2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Search,
+  Eye,
+  Package,
+  Download,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  DollarSign,
+  Settings2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -61,25 +69,37 @@ export default function OrdersPage() {
   });
 
   // Fetch orders from API
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } | null>(null);
+
+  const PAGE_SIZE = 50;
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const response = await api.orders.getAll({
-        page: 1,
-        limit: 100,
+        page,
+        limit: PAGE_SIZE,
         sortBy: sortColumn,
         sortOrder: sortDirection,
         search: searchTerm,
       });
 
       if (response.success) {
-        setOrders(response.data.data || []);
+        const data = response.data;
+        setOrders(data?.data || []);
+        setPagination(data?.pagination || null);
       } else {
-        toast.error(getEntityMessages('orders').loadError);
+        toast.error(getEntityMessages("orders").loadError);
       }
     } catch (error: any) {
       console.error("Error fetching orders:", error);
-      toast.error(error.message || getEntityMessages('orders').loadError);
+      toast.error(error.message || getEntityMessages("orders").loadError);
     } finally {
       setLoading(false);
     }
@@ -88,7 +108,7 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch]);
+  }, [sortColumn, sortDirection, debouncedSearch, page]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -111,9 +131,9 @@ export default function OrdersPage() {
   };
 
   const toggleColumn = (column: string) => {
-    setVisibleColumns(prev => ({ 
-      ...prev, 
-      [column]: !prev[column as keyof typeof prev] 
+    setVisibleColumns((prev) => ({
+      ...prev,
+      [column]: !prev[column as keyof typeof prev],
     }));
   };
 
@@ -122,56 +142,70 @@ export default function OrdersPage() {
       const matchesSearch =
         order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.shippingName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || order.orderStatus === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || order.orderStatus === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
       const aValue = a[sortColumn as keyof Order];
       const bValue = b[sortColumn as keyof Order];
-      
+
       if (aValue === undefined || bValue === undefined) return 0;
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === "asc" 
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
         return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
       }
-      
+
       if (aValue instanceof Date && bValue instanceof Date) {
-        return sortDirection === "asc" 
+        return sortDirection === "asc"
           ? aValue.getTime() - bValue.getTime()
           : bValue.getTime() - aValue.getTime();
       }
-      
+
       return 0;
     });
 
   const getStatusBadge = (status: EnumOrderStatus) => {
-    const variants: Record<EnumOrderStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    const variants: Record<
+      EnumOrderStatus,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+      }
+    > = {
       RECEIVED: { variant: "default", label: "Received" },
-      PARTIALLY_FULFILLED: { variant: "secondary", label: "Partially Fulfilled" },
+      PARTIALLY_FULFILLED: {
+        variant: "secondary",
+        label: "Partially Fulfilled",
+      },
       FULFILLED: { variant: "default", label: "Fulfilled" },
       CANCELLED: { variant: "destructive", label: "Cancelled" },
       FULLY_REFUNDED: { variant: "outline", label: "Refunded" },
     };
-    return <Badge variant={variants[status].variant}>{variants[status].label}</Badge>;
+    return (
+      <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
+    );
   };
 
   const handleDownloadOrders = () => {
     const headers = ["Order ID", "Customer", "Amount", "Status", "Date"];
-    const rows = filteredOrders.map(order => [
+    const rows = filteredOrders.map((order) => [
       order.orderID,
       order.shippingName,
       `€${order.payableAmount.toFixed(2)}`,
       order.orderStatus,
-      format(order.createdAt, "MMM dd, yyyy")
+      format(order.createdAt, "MMM dd, yyyy"),
     ]);
-    
-    const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -181,15 +215,21 @@ export default function OrdersPage() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-    
+
     toast.success(`Downloaded ${filteredOrders.length} orders`);
   };
 
   // Calculate stats
   const totalOrders = orders.length;
-  const receivedOrders = orders.filter(o => o.orderStatus === EnumOrderStatus.RECEIVED).length;
-  const fulfilledOrders = orders.filter(o => o.orderStatus === EnumOrderStatus.FULFILLED).length;
-  const cancelledOrders = orders.filter(o => o.orderStatus === EnumOrderStatus.CANCELLED).length;
+  const receivedOrders = orders.filter(
+    (o) => o.orderStatus === EnumOrderStatus.RECEIVED
+  ).length;
+  const fulfilledOrders = orders.filter(
+    (o) => o.orderStatus === EnumOrderStatus.FULFILLED
+  ).length;
+  const cancelledOrders = orders.filter(
+    (o) => o.orderStatus === EnumOrderStatus.CANCELLED
+  ).length;
   const totalRevenue = orders.reduce((sum, o) => sum + o.payableAmount, 0);
 
   return (
@@ -197,42 +237,48 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">Manage and track customer orders</p>
+          <p className="text-sm text-muted-foreground">
+            Manage and track customer orders
+          </p>
         </div>
       </div>
 
       {/* Date Filter Buttons */}
       <div className="flex gap-1">
-        <Button 
+        <Button
           variant={dateFilter === "all" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("all")}
-          className={dateFilter === "all" ? "bg-pink-500 hover:bg-pink-600 text-white border-0" : ""}
+          className={
+            dateFilter === "all"
+              ? "bg-pink-500 hover:bg-pink-600 text-white border-0"
+              : ""
+          }
         >
           All Time
         </Button>
-        <Button 
+        <Button
           variant={dateFilter === "today" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("today")}
         >
           Today
         </Button>
-        <Button 
+        <Button
           variant={dateFilter === "yesterday" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("yesterday")}
         >
           Yesterday
         </Button>
-        <Button 
+        <Button
           variant={dateFilter === "last7days" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("last7days")}
         >
           Last 7 Days
         </Button>
-        <Button 
+        <Button
           variant={dateFilter === "last30days" ? "default" : "outline"}
           size="sm"
           onClick={() => setDateFilter("last30days")}
@@ -247,7 +293,9 @@ export default function OrdersPage() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Total Orders</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Total Orders
+                </p>
                 <div className="text-xl font-bold">{totalOrders}</div>
                 <p className="text-xs text-muted-foreground">All time</p>
               </div>
@@ -255,52 +303,72 @@ export default function OrdersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-blue-400">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Received</p>
-                <div className="text-xl font-bold text-blue-600">{receivedOrders}</div>
-                <p className="text-xs text-muted-foreground">Pending fulfillment</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Received
+                </p>
+                <div className="text-xl font-bold text-blue-600">
+                  {receivedOrders}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pending fulfillment
+                </p>
               </div>
               <Clock className="h-4 w-4 text-blue-400" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-green-400">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Fulfilled</p>
-                <div className="text-xl font-bold text-green-600">{fulfilledOrders}</div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Fulfilled
+                </p>
+                <div className="text-xl font-bold text-green-600">
+                  {fulfilledOrders}
+                </div>
                 <p className="text-xs text-muted-foreground">Completed</p>
               </div>
               <CheckCircle className="h-4 w-4 text-green-400" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-red-400">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Cancelled</p>
-                <div className="text-xl font-bold text-red-600">{cancelledOrders}</div>
-                <p className="text-xs text-muted-foreground">Cancelled orders</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Cancelled
+                </p>
+                <div className="text-xl font-bold text-red-600">
+                  {cancelledOrders}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cancelled orders
+                </p>
               </div>
               <AlertCircle className="h-4 w-4 text-red-400" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-l-4 border-l-yellow-400">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Revenue</p>
-                <div className="text-xl font-bold">€{totalRevenue.toFixed(2)}</div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Revenue
+                </p>
+                <div className="text-xl font-bold">
+                  €{totalRevenue.toFixed(2)}
+                </div>
                 <p className="text-xs text-muted-foreground">Total revenue</p>
               </div>
               <DollarSign className="h-4 w-4 text-yellow-400" />
@@ -375,7 +443,11 @@ export default function OrdersPage() {
               <Button variant="outline" size="sm">
                 All Orders
               </Button>
-              <Button onClick={handleDownloadOrders} variant="outline" size="sm">
+              <Button
+                onClick={handleDownloadOrders}
+                variant="outline"
+                size="sm"
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Download Orders
               </Button>
@@ -447,42 +519,86 @@ export default function OrdersPage() {
                       </Button>
                     </TableHead>
                   )}
-                  {visibleColumns.actions && (
-                    <TableHead>Actions</TableHead>
-                  )}
+                  {visibleColumns.actions && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {visibleColumns.orderID && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
-                      {visibleColumns.customer && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
-                      {visibleColumns.amount && <TableCell><Skeleton className="h-4 w-16" /></TableCell>}
-                      {visibleColumns.status && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
-                      {visibleColumns.date && <TableCell><Skeleton className="h-4 w-24" /></TableCell>}
-                      {visibleColumns.actions && <TableCell><Skeleton className="h-4 w-16" /></TableCell>}
+                      {visibleColumns.orderID && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                      )}
+                      {visibleColumns.customer && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-32" />
+                        </TableCell>
+                      )}
+                      {visibleColumns.amount && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                      )}
+                      {visibleColumns.status && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                      )}
+                      {visibleColumns.date && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                      )}
+                      {visibleColumns.actions && (
+                        <TableCell>
+                          <Skeleton className="h-4 w-16" />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 ) : filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={Object.values(visibleColumns).filter(Boolean).length} className="text-center py-8">
+                    <TableCell
+                      colSpan={
+                        Object.values(visibleColumns).filter(Boolean).length
+                      }
+                      className="text-center py-8"
+                    >
                       <Package className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                       <p className="text-muted-foreground">No orders found</p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredOrders.map((order) => (
-                    <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
-                      {visibleColumns.orderID && <TableCell className="font-medium">{order.orderID}</TableCell>}
-                      {visibleColumns.customer && <TableCell>{order.shippingName}</TableCell>}
-                      {visibleColumns.amount && <TableCell>€{order.payableAmount.toFixed(2)}</TableCell>}
-                      {visibleColumns.status && <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>}
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
+                      {visibleColumns.orderID && (
+                        <TableCell className="font-medium">
+                          {order.orderID}
+                        </TableCell>
+                      )}
+                      {visibleColumns.customer && (
+                        <TableCell>{order.shippingName}</TableCell>
+                      )}
+                      {visibleColumns.amount && (
+                        <TableCell>€{order.payableAmount.toFixed(2)}</TableCell>
+                      )}
+                      {visibleColumns.status && (
+                        <TableCell>
+                          {getStatusBadge(order.orderStatus)}
+                        </TableCell>
+                      )}
                       {visibleColumns.date && (
                         <TableCell>
                           <div className="text-sm">
                             <div>{format(order.createdAt, "MMM dd, yyyy")}</div>
-                            <div className="text-muted-foreground">{format(order.createdAt, "h:mm a")}</div>
+                            <div className="text-muted-foreground">
+                              {format(order.createdAt, "h:mm a")}
+                            </div>
                           </div>
                         </TableCell>
                       )}
@@ -491,7 +607,9 @@ export default function OrdersPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                            onClick={() =>
+                              router.push(`/dashboard/orders/${order.id}`)
+                            }
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -502,6 +620,35 @@ export default function OrdersPage() {
                 )}
               </TableBody>
             </Table>
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex justify-end items-center gap-2 p-3 text-xs text-muted-foreground">
+                <span>
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() =>
+                    setPage((prev) =>
+                      pagination
+                        ? Math.min(pagination.totalPages, prev + 1)
+                        : prev + 1
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

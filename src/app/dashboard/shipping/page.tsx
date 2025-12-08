@@ -221,26 +221,6 @@ export default function SettingsPage() {
     toast.success("Shipping provider removed");
   };
 
-  // Save all settings
-  const handleSaveSettings = async () => {
-    try {
-      setIsLoading(true);
-      // In a real app, you would make API calls here to save the data
-      // await api.saveShippingFees(shippingFees);
-      // await api.saveShippingProviders(shippingProviders);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast.success("Settings saved successfully");
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      toast.error("Failed to save settings");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -413,12 +393,6 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleSaveSettings} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -552,12 +526,6 @@ export default function SettingsPage() {
                     </p>
                   </div>
                 )}
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleSaveSettings} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Button>
               </div>
             </CardContent>
           </Card>

@@ -115,20 +115,35 @@ export default function ProductsPage() {
     productName: string;
   } | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<"ALL" | EnumProductStatus>(
+    "ALL"
+  );
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } | null>(null);
+
+  const PAGE_SIZE = 50;
+
   // Fetch products from API
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await api.products.getAll({
-        page: 1,
-        limit: 100,
+        page,
+        limit: PAGE_SIZE,
         sortBy: sortColumn,
         sortOrder: sortDirection,
         search: searchTerm,
       });
 
       if (response.success) {
-        setProducts(response.data.data || []);
+        const data = response.data;
+        setProducts(data?.data || []);
+        setPagination(data?.pagination || null);
       } else {
         toast.error(getEntityMessages("products").loadError);
       }
@@ -143,7 +158,7 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch]);
+  }, [sortColumn, sortDirection, debouncedSearch, page]);
 
   // Auto-generation functions
   const generateProductName = (
@@ -236,11 +251,14 @@ export default function ProductsPage() {
   };
 
   const filteredAndSortedProducts = products
-    .filter(
-      (product) =>
+    .filter((product) => {
+      const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "ALL" || product.productStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
     .sort((a, b) => {
       let aValue: any = a[sortColumn as keyof Product];
       let bValue: any = b[sortColumn as keyof Product];
@@ -285,17 +303,24 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDuplicate = (product: Product) => {
-    const duplicatedProduct: Product = {
-      ...product,
-      id: `${product.id}-copy-${Date.now()}`,
-      sku: `${product.sku}-COPY`,
-      name: `${product.name} (Copy)`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setProducts([duplicatedProduct, ...products]);
-    toast.success("Product duplicated successfully");
+  const handleDuplicate = async (product: Product) => {
+    try {
+      const newSku = `${product.sku}-COPY-${Date.now().toString().slice(-4)}`;
+      const newName = `${product.name} (Copy)`;
+
+      await api.products.duplicate(product.id, {
+        sku: newSku,
+        name: newName,
+        year: product.year,
+        yearEnd: product.yearEnd,
+      });
+
+      toast.success("Product duplicated successfully");
+      fetchProducts();
+    } catch (error: any) {
+      console.error("Error duplicating product:", error);
+      toast.error(error.message || "Failed to duplicate product");
+    }
   };
 
   const handleEdit = (product: Product) => {
@@ -318,14 +343,51 @@ export default function ProductsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    toast.success(
-      editingProduct
-        ? "Product updated successfully"
-        : "Product created successfully"
-    );
-    setIsDialogOpen(false);
-    setEditingProduct(null);
+  const handleSave = async () => {
+    try {
+      if (!formData.team || !formData.year || !formData.sku || !formData.name) {
+        toast.error("Please fill in Team, Year, Name and SKU");
+        return;
+      }
+
+      if (editingProduct) {
+        await api.products.update(editingProduct.id, {
+          sku: formData.sku,
+          name: formData.name,
+          year: formData.year,
+          yearEnd: formData.yearEnd,
+          homeAway: formData.homeAway,
+          shirtType: formData.shirtType,
+          productType: formData.productType,
+          productStatus: formData.status,
+        });
+      } else {
+        await api.products.create({
+          sku: formData.sku,
+          name: formData.name,
+          year: formData.year,
+          yearEnd: formData.yearEnd,
+          team: formData.team,
+          homeAway: formData.homeAway,
+          shirtType: formData.shirtType,
+          productType: formData.productType,
+          productStatus: formData.status,
+        });
+      }
+
+      toast.success(
+        editingProduct
+          ? "Product updated successfully"
+          : "Product created successfully"
+      );
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      resetForm();
+      fetchProducts();
+    } catch (error: any) {
+      console.error("Error saving product:", error);
+      toast.error(error.message || "Failed to save product");
+    }
   };
 
   return (
@@ -378,7 +440,7 @@ export default function ProductsPage() {
                         updateFormData("league", league);
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger disabled={!!editingProduct}>
                         <SelectValue placeholder="Select team" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
@@ -569,6 +631,22 @@ export default function ProductsPage() {
               <CardTitle>Products</CardTitle>
             </div>
             <div className="flex items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={(value) =>
+                  setStatusFilter(value as "ALL" | EnumProductStatus)
+                }
+              >
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -732,6 +810,35 @@ export default function ProductsPage() {
               </TableBody>
             </Table>
           )}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex justify-end items-center gap-2 pt-2 text-xs text-muted-foreground">
+              <span>
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page <= 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() =>
+                  setPage((prev) =>
+                    pagination
+                      ? Math.min(pagination.totalPages, prev + 1)
+                      : prev + 1
+                  )
+                }
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -772,21 +879,19 @@ export default function ProductsPage() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
+              onClick={async () => {
                 if (!pendingStatusChange) return;
-                setProducts(
-                  products.map((product) =>
-                    product.id === pendingStatusChange.productId
-                      ? {
-                          ...product,
-                          productStatus: pendingStatusChange.newStatus,
-                          updatedAt: new Date(),
-                        }
-                      : product
-                  )
-                );
-                toast.success("Product status updated successfully");
-                setPendingStatusChange(null);
+                try {
+                  await api.products.update(pendingStatusChange.productId, {
+                    productStatus: pendingStatusChange.newStatus,
+                  });
+                  toast.success("Product status updated successfully");
+                  setPendingStatusChange(null);
+                  fetchProducts();
+                } catch (error: any) {
+                  console.error("Error updating product status:", error);
+                  toast.error(error.message || "Failed to update status");
+                }
               }}
             >
               Confirm
