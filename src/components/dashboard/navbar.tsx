@@ -22,6 +22,7 @@ export function Navbar() {
 
   useEffect(() => {
     setUser(getUser());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Get user initials for avatar

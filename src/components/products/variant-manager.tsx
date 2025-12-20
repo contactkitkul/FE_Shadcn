@@ -98,6 +98,7 @@ export function VariantManager({
     if (open && productId) {
       fetchVariants();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, productId]);
 
   const fetchVariants = async () => {

@@ -4,14 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,12 +30,8 @@ import {
   Clock,
   DollarSign,
   Settings2,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
 } from "lucide-react";
 import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
@@ -119,17 +108,6 @@ export default function OrdersPage() {
     }
   };
 
-  const getSortIcon = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return sortDirection === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
-  };
-
   const toggleColumn = (column: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
@@ -137,39 +115,10 @@ export default function OrdersPage() {
     }));
   };
 
-  const filteredOrders = orders
-    .filter((order) => {
-      const matchesSearch =
-        order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.shippingName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || order.orderStatus === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortColumn as keyof Order];
-      const bValue = b[sortColumn as keyof Order];
-
-      if (aValue === undefined || bValue === undefined) return 0;
-
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-      }
-
-      if (aValue instanceof Date && bValue instanceof Date) {
-        return sortDirection === "asc"
-          ? aValue.getTime() - bValue.getTime()
-          : bValue.getTime() - aValue.getTime();
-      }
-
-      return 0;
-    });
+  // Filter orders by status (sorting handled by CrudDataTable)
+  const filteredOrders = orders.filter((order) => {
+    return statusFilter === "all" || order.orderStatus === statusFilter;
+  });
 
   const getStatusBadge = (status: EnumOrderStatus) => {
     const variants: Record<
@@ -455,201 +404,106 @@ export default function OrdersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {visibleColumns.orderID && (
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSort("orderID")}
-                        className="h-auto p-0 font-semibold"
-                      >
-                        Order ID
-                        {getSortIcon("orderID")}
-                      </Button>
-                    </TableHead>
-                  )}
-                  {visibleColumns.customer && (
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSort("shippingName")}
-                        className="h-auto p-0 font-semibold"
-                      >
-                        Customer
-                        {getSortIcon("shippingName")}
-                      </Button>
-                    </TableHead>
-                  )}
-                  {visibleColumns.amount && (
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSort("payableAmount")}
-                        className="h-auto p-0 font-semibold"
-                      >
-                        Amount
-                        {getSortIcon("payableAmount")}
-                      </Button>
-                    </TableHead>
-                  )}
-                  {visibleColumns.status && (
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSort("orderStatus")}
-                        className="h-auto p-0 font-semibold"
-                      >
-                        Status
-                        {getSortIcon("orderStatus")}
-                      </Button>
-                    </TableHead>
-                  )}
-                  {visibleColumns.date && (
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSort("createdAt")}
-                        className="h-auto p-0 font-semibold"
-                      >
-                        Date & Time
-                        {getSortIcon("createdAt")}
-                      </Button>
-                    </TableHead>
-                  )}
-                  {visibleColumns.actions && <TableHead>Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {visibleColumns.orderID && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                      )}
-                      {visibleColumns.customer && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-32" />
-                        </TableCell>
-                      )}
-                      {visibleColumns.amount && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-16" />
-                        </TableCell>
-                      )}
-                      {visibleColumns.status && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                      )}
-                      {visibleColumns.date && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                      )}
-                      {visibleColumns.actions && (
-                        <TableCell>
-                          <Skeleton className="h-4 w-16" />
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                ) : filteredOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={
-                        Object.values(visibleColumns).filter(Boolean).length
-                      }
-                      className="text-center py-8"
-                    >
-                      <Package className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No orders found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <TableRow
-                      key={order.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                    >
-                      {visibleColumns.orderID && (
-                        <TableCell className="font-medium">
-                          {order.orderID}
-                        </TableCell>
-                      )}
-                      {visibleColumns.customer && (
-                        <TableCell>{order.shippingName}</TableCell>
-                      )}
-                      {visibleColumns.amount && (
-                        <TableCell>€{order.payableAmount.toFixed(2)}</TableCell>
-                      )}
-                      {visibleColumns.status && (
-                        <TableCell>
-                          {getStatusBadge(order.orderStatus)}
-                        </TableCell>
-                      )}
-                      {visibleColumns.date && (
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>{format(order.createdAt, "MMM dd, yyyy")}</div>
-                            <div className="text-muted-foreground">
-                              {format(order.createdAt, "h:mm a")}
-                            </div>
-                          </div>
-                        </TableCell>
-                      )}
-                      {visibleColumns.actions && (
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              router.push(`/dashboard/orders/${order.id}`)
-                            }
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex justify-end items-center gap-2 p-3 text-xs text-muted-foreground">
-                <span>
-                  Page {pagination.page} of {pagination.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page <= 1}
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() =>
-                    setPage((prev) =>
-                      pagination
-                        ? Math.min(pagination.totalPages, prev + 1)
-                        : prev + 1
-                    )
+          <CrudDataTable<Order>
+            data={filteredOrders}
+            loading={loading}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            getRowKey={(order) => order.id}
+            emptyIcon={<Package className="h-12 w-12 text-muted-foreground" />}
+            emptyMessage="No orders found"
+            pagination={
+              pagination && pagination.totalPages > 1
+                ? {
+                    page: pagination.page,
+                    totalPages: pagination.totalPages,
+                    onPageChange: setPage,
                   }
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-          </div>
+                : undefined
+            }
+            columns={[
+              ...(visibleColumns.orderID
+                ? [
+                    {
+                      key: "orderID",
+                      header: "Order ID",
+                      sortable: true,
+                      render: (order: Order) => (
+                        <span className="font-medium">{order.orderID}</span>
+                      ),
+                    },
+                  ]
+                : []),
+              ...(visibleColumns.customer
+                ? [
+                    {
+                      key: "shippingName",
+                      header: "Customer",
+                      sortable: true,
+                    },
+                  ]
+                : []),
+              ...(visibleColumns.amount
+                ? [
+                    {
+                      key: "payableAmount",
+                      header: "Amount",
+                      sortable: true,
+                      render: (order: Order) =>
+                        `€${order.payableAmount.toFixed(2)}`,
+                    },
+                  ]
+                : []),
+              ...(visibleColumns.status
+                ? [
+                    {
+                      key: "orderStatus",
+                      header: "Status",
+                      sortable: true,
+                      render: (order: Order) =>
+                        getStatusBadge(order.orderStatus),
+                    },
+                  ]
+                : []),
+              ...(visibleColumns.date
+                ? [
+                    {
+                      key: "createdAt",
+                      header: "Date & Time",
+                      sortable: true,
+                      render: (order: Order) => (
+                        <div className="text-sm">
+                          <div>{format(order.createdAt, "MMM dd, yyyy")}</div>
+                          <div className="text-muted-foreground">
+                            {format(order.createdAt, "h:mm a")}
+                          </div>
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
+              ...(visibleColumns.actions
+                ? [
+                    {
+                      key: "actions",
+                      header: "Actions",
+                      render: (order: Order) => (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/dashboard/orders/${order.id}`)
+                          }
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </CardContent>
       </Card>
     </div>

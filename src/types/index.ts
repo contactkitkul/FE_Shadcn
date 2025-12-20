@@ -199,6 +199,13 @@ export interface ProductVariant {
   patch: EnumPatch;
   sellPrice: number;
   costPrice: number;
+  // Nested product data (included in order item queries)
+  product?: {
+    id: string;
+    name: string;
+    sku: string;
+    ProductImage?: ProductImage[];
+  };
 }
 
 export interface ProductImage {
@@ -251,6 +258,12 @@ export interface Order {
   shipments?: Shipment[];
 }
 
+export enum EnumOrderItemStatus {
+  ACTIVE = "ACTIVE",
+  REMOVED = "REMOVED",
+  REFUNDED = "REFUNDED",
+}
+
 export interface OrderItem {
   id: string;
   createdAt: Date;
@@ -262,6 +275,8 @@ export interface OrderItem {
   customisationPrice?: number;
   noStockStatus: EnumNoStockStatus;
   quantity: number;
+  status?: EnumOrderItemStatus;
+  unitPrice?: number;
 }
 
 export interface Payment {

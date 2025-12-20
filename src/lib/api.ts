@@ -284,6 +284,33 @@ export const api = {
       }),
   },
 
+  // Order Items
+  orderItems: {
+    getAll: (params?: PaginationParams & { orderId?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
+      if (params?.orderId) query.append("orderId", params.orderId);
+      const queryStr = query.toString() ? `?${query.toString()}` : "";
+      return fetchAPI(`/order-items${queryStr}`);
+    },
+    getById: (id: string) => fetchAPI(`/order-items/${id}`),
+    create: (data: any) =>
+      fetchAPI("/order-items", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      fetchAPI(`/order-items/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    updateStatus: (id: string, status: string, reason?: string) =>
+      fetchAPI(`/order-items/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status, reason }),
+      }),
+    delete: (id: string) =>
+      fetchAPI(`/order-items/${id}`, { method: "DELETE" }),
+  },
+
   // Abandoned Carts
   abandonedCarts: {
     getAll: (params?: PaginationParams & { recovered?: boolean }) => {

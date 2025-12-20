@@ -9,14 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
 import {
   Dialog,
   DialogContent,
@@ -36,24 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Tag,
-  Percent,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+import { Plus, Search, Edit, Trash2, Tag, Percent } from "lucide-react";
 import {
   Discount,
   EnumDiscountStatus,
   EnumDiscountType,
   EnumDiscountReason,
 } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,44 +110,6 @@ export default function DiscountsPage() {
       setSortDirection("asc");
     }
   };
-
-  const getSortIcon = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return sortDirection === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
-  };
-
-  const filteredAndSortedDiscounts = discounts
-    .filter(
-      (discount) =>
-        discount.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        discount.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      let aValue: any = a[sortColumn as keyof Discount];
-      let bValue: any = b[sortColumn as keyof Discount];
-
-      if (sortColumn === "createdAt" || sortColumn === "expiryDate") {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      }
-
-      if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
 
   const getStatusBadge = (status: EnumDiscountStatus) => {
     const variants: Record<
@@ -611,138 +555,90 @@ export default function DiscountsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
+          <CrudDataTable<Discount>
+            data={discounts}
+            loading={loading}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            getRowKey={(discount) => discount.id}
+            emptyIcon={<Tag className="h-12 w-12 text-muted-foreground" />}
+            emptyMessage="No discounts found"
+            columns={[
+              {
+                key: "code",
+                header: "Code",
+                sortable: true,
+                render: (discount) => (
+                  <span className="font-medium font-mono">{discount.code}</span>
+                ),
+              },
+              {
+                key: "discountType",
+                header: "Type",
+                sortable: true,
+                render: (discount) => discount.discountType.replace(/_/g, " "),
+              },
+              {
+                key: "value",
+                header: "Value",
+                render: (discount) =>
+                  discount.discountPercentage
+                    ? `${discount.discountPercentage}%`
+                    : `€${discount.discountAmount}`,
+              },
+              {
+                key: "timesUsed",
+                header: "Usage",
+                sortable: true,
+                render: (discount) =>
+                  `${discount.timesUsed} / ${discount.usageLimit}`,
+              },
+              {
+                key: "expiryDate",
+                header: "Expiry",
+                sortable: true,
+                render: (discount) =>
+                  format(new Date(discount.expiryDate), "MMM dd, yyyy"),
+              },
+              {
+                key: "status",
+                header: "Status",
+                sortable: true,
+                render: (discount) => getStatusBadge(discount.status),
+              },
+              {
+                key: "createdAt",
+                header: "Created",
+                sortable: true,
+                render: (discount) =>
+                  format(new Date(discount.createdAt), "MMM dd, yyyy"),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                className: "text-right",
+                render: (discount) => (
+                  <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("code")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => handleEdit(discount)}
                     >
-                      Code
-                      {getSortIcon("code")}
+                      <Edit className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("discountType")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => handleDelete(discount.id)}
                     >
-                      Type
-                      {getSortIcon("discountType")}
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("timesUsed")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Usage
-                      {getSortIcon("timesUsed")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("expiryDate")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Expiry
-                      {getSortIcon("expiryDate")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("status")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Status
-                      {getSortIcon("status")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("createdAt")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Created
-                      {getSortIcon("createdAt")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedDiscounts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <Tag className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">
-                        No discounts found
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAndSortedDiscounts.map((discount: Discount) => (
-                    <TableRow key={discount.id}>
-                      <TableCell className="font-medium font-mono">
-                        {discount.code}
-                      </TableCell>
-                      <TableCell>
-                        {discount.discountType.replace(/_/g, " ")}
-                      </TableCell>
-                      <TableCell>
-                        {discount.discountPercentage
-                          ? `${discount.discountPercentage}%`
-                          : `£${discount.discountAmount}`}
-                      </TableCell>
-                      <TableCell>
-                        {discount.timesUsed} / {discount.usageLimit}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(discount.expiryDate), "MMM dd, yyyy")}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(discount.status)}</TableCell>
-                      <TableCell>
-                        {format(new Date(discount.createdAt), "MMM dd, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(discount)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(discount.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
     </div>

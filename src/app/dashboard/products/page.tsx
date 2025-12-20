@@ -10,14 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
 import {
   Dialog,
   DialogContent,
@@ -42,11 +35,7 @@ import {
   Plus,
   Package,
   Edit,
-  MoreHorizontal,
   Copy,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Upload,
   Trash2,
 } from "lucide-react";
@@ -58,7 +47,6 @@ import {
   EnumShirtType,
   EnumHomeAway,
 } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { TOAST_MESSAGES, getEntityMessages } from "@/config/messages";
@@ -239,46 +227,10 @@ export default function ProductsPage() {
     }
   };
 
-  const getSortIcon = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return sortDirection === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
-  };
-
-  const filteredAndSortedProducts = products
-    .filter((product) => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "ALL" || product.productStatus === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let aValue: any = a[sortColumn as keyof Product];
-      let bValue: any = b[sortColumn as keyof Product];
-
-      if (sortColumn === "createdAt") {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      }
-
-      if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+  // Filter products by status (sorting handled by CrudDataTable)
+  const filteredProducts = products.filter((product) => {
+    return statusFilter === "ALL" || product.productStatus === statusFilter;
+  });
 
   const getStatusBadge = (status: EnumProductStatus) => {
     const variants: Record<
@@ -660,185 +612,110 @@ export default function ProductsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
+          <CrudDataTable<Product>
+            data={filteredProducts}
+            loading={loading}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            getRowKey={(product) => product.id}
+            emptyIcon={<Package className="h-12 w-12 text-muted-foreground" />}
+            emptyMessage="No products found"
+            pagination={
+              pagination && pagination.totalPages > 1
+                ? {
+                    page: pagination.page,
+                    totalPages: pagination.totalPages,
+                    onPageChange: setPage,
+                  }
+                : undefined
+            }
+            columns={[
+              {
+                key: "sku",
+                header: "SKU",
+                sortable: true,
+                render: (product) => (
+                  <span className="font-medium">{product.sku}</span>
+                ),
+              },
+              {
+                key: "name",
+                header: "Name",
+                sortable: true,
+              },
+              {
+                key: "team",
+                header: "Team",
+                sortable: true,
+                render: (product) => product.team?.replace(/_/g, " "),
+              },
+              {
+                key: "league",
+                header: "League",
+                sortable: true,
+                render: (product) => product.league?.replace(/_/g, " "),
+              },
+              {
+                key: "year",
+                header: "Year",
+                sortable: true,
+              },
+              {
+                key: "homeAway",
+                header: "Type",
+                sortable: true,
+              },
+              {
+                key: "productStatus",
+                header: "Status",
+                sortable: true,
+                render: (product) => getStatusBadge(product.productStatus),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                className: "text-right",
+                render: (product) => (
+                  <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("sku")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedProductForVariants(product);
+                        setVariantManagerOpen(true);
+                      }}
+                      title="Manage variants"
                     >
-                      SKU
-                      {getSortIcon("sku")}
+                      <Package className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("name")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => handleDuplicate(product)}
+                      title="Duplicate product"
                     >
-                      Name
-                      {getSortIcon("name")}
+                      <Copy className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("team")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => handleEdit(product)}
                     >
-                      Team
-                      {getSortIcon("team")}
+                      <Edit className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort("league")}
-                      className="h-auto p-0 font-semibold"
+                      size="icon"
+                      onClick={() => handleDelete(product.id)}
                     >
-                      League
-                      {getSortIcon("league")}
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("year")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Year
-                      {getSortIcon("year")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("productType")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Type
-                      {getSortIcon("productType")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("productStatus")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Status
-                      {getSortIcon("productStatus")}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedProducts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <Package className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">No products found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAndSortedProducts.map((product: Product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        {product.sku}
-                      </TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.team?.replace(/_/g, " ")}</TableCell>
-                      <TableCell>
-                        {product.league?.replace(/_/g, " ")}
-                      </TableCell>
-                      <TableCell>{product.year}</TableCell>
-                      <TableCell>{product.homeAway}</TableCell>
-                      <TableCell>
-                        {getStatusBadge(product.productStatus)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedProductForVariants(product);
-                              setVariantManagerOpen(true);
-                            }}
-                            title="Manage variants"
-                          >
-                            <Package className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDuplicate(product)}
-                            title="Duplicate product"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(product)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-end items-center gap-2 pt-2 text-xs text-muted-foreground">
-              <span>
-                Page {pagination.page} of {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page <= 1}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() =>
-                  setPage((prev) =>
-                    pagination
-                      ? Math.min(pagination.totalPages, prev + 1)
-                      : prev + 1
-                  )
-                }
-              >
-                Next
-              </Button>
-            </div>
-          )}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
 

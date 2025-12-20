@@ -9,31 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable } from "@/components/ui/crud-data-table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  Users,
-  Eye,
-  ShoppingBag,
-  Calendar,
-  Edit,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Check,
-  X,
-} from "lucide-react";
+import { Search, Users, Eye, ShoppingBag, Calendar } from "lucide-react";
 import { Customer } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -125,78 +105,6 @@ export default function CustomersPage() {
     }
   };
 
-  const getSortIcon = (column: string) => {
-    if (sortColumn !== column) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return sortDirection === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
-  };
-
-  const handleEdit = (customer: CustomerWithOrders) => {
-    setEditingCustomer(customer.id);
-    setEditValues({
-      firstName: customer.firstName,
-      lastName: customer.lastName || "",
-      email: customer.email,
-    });
-  };
-
-  const handleSaveEdit = (customerId: string) => {
-    setCustomers(
-      customers.map((customer) =>
-        customer.id === customerId
-          ? {
-              ...customer,
-              firstName: editValues.firstName,
-              lastName: editValues.lastName,
-              email: editValues.email,
-              updatedAt: new Date(),
-            }
-          : customer
-      )
-    );
-    setEditingCustomer(null);
-    toast.success("Customer updated successfully");
-  };
-
-  const handleCancelEdit = () => {
-    setEditingCustomer(null);
-    setEditValues({ firstName: "", lastName: "", email: "" });
-  };
-
-  const filteredAndSortedCustomers = customers
-    .filter(
-      (customer) =>
-        customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.includes(searchTerm)
-    )
-    .sort((a, b) => {
-      let aValue: any = a[sortColumn as keyof CustomerWithOrders];
-      let bValue: any = b[sortColumn as keyof CustomerWithOrders];
-
-      if (sortColumn === "createdAt" || sortColumn === "lastOrderDate") {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      }
-
-      if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-
   const handleViewDetails = (customer: CustomerWithOrders) => {
     setSelectedCustomer(customer);
     setIsDetailOpen(true);
@@ -282,83 +190,81 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Orders</TableHead>
-                  <TableHead>Total Spent</TableHead>
-                  <TableHead>Last Order</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <Users className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">
-                        No customers found
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAndSortedCustomers.map(
-                    (customer: CustomerWithOrders) => (
-                      <TableRow
-                        key={customer.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleViewDetails(customer)}
-                      >
-                        <TableCell className="font-medium">
-                          {customer.firstName} {customer.lastName}
-                        </TableCell>
-                        <TableCell>
-                          +{customer.country.countryCode} {customer.phone}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {customer.orderCount}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          €{customer.totalSpent.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          {customer.lastOrderDate
-                            ? format(customer.lastOrderDate, "MMM dd, yyyy")
-                            : "N/A"}
-                        </TableCell>
-                        <TableCell
-                          className="text-right"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewDetails(customer)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  )
-                )}
-              </TableBody>
-            </Table>
-          )}
+          <CrudDataTable<CustomerWithOrders>
+            data={customers}
+            loading={loading}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            getRowKey={(customer) => customer.id}
+            emptyIcon={<Users className="h-12 w-12 text-muted-foreground" />}
+            emptyMessage="No customers found"
+            columns={[
+              {
+                key: "firstName",
+                header: "Name",
+                sortable: true,
+                render: (customer) => (
+                  <span className="font-medium">
+                    {customer.firstName} {customer.lastName}
+                  </span>
+                ),
+              },
+              {
+                key: "phone",
+                header: "Phone",
+                render: (customer) =>
+                  `+${customer.country.countryCode} ${customer.phone}`,
+              },
+              {
+                key: "orderCount",
+                header: "Orders",
+                sortable: true,
+                render: (customer) => (
+                  <div className="flex items-center gap-1">
+                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{customer.orderCount}</span>
+                  </div>
+                ),
+              },
+              {
+                key: "totalSpent",
+                header: "Total Spent",
+                sortable: true,
+                render: (customer) => (
+                  <span className="font-semibold">
+                    €{customer.totalSpent.toFixed(2)}
+                  </span>
+                ),
+              },
+              {
+                key: "lastOrderDate",
+                header: "Last Order",
+                sortable: true,
+                render: (customer) =>
+                  customer.lastOrderDate
+                    ? format(customer.lastOrderDate, "MMM dd, yyyy")
+                    : "N/A",
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                className: "text-right",
+                render: (customer) => (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(customer);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
 

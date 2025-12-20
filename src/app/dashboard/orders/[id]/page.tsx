@@ -3,13 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"; // Used in Add Item Dialog
 import {
   Dialog,
   DialogContent,
@@ -30,41 +24,18 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft,
-  Package,
-  User,
-  MapPin,
   CreditCard,
-  Truck,
-  Mail,
-  Phone,
   AlertCircle,
   CheckCircle,
-  Plus,
-  Trash2,
   Check,
-  ExternalLink,
-  Copy,
-  Edit,
-  X,
 } from "lucide-react";
-import {
-  Order,
-  EnumOrderStatus,
-  EnumCurrency,
-  EnumRiskChargeback,
-  EnumNoStockStatus,
-} from "@/types";
+import { Order, EnumOrderStatus, EnumRiskChargeback } from "@/types";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { validateAddress, type Address } from "@/lib/address-validation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// Address validation now handled by OrderAddressCard
+// DropdownMenu moved to extracted components
+import { Input } from "@/components/ui/input"; // Used in Add Item Dialog
+import { Label } from "@/components/ui/label"; // Used in Add Item Dialog
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,6 +47,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { api } from "@/lib/api";
+import {
+  OrderItemsCard,
+  OrderTrackingCard,
+  OrderAddressCard,
+} from "@/components/orders";
 
 export default function OrderDetailPage({
   params,
@@ -86,33 +62,9 @@ export default function OrderDetailPage({
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
-  const [trackingRows, setTrackingRows] = useState([
-    { provider: "", trackingNumber: "" },
-  ]);
   const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [addressValidation, setAddressValidation] = useState<ReturnType<
-    typeof validateAddress
-  > | null>(null);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingItemValues, setEditingItemValues] = useState<{
-    quantity: number;
-    customisationString?: string;
-    customisationPrice: number;
-  }>({ quantity: 1, customisationPrice: 0 });
-  const [editingAddress, setEditingAddress] = useState(false);
-  const [addressValues, setAddressValues] = useState({
-    shippingName: "",
-    shippingLine1: "",
-    shippingLine2: "",
-    shippingCity: "",
-    shippingState: "",
-    shippingPostalCode: "",
-    shippingCountry: "",
-    shippingPhone: "",
-    shippingEmail: "",
-  });
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -146,25 +98,6 @@ export default function OrderDetailPage({
             })),
           };
           setOrder(formattedOrder);
-
-          // Validate address
-          const addressToValidate: Address = {
-            line1: formattedOrder.shippingLine1,
-            line2: formattedOrder.shippingLine2,
-            city: formattedOrder.shippingCity,
-            state: formattedOrder.shippingState,
-            postalCode: formattedOrder.shippingPostalCode,
-            country: formattedOrder.shippingCountry,
-            name: formattedOrder.shippingName,
-          };
-          const validation = validateAddress(addressToValidate);
-          setAddressValidation(validation);
-
-          if (!validation.isValid) {
-            toast.error("Address validation failed - please review");
-          } else if (validation.warnings.length > 0) {
-            toast.warning("Address has warnings - please review");
-          }
         } else {
           toast.error("Failed to load order");
           router.push("/dashboard/orders");
@@ -251,81 +184,6 @@ export default function OrderDetailPage({
     }
   };
 
-  const handleAddTrackingRow = () => {
-    setTrackingRows([...trackingRows, { provider: "", trackingNumber: "" }]);
-  };
-
-  const handleRemoveTrackingRow = (index: number) => {
-    setTrackingRows(trackingRows.filter((_, i) => i !== index));
-  };
-
-  const handleTrackingChange = (
-    index: number,
-    field: "provider" | "trackingNumber",
-    value: string
-  ) => {
-    const updated = [...trackingRows];
-    updated[index][field] = value;
-    setTrackingRows(updated);
-  };
-
-  const handleSaveTracking = async () => {
-    const validTracking = trackingRows.filter(
-      (row) => row.provider && row.trackingNumber
-    );
-    if (validTracking.length === 0) {
-      toast.error("Please add at least one tracking detail");
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      for (const row of validTracking) {
-        try {
-          await api.orders.addTracking(params.id, row.trackingNumber);
-          successCount++;
-        } catch (error: any) {
-          // Skip if tracking already exists
-          if (!error.message?.includes("already exists")) {
-            throw error;
-          }
-        }
-      }
-      if (successCount > 0) {
-        toast.success(`${successCount} tracking detail(s) saved`);
-      } else {
-        toast.info("All tracking numbers already exist");
-      }
-    } catch (error: any) {
-      console.error("Error saving tracking:", error);
-      toast.error(error.message || "Failed to save tracking");
-    }
-  };
-
-  const getTrackingUrl = (provider: string, trackingNumber: string): string => {
-    const urls: Record<string, string> = {
-      DHL: `https://www.dhl.com/track?tracking-id=${trackingNumber}`,
-      FedEx: `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`,
-      UPS: `https://www.ups.com/track?tracknum=${trackingNumber}`,
-      "Royal Mail": `https://www.royalmail.com/track-your-item#/tracking-results/${trackingNumber}`,
-      USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`,
-    };
-    return urls[provider] || "#";
-  };
-
-  const handleMarkAsFulfilled = () => {
-    const validTracking = trackingRows.filter(
-      (row) => row.provider && row.trackingNumber
-    );
-    if (validTracking.length === 0) {
-      toast.error(
-        "Please add tracking information before marking as fulfilled"
-      );
-      return;
-    }
-    setShowFulfillDialog(true);
-  };
-
   const confirmFulfillment = async () => {
     await handleStatusChange(EnumOrderStatus.FULFILLED);
     setShowFulfillDialog(false);
@@ -384,378 +242,26 @@ export default function OrderDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Fulfillment Status */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                <CardTitle className="text-base">
-                  {statusConfig.label}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Order Items */}
-                <div className="space-y-3">
-                  {order.orderItems?.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={
-                        item.noStockStatus === EnumNoStockStatus.OUT_OF_STOCK
-                          ? "opacity-50"
-                          : ""
-                      }
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-3">
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              2004 Portugal 2a Equipacion
-                              {item.noStockStatus ===
-                                EnumNoStockStatus.OUT_OF_STOCK && (
-                                <Badge variant="destructive" className="ml-2">
-                                  Cancelled
-                                </Badge>
-                              )}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              S / Sin parche
-                            </p>
-                            {item.customisationString && (
-                              <p className="text-sm text-muted-foreground">
-                                ✓ {item.customisationString}
-                              </p>
-                            )}
-                            {/* Stock Status Dropdown */}
-                            <div className="mt-2">
-                              <Select
-                                value={item.noStockStatus}
-                                onValueChange={(value) => {
-                                  if (!order) return;
-                                  const updatedItems = order.orderItems?.map(
-                                    (i) =>
-                                      i.id === item.id
-                                        ? {
-                                            ...i,
-                                            noStockStatus:
-                                              value as EnumNoStockStatus,
-                                          }
-                                        : i
-                                  );
-                                  setOrder({
-                                    ...order,
-                                    orderItems: updatedItems,
-                                  });
-                                  toast.success("Stock status updated");
-                                }}
-                              >
-                                <SelectTrigger className="w-[180px] h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="NONE">
-                                    Stock: None
-                                  </SelectItem>
-                                  <SelectItem value="OUT_OF_STOCK">
-                                    Out of Stock
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-2">
-                          {editingItemId === item.id ? (
-                            <div className="space-y-2">
-                              <div className="flex gap-2 items-center">
-                                <Label className="text-xs">Qty:</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={editingItemValues.quantity}
-                                  onChange={(e) =>
-                                    setEditingItemValues({
-                                      ...editingItemValues,
-                                      quantity: parseInt(e.target.value) || 1,
-                                    })
-                                  }
-                                  className="w-16 h-8"
-                                />
-                              </div>
-                              <div className="flex gap-2 items-center">
-                                <Label className="text-xs">Custom:</Label>
-                                <Input
-                                  value={
-                                    editingItemValues.customisationString || ""
-                                  }
-                                  onChange={(e) =>
-                                    setEditingItemValues({
-                                      ...editingItemValues,
-                                      customisationString: e.target.value,
-                                    })
-                                  }
-                                  className="w-24 h-8"
-                                  placeholder="Custom"
-                                />
-                              </div>
-                              <div className="flex gap-2 items-center">
-                                <Label className="text-xs">Price:</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={editingItemValues.customisationPrice}
-                                  onChange={(e) =>
-                                    setEditingItemValues({
-                                      ...editingItemValues,
-                                      customisationPrice:
-                                        parseFloat(e.target.value) || 0,
-                                    })
-                                  }
-                                  className="w-20 h-8"
-                                />
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    if (!order) return;
-                                    const updatedItems = order.orderItems?.map(
-                                      (i) =>
-                                        i.id === item.id
-                                          ? {
-                                              ...i,
-                                              quantity:
-                                                editingItemValues.quantity,
-                                              customisationString:
-                                                editingItemValues.customisationString,
-                                              customisationPrice:
-                                                editingItemValues.customisationPrice,
-                                            }
-                                          : i
-                                    );
-                                    setOrder({
-                                      ...order,
-                                      orderItems: updatedItems,
-                                    });
-                                    setEditingItemId(null);
-                                    toast.success("Item updated successfully");
-                                  }}
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingItemId(null)}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div>
-                                <p className="font-medium">
-                                  €{item.productVariant?.sellPrice.toFixed(2)} ×{" "}
-                                  {item.quantity}
-                                </p>
-                                <p className="text-sm font-semibold">
-                                  €
-                                  {(
-                                    (item.productVariant?.sellPrice || 0) *
-                                    item.quantity
-                                  ).toFixed(2)}
-                                </p>
-                                {(item.customisationPrice || 0) > 0 && (
-                                  <p className="text-xs text-muted-foreground">
-                                    +€
-                                    {(item.customisationPrice || 0).toFixed(
-                                      2
-                                    )}{" "}
-                                    custom
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    setEditingItemId(item.id);
-                                    setEditingItemValues({
-                                      quantity: item.quantity,
-                                      customisationString:
-                                        item.customisationString,
-                                      customisationPrice:
-                                        item.customisationPrice || 0,
-                                    });
-                                  }}
-                                  title="Edit item"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    if (!order) return;
-                                    const updatedItems = order.orderItems?.map(
-                                      (i) =>
-                                        i.id === item.id
-                                          ? {
-                                              ...i,
-                                              noStockStatus:
-                                                EnumNoStockStatus.OUT_OF_STOCK,
-                                            }
-                                          : i
-                                    );
-                                    setOrder({
-                                      ...order,
-                                      orderItems: updatedItems,
-                                    });
-                                    toast.success("Item marked as cancelled");
-                                  }}
-                                  title="Mark item as cancelled"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      {index < (order.orderItems?.length || 0) - 1 && (
-                        <Separator className="mt-3" />
-                      )}
-                    </div>
-                  ))}
+          {/* Order Items Card - Extracted Component */}
+          <OrderItemsCard
+            order={order}
+            onOrderUpdate={setOrder}
+            onAddItem={() => setShowAddItemDialog(true)}
+            onDuplicateOrder={() =>
+              router.push(`/dashboard/orders/new?duplicate=${order.id}`)
+            }
+          />
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAddItemDialog(true)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Item
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (order) {
-                          router.push(
-                            `/dashboard/orders/new?duplicate=${order.id}`
-                          );
-                        }
-                      }}
-                    >
-                      <Copy className="mr-2 h-4 w-4" />
-                      Duplicate Order
-                    </Button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Tracking Information */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    Tracking Information
-                  </Label>
-                  {trackingRows.map((row, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Select
-                        value={row.provider}
-                        onValueChange={(value) =>
-                          handleTrackingChange(index, "provider", value)
-                        }
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="DHL">DHL</SelectItem>
-                          <SelectItem value="FedEx">FedEx</SelectItem>
-                          <SelectItem value="UPS">UPS</SelectItem>
-                          <SelectItem value="Royal Mail">Royal Mail</SelectItem>
-                          <SelectItem value="USPS">USPS</SelectItem>
-                          <SelectItem value="La Poste">La Poste</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        placeholder="Tracking number"
-                        value={row.trackingNumber}
-                        onChange={(e) =>
-                          handleTrackingChange(
-                            index,
-                            "trackingNumber",
-                            e.target.value
-                          )
-                        }
-                        className="flex-1"
-                      />
-                      {row.provider && row.trackingNumber && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            window.open(
-                              getTrackingUrl(row.provider, row.trackingNumber),
-                              "_blank"
-                            )
-                          }
-                          title="Track shipment"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {trackingRows.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveTrackingRow(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddTrackingRow}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Tracking
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleSaveTracking}
-                    className="flex-1"
-                  >
-                    Save Tracking
-                  </Button>
-                  <Button onClick={handleMarkAsFulfilled} className="flex-1">
-                    <Check className="h-4 w-4 mr-2" />
-                    Mark as Fulfilled
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Tracking Card - Extracted Component */}
+          <OrderTrackingCard
+            orderId={order.id}
+            onTrackingSaved={async () => {
+              const response = await api.orders.getById(params.id);
+              if (response.success && response.data) {
+                setOrder(response.data);
+              }
+            }}
+          />
 
           {/* Payment Status */}
           <Card>
@@ -969,239 +475,11 @@ export default function OrderDetailPage({
                   )}
                 </div>
               </div>
-              <Separator />
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium">Shipping address</p>
-                  {!editingAddress ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingAddress(true);
-                        setAddressValues({
-                          shippingName: order.shippingName,
-                          shippingLine1: order.shippingLine1,
-                          shippingLine2: order.shippingLine2 || "",
-                          shippingCity: order.shippingCity,
-                          shippingState: order.shippingState,
-                          shippingPostalCode: order.shippingPostalCode,
-                          shippingCountry: order.shippingCountry,
-                          shippingPhone: order.shippingPhone || "",
-                          shippingEmail: order.shippingEmail,
-                        });
-                      }}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setOrder({
-                            ...order,
-                            ...addressValues,
-                            updatedAt: new Date(),
-                          });
-                          setEditingAddress(false);
-                          toast.success("Address updated successfully");
-
-                          // Re-validate address
-                          const addressToValidate = {
-                            line1: addressValues.shippingLine1,
-                            line2: addressValues.shippingLine2,
-                            city: addressValues.shippingCity,
-                            state: addressValues.shippingState,
-                            postalCode: addressValues.shippingPostalCode,
-                            country: addressValues.shippingCountry,
-                            name: addressValues.shippingName,
-                          };
-                          const validation = validateAddress(addressToValidate);
-                          setAddressValidation(validation);
-                        }}
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingAddress(false)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {editingAddress ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={addressValues.shippingName}
-                      onChange={(e) =>
-                        setAddressValues({
-                          ...addressValues,
-                          shippingName: e.target.value,
-                        })
-                      }
-                      placeholder="Full Name"
-                      className="text-sm"
-                    />
-                    <Input
-                      value={addressValues.shippingLine1}
-                      onChange={(e) =>
-                        setAddressValues({
-                          ...addressValues,
-                          shippingLine1: e.target.value,
-                        })
-                      }
-                      placeholder="Address Line 1"
-                      className="text-sm"
-                    />
-                    <Input
-                      value={addressValues.shippingLine2}
-                      onChange={(e) =>
-                        setAddressValues({
-                          ...addressValues,
-                          shippingLine2: e.target.value,
-                        })
-                      }
-                      placeholder="Address Line 2 (Optional)"
-                      className="text-sm"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        value={addressValues.shippingPostalCode}
-                        onChange={(e) =>
-                          setAddressValues({
-                            ...addressValues,
-                            shippingPostalCode: e.target.value,
-                          })
-                        }
-                        placeholder="Postal Code"
-                        className="text-sm"
-                      />
-                      <Input
-                        value={addressValues.shippingCity}
-                        onChange={(e) =>
-                          setAddressValues({
-                            ...addressValues,
-                            shippingCity: e.target.value,
-                          })
-                        }
-                        placeholder="City"
-                        className="text-sm"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        value={addressValues.shippingState}
-                        onChange={(e) =>
-                          setAddressValues({
-                            ...addressValues,
-                            shippingState: e.target.value,
-                          })
-                        }
-                        placeholder="State/Province"
-                        className="text-sm"
-                      />
-                      <Input
-                        value={addressValues.shippingCountry}
-                        onChange={(e) =>
-                          setAddressValues({
-                            ...addressValues,
-                            shippingCountry: e.target.value,
-                          })
-                        }
-                        placeholder="Country"
-                        className="text-sm"
-                      />
-                    </div>
-                    <Input
-                      value={addressValues.shippingPhone}
-                      onChange={(e) =>
-                        setAddressValues({
-                          ...addressValues,
-                          shippingPhone: e.target.value,
-                        })
-                      }
-                      placeholder="Phone Number"
-                      className="text-sm"
-                    />
-                    <Input
-                      value={addressValues.shippingEmail}
-                      onChange={(e) =>
-                        setAddressValues({
-                          ...addressValues,
-                          shippingEmail: e.target.value,
-                        })
-                      }
-                      placeholder="Email Address"
-                      className="text-sm"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground space-y-0.5">
-                    <p>{order.shippingName}</p>
-                    <p>{order.shippingLine1}</p>
-                    {order.shippingLine2 && <p>{order.shippingLine2}</p>}
-                    <p>
-                      {order.shippingPostalCode} {order.shippingCity}
-                    </p>
-                    <p>
-                      {order.shippingState}, {order.shippingCountry}
-                    </p>
-                    <p>{order.shippingPhone}</p>
-                    <p className="text-blue-600">{order.shippingEmail}</p>
-                  </div>
-                )}
-
-                {/* Address Validation Results */}
-                {addressValidation && (
-                  <div className="mt-3 space-y-2">
-                    {addressValidation.errors.length > 0 && (
-                      <div className="rounded-md bg-destructive/10 p-2">
-                        <p className="text-xs font-medium text-destructive mb-1">
-                          Address Errors:
-                        </p>
-                        {addressValidation.errors.map((error, idx) => (
-                          <p key={idx} className="text-xs text-destructive">
-                            • {error}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {addressValidation.warnings.length > 0 && (
-                      <div className="rounded-md bg-yellow-50 p-2">
-                        <p className="text-xs font-medium text-yellow-800 mb-1">
-                          Address Warnings:
-                        </p>
-                        {addressValidation.warnings.map((warning, idx) => (
-                          <p key={idx} className="text-xs text-yellow-700">
-                            • {warning}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {addressValidation.isValid &&
-                      addressValidation.warnings.length === 0 && (
-                        <div className="rounded-md bg-green-50 p-2">
-                          <p className="text-xs text-green-700">
-                            ✓ Address validated successfully
-                          </p>
-                        </div>
-                      )}
-                  </div>
-                )}
-
-                <Button variant="link" className="h-auto p-0 text-sm mt-2">
-                  View map
-                </Button>
-              </div>
-              <Separator />
             </CardContent>
           </Card>
+
+          {/* Shipping Address - Extracted Component */}
+          <OrderAddressCard order={order} onOrderUpdate={setOrder} />
 
           {/* Conversion Summary */}
           <Card>
