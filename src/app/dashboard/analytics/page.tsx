@@ -42,26 +42,93 @@ import {
   Package,
   AlertCircle,
 } from "lucide-react";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+
+interface DashboardStats {
+  totalProducts: number;
+  totalCustomers: number;
+  totalOrders: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  recentOrders: Array<{
+    id: string;
+    orderID: string;
+    customerName: string;
+    totalAmount: number;
+    payableAmount: number;
+    orderStatus: string;
+    createdAt: string;
+  }>;
+  topProducts: Array<{
+    productId: string;
+    name: string;
+    sku: string;
+    imageUrl: string | null;
+    orderCount: number;
+    totalQuantity: number;
+  }>;
+  ordersByStatus: Array<{
+    status: string;
+    count: number;
+  }>;
+  revenueTrend: Array<{
+    date: string;
+    revenue: number;
+    orders: number;
+  }>;
+}
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
-  // Mock data - replace with actual API calls
-  const revenueData = [
-    { month: "Jan", revenue: 12400, orders: 45 },
-    { month: "Feb", revenue: 15800, orders: 52 },
-    { month: "Mar", revenue: 18200, orders: 61 },
-    { month: "Apr", revenue: 16500, orders: 55 },
-    { month: "May", revenue: 21000, orders: 68 },
-    { month: "Jun", revenue: 19800, orders: 64 },
-    { month: "Jul", revenue: 23500, orders: 75 },
-    { month: "Aug", revenue: 25200, orders: 82 },
-    { month: "Sep", revenue: 22800, orders: 71 },
-    { month: "Oct", revenue: 26500, orders: 85 },
-    { month: "Nov", revenue: 28900, orders: 92 },
-  ];
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Calculate date range based on timeRange
+      const endDate = new Date();
+      const startDate = new Date();
+      switch (timeRange) {
+        case "7d":
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case "30d":
+          startDate.setDate(endDate.getDate() - 30);
+          break;
+        case "90d":
+          startDate.setDate(endDate.getDate() - 90);
+          break;
+        case "1y":
+          startDate.setFullYear(endDate.getFullYear() - 1);
+          break;
+      }
 
+      const response = await api.dashboard.getStats(
+        startDate.toISOString(),
+        endDate.toISOString()
+      );
+
+      if (response.success && response.data) {
+        setStats(response.data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching dashboard stats:", error);
+      toast.error(error.message || "Failed to load analytics");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange]);
+
+  // Fallback data for charts that don't have API data yet
   const salesByLeague = [
     { name: "Premier League", value: 3500, color: "#8b5cf6" },
     { name: "La Liga", value: 2800, color: "#3b82f6" },
@@ -78,31 +145,38 @@ export default function AnalyticsPage() {
     { type: "Kid", count: 1800 },
   ];
 
-  const topProducts = [
-    { name: "Man Utd Home 23/24", sales: 245, revenue: 12250 },
-    { name: "Real Madrid Away 23/24", sales: 198, revenue: 10890 },
-    { name: "Barcelona Home 23/24", sales: 187, revenue: 10285 },
-    { name: "Liverpool Home 23/24", sales: 165, revenue: 9075 },
-    { name: "Bayern Munich Home 23/24", sales: 142, revenue: 7810 },
-  ];
+  // Format revenue trend data for charts
+  const revenueData =
+    stats?.revenueTrend?.map((day) => ({
+      date: format(new Date(day.date), "MMM dd"),
+      revenue: day.revenue,
+      orders: day.orders,
+    })) || [];
 
+  // Format top products for display
+  const topProducts =
+    stats?.topProducts?.map((p) => ({
+      name: p.name,
+      sales: p.orderCount,
+      quantity: p.totalQuantity,
+      revenue: p.orderCount * 50, // Estimate - replace with actual revenue when API supports it
+    })) || [];
+
+  // Customer metrics from API or fallback
   const customerMetrics = {
-    total: 1284,
-    new: 156,
-    returning: 1128,
-    avgLifetimeValue: 245.5,
-    topCustomers: [
-      { name: "John Doe", orders: 12, spent: 1240 },
-      { name: "Jane Smith", orders: 9, spent: 980 },
-      { name: "Mike Johnson", orders: 8, spent: 875 },
-    ],
+    total: stats?.totalCustomers || 0,
+    new: 0, // TODO: Add to API
+    returning: stats?.totalCustomers || 0,
+    avgLifetimeValue: stats?.averageOrderValue || 0,
+    topCustomers: [] as Array<{ name: string; orders: number; spent: number }>,
   };
 
+  // Inventory metrics from API or fallback
   const inventoryMetrics = {
-    totalProducts: 342,
-    lowStock: 23,
-    outOfStock: 8,
-    totalValue: 45680,
+    totalProducts: stats?.totalProducts || 0,
+    lowStock: 0, // TODO: Add to API
+    outOfStock: 0, // TODO: Add to API
+    totalValue: 0, // TODO: Add to API
   };
 
   return (
@@ -147,10 +221,15 @@ export default function AnalyticsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">€245,231</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+20.1%</span> from last month
+                {loading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    €{((stats?.totalRevenue || 0) / 100).toLocaleString()}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  For selected period
                 </p>
               </CardContent>
             </Card>
@@ -163,10 +242,15 @@ export default function AnalyticsPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2,350</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+12.5%</span> from last month
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {(stats?.totalOrders || 0).toLocaleString()}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  For selected period
                 </p>
               </CardContent>
             </Card>
@@ -179,10 +263,15 @@ export default function AnalyticsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">€104.35</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+5.2%</span> from last month
+                {loading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    €{((stats?.averageOrderValue || 0) / 100).toFixed(2)}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Average per order
                 </p>
               </CardContent>
             </Card>
@@ -190,15 +279,20 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Conversion Rate
+                  Total Customers
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3.24%</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingDown className="h-3 w-3 text-red-600" />
-                  <span className="text-red-600">-0.5%</span> from last month
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {(stats?.totalCustomers || 0).toLocaleString()}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Registered customers
                 </p>
               </CardContent>
             </Card>

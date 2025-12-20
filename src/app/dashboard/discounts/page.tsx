@@ -120,58 +120,6 @@ export default function DiscountsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortColumn, sortDirection, debouncedSearch]);
 
-  // Old mock data
-  const oldMockEffect = () => {
-    setTimeout(() => {
-      const mockDiscounts: Discount[] = [
-        {
-          id: "1",
-          createdAt: new Date("2024-11-10"),
-          updatedAt: new Date(),
-          code: "SUMMER2024",
-          status: EnumDiscountStatus.ACTIVE,
-          expiryDate: new Date("2024-08-31"),
-          usageLimit: 100,
-          maxDiscountAmount: 50,
-          minCartValue: 100,
-          description: "Summer sale discount",
-          discountType: EnumDiscountType.PERCENTAGE,
-          timesUsed: 25,
-          discountPercentage: 20,
-        },
-        {
-          id: "2",
-          createdAt: new Date("2024-11-11"),
-          updatedAt: new Date(),
-          code: "WELCOME10",
-          status: EnumDiscountStatus.ACTIVE,
-          expiryDate: new Date("2024-12-31"),
-          usageLimit: 500,
-          minCartValue: 50,
-          description: "Welcome discount for new customers",
-          discountType: EnumDiscountType.FIXED_AMOUNT,
-          timesUsed: 150,
-          discountAmount: 10,
-        },
-        {
-          id: "3",
-          createdAt: new Date("2024-11-09"),
-          updatedAt: new Date(),
-          code: "EXPIRED2023",
-          status: EnumDiscountStatus.EXPIRED,
-          expiryDate: new Date("2023-12-31"),
-          usageLimit: 200,
-          description: "Old year discount",
-          discountType: EnumDiscountType.PERCENTAGE,
-          timesUsed: 200,
-          discountPercentage: 15,
-        },
-      ];
-      setDiscounts(mockDiscounts);
-      setLoading(false);
-    }, 1000);
-  };
-
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -232,9 +180,15 @@ export default function DiscountsPage() {
     return <Badge variant={variants[status]}>{status}</Badge>;
   };
 
-  const handleDelete = (id: string) => {
-    toast.success("Discount deleted successfully");
-    setDiscounts(discounts.filter((d) => d.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await api.discounts.delete(id);
+      toast.success("Discount deleted successfully");
+      setDiscounts(discounts.filter((d) => d.id !== id));
+    } catch (error: any) {
+      console.error("Error deleting discount:", error);
+      toast.error(error.message || "Failed to delete discount");
+    }
   };
 
   const handleEdit = (discount: Discount) => {
@@ -541,6 +495,7 @@ export default function DiscountsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="PROMOTION">Promotion</SelectItem>
                     <SelectItem value="CHINA_MISTAKE">China Mistake</SelectItem>
                     <SelectItem value="EUROPE_MISTAKE">
                       Europe Mistake

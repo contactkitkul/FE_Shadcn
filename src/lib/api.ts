@@ -271,6 +271,33 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify({ orderStatus: status }),
       }),
+    // Tracking
+    getTracking: (orderId: string) => fetchAPI(`/orders/${orderId}/tracking`),
+    addTracking: (orderId: string, trackingNumber: string) =>
+      fetchAPI(`/orders/${orderId}/tracking`, {
+        method: "POST",
+        body: JSON.stringify({ trackingNumber }),
+      }),
+    removeTracking: (orderId: string, trackingId: string) =>
+      fetchAPI(`/orders/${orderId}/tracking?trackingId=${trackingId}`, {
+        method: "DELETE",
+      }),
+  },
+
+  // Abandoned Carts
+  abandonedCarts: {
+    getAll: (params?: PaginationParams & { recovered?: boolean }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
+      if (params?.sortBy) query.append("sortBy", params.sortBy);
+      if (params?.sortOrder) query.append("sortOrder", params.sortOrder);
+      if (params?.recovered !== undefined)
+        query.append("recovered", params.recovered.toString());
+      const queryStr = query.toString() ? `?${query.toString()}` : "";
+      return fetchAPI(`/abandoned-carts${queryStr}`);
+    },
+    getById: (id: string) => fetchAPI(`/abandoned-carts/${id}`),
   },
 
   // Customers
@@ -401,6 +428,20 @@ export const api = {
       if (endDate) params.append("endDate", endDate);
       const query = params.toString() ? `?${params.toString()}` : "";
       return fetchAPI(`/dashboard/stats${query}`);
+    },
+  },
+
+  // Shipments (Order Tracking)
+  shipments: {
+    getAll: (params?: PaginationParams & { search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
+      if (params?.sortBy) query.append("sortBy", params.sortBy);
+      if (params?.sortOrder) query.append("sortOrder", params.sortOrder);
+      if (params?.search) query.append("search", params.search);
+      const queryStr = query.toString() ? `?${query.toString()}` : "";
+      return fetchAPI(`/shipments${queryStr}`);
     },
   },
 };

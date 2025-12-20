@@ -37,18 +37,30 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 interface AbandonedCart {
   id: string;
-  customerName: string;
-  customerEmail: string;
-  phone: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  customerId?: string;
+  email?: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    productId?: string;
+    variantId?: string;
+  }>;
   totalPrice: number;
   currency: string;
   createdAt: Date;
-  source: string;
-  recovered: boolean;
+  recoveredOrderId?: string;
+  recoveredAt?: Date;
+  source?: string;
+  shippingName?: string;
+  shippingPhone?: string;
+  shippingLine1?: string;
+  shippingCity?: string;
+  shippingCountry?: string;
 }
 
 export default function AbandonedCartsPage() {
@@ -58,72 +70,57 @@ export default function AbandonedCartsPage() {
   const [selectedCart, setSelectedCart] = useState<AbandonedCart | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  useEffect(() => {
-    // Mock data
-    setTimeout(() => {
-      const mockCarts: AbandonedCart[] = [
-        {
-          id: "1",
-          customerName: "John Doe",
-          customerEmail: "john@example.com",
-          phone: "+44 7700 900123",
-          items: [
-            { name: "Man Utd Home 23/24 - M", quantity: 1, price: 89.99 },
-            { name: "Player Patch", quantity: 1, price: 15.0 },
-          ],
-          totalPrice: 104.99,
-          currency: "EUR",
-          createdAt: new Date("2024-11-11T10:30:00"),
-          source: "Website",
-          recovered: false,
-        },
-        {
-          id: "2",
-          customerName: "Jane Smith",
-          customerEmail: "jane@example.com",
-          phone: "+44 7700 900456",
-          items: [
-            { name: "Real Madrid Away 23/24 - L", quantity: 2, price: 84.99 },
-          ],
-          totalPrice: 169.98,
-          currency: "EUR",
-          createdAt: new Date("2024-11-10T15:45:00"),
-          source: "Mobile App",
-          recovered: false,
-        },
-        {
-          id: "3",
-          customerName: "Mike Johnson",
-          customerEmail: "mike@example.com",
-          phone: "+1 555 123 4567",
-          items: [
-            { name: "Barcelona Home 23/24 - S", quantity: 1, price: 89.99 },
-          ],
-          totalPrice: 89.99,
-          currency: "EUR",
-          createdAt: new Date("2024-11-09T09:15:00"),
-          source: "Website",
-          recovered: true,
-        },
-      ];
-      setCarts(mockCarts);
+  const fetchCarts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.abandonedCarts.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
+
+      if (response.success && response.data?.data) {
+        const formattedCarts = response.data.data.map((cart: any) => ({
+          ...cart,
+          createdAt: new Date(cart.createdAt),
+          recoveredAt: cart.recoveredAt
+            ? new Date(cart.recoveredAt)
+            : undefined,
+        }));
+        setCarts(formattedCarts);
+      }
+    } catch (error: any) {
+      console.error("Error fetching abandoned carts:", error);
+      toast.error(error.message || "Failed to load abandoned carts");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    fetchCarts();
   }, []);
 
   const filteredCarts = carts.filter(
     (cart) =>
-      cart.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cart.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+      (cart.shippingName?.toLowerCase() || "").includes(
+        searchTerm.toLowerCase()
+      ) || (cart.email?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   const handleSendRecoveryEmail = (cart: AbandonedCart) => {
-    toast.success(`Recovery email sent to ${cart.customerEmail}`);
+    if (!cart.email) {
+      toast.error("No email address available for this cart");
+      return;
+    }
+    toast.success(`Recovery email sent to ${cart.email}`);
     // Implement actual email sending
   };
 
-  const totalValue = carts.reduce((sum, cart) => sum + cart.totalPrice, 0);
-  const recoveredCount = carts.filter((cart) => cart.recovered).length;
+  const totalValue =
+    carts.reduce((sum, cart) => sum + cart.totalPrice, 0) / 100;
+  const recoveredCount = carts.filter((cart) => !!cart.recoveredOrderId).length;
   const recoveryRate =
     carts.length > 0 ? (recoveredCount / carts.length) * 100 : 0;
 
@@ -246,12 +243,12 @@ export default function AbandonedCartsPage() {
                   filteredCarts.map((cart) => (
                     <TableRow key={cart.id}>
                       <TableCell className="font-medium">
-                        {cart.customerName}
+                        {cart.shippingName || "Unknown"}
                       </TableCell>
-                      <TableCell>{cart.customerEmail}</TableCell>
-                      <TableCell>{cart.items.length} items</TableCell>
+                      <TableCell>{cart.email || "-"}</TableCell>
+                      <TableCell>{cart.items?.length || 0} items</TableCell>
                       <TableCell className="font-semibold">
-                        €{cart.totalPrice.toFixed(2)}
+                        €{(cart.totalPrice / 100).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {format(cart.createdAt, "MMM dd, yyyy")}
@@ -260,9 +257,9 @@ export default function AbandonedCartsPage() {
                           {format(cart.createdAt, "h:mm a")}
                         </span>
                       </TableCell>
-                      <TableCell>{cart.source}</TableCell>
+                      <TableCell>{cart.source || "-"}</TableCell>
                       <TableCell>
-                        {cart.recovered ? (
+                        {cart.recoveredOrderId ? (
                           <Badge className="bg-green-100 text-green-800">
                             Recovered
                           </Badge>
@@ -282,7 +279,7 @@ export default function AbandonedCartsPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {!cart.recovered && (
+                          {!cart.recoveredOrderId && cart.email && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -308,7 +305,8 @@ export default function AbandonedCartsPage() {
           <DialogHeader>
             <DialogTitle>Cart Details</DialogTitle>
             <DialogDescription>
-              {selectedCart?.customerName} - {selectedCart?.customerEmail}
+              {selectedCart?.shippingName || "Unknown"} -{" "}
+              {selectedCart?.email || "No email"}
             </DialogDescription>
           </DialogHeader>
           {selectedCart && (
@@ -317,25 +315,26 @@ export default function AbandonedCartsPage() {
                 <div>
                   <h4 className="font-semibold mb-2">Customer Information</h4>
                   <p className="text-sm text-muted-foreground">
-                    Name: {selectedCart.customerName}
+                    Name: {selectedCart.shippingName || "Unknown"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Email: {selectedCart.customerEmail}
+                    Email: {selectedCart.email || "-"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Phone: {selectedCart.phone}
+                    Phone: {selectedCart.shippingPhone || "-"}
                   </p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Cart Information</h4>
                   <p className="text-sm text-muted-foreground">
-                    Source: {selectedCart.source}
+                    Source: {selectedCart.source || "-"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Abandoned: {format(selectedCart.createdAt, "PPP")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Status: {selectedCart.recovered ? "Recovered" : "Pending"}
+                    Status:{" "}
+                    {selectedCart.recoveredOrderId ? "Recovered" : "Pending"}
                   </p>
                 </div>
               </div>
@@ -343,30 +342,32 @@ export default function AbandonedCartsPage() {
               <div>
                 <h4 className="font-semibold mb-3">Cart Items</h4>
                 <div className="space-y-2">
-                  {selectedCart.items.map((item, index) => (
+                  {selectedCart.items?.map((item, index) => (
                     <div
                       key={index}
                       className="flex justify-between p-3 bg-muted rounded"
                     >
                       <div>
-                        <p className="font-medium">{item.name}</p>
+                        <p className="font-medium">{item.name || "Product"}</p>
                         <p className="text-sm text-muted-foreground">
                           Quantity: {item.quantity}
                         </p>
                       </div>
-                      <p className="font-semibold">€{item.price.toFixed(2)}</p>
+                      <p className="font-semibold">
+                        €{((item.price || 0) / 100).toFixed(2)}
+                      </p>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between mt-4 pt-4 border-t">
                   <span className="font-semibold">Total:</span>
                   <span className="font-bold text-lg">
-                    €{selectedCart.totalPrice.toFixed(2)}
+                    €{(selectedCart.totalPrice / 100).toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              {!selectedCart.recovered && (
+              {!selectedCart.recoveredOrderId && selectedCart.email && (
                 <Button
                   className="w-full"
                   onClick={() => handleSendRecoveryEmail(selectedCart)}

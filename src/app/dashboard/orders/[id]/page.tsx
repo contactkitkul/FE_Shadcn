@@ -75,6 +75,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { api } from "@/lib/api";
 
 export default function OrderDetailPage({
   params,
@@ -114,91 +115,71 @@ export default function OrderDetailPage({
   });
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    setTimeout(() => {
-      const mockOrder: Order = {
-        id: params.id,
-        createdAt: new Date("2024-11-11T09:31:00"),
-        updatedAt: new Date(),
-        shippingName: "Fousseynou Sall",
-        shippingPhone: "+33 7 50 01 42 24",
-        shippingLine1: "25 Rue Voltaire",
-        shippingLine2: "Appartement 3",
-        shippingCity: "Clichy",
-        shippingState: "Île-de-France",
-        shippingPostalCode: "92110",
-        shippingCountry: "France",
-        shippingEmail: "fousseynousal100@gmail.com",
-        orderID: "FUTGY@44613",
-        orderStatus: EnumOrderStatus.RECEIVED,
-        customerId: "cust1",
-        totalAmount: 19.9,
-        discountAmount: 0,
-        payableAmount: 19.9,
-        currencyPayment: EnumCurrency.EUR,
-        riskChargeback: EnumRiskChargeback.SAFE,
-        notes: "",
-        orderItems: [
-          {
-            id: "item1",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            orderId: params.id,
-            productVariantId: "var1",
-            customisationString: "JAS_2623: 75877",
-            noStockStatus: EnumNoStockStatus.NONE,
-            quantity: 1,
-            productVariant: {
-              id: "var1",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              productId: "prod1",
-              size: "M" as any,
-              patch: "NO_PATCH" as any,
-              sellPrice: 19.9,
-              costPrice: 10.0,
-            },
-          },
-        ],
-        payments: [
-          {
-            id: "pay1",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            orderId: params.id,
-            paymentMethod: "CREDIT_CARD",
-            paymentStatus: "SUCCESS" as any,
-            transactionId: "MC_083E",
-            paymentGateway: "Mastercard",
-            amountPaid: 19.9,
-            currencyPaid: EnumCurrency.EUR,
-          },
-        ],
-      };
-      setOrder(mockOrder);
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const response = await api.orders.getById(params.id);
 
-      // Validate address
-      const addressToValidate: Address = {
-        line1: mockOrder.shippingLine1,
-        line2: mockOrder.shippingLine2,
-        city: mockOrder.shippingCity,
-        state: mockOrder.shippingState,
-        postalCode: mockOrder.shippingPostalCode,
-        country: mockOrder.shippingCountry,
-        name: mockOrder.shippingName,
-      };
-      const validation = validateAddress(addressToValidate);
-      setAddressValidation(validation);
+        if (response.success && response.data) {
+          const orderData = response.data;
+          // Convert date strings to Date objects
+          const formattedOrder: Order = {
+            ...orderData,
+            createdAt: new Date(orderData.createdAt),
+            updatedAt: new Date(orderData.updatedAt),
+            orderItems: orderData.orderItems?.map((item: any) => ({
+              ...item,
+              createdAt: new Date(item.createdAt),
+              updatedAt: new Date(item.updatedAt),
+              productVariant: item.productVariant
+                ? {
+                    ...item.productVariant,
+                    createdAt: new Date(item.productVariant.createdAt),
+                    updatedAt: new Date(item.productVariant.updatedAt),
+                  }
+                : undefined,
+            })),
+            payments: orderData.payments?.map((payment: any) => ({
+              ...payment,
+              createdAt: new Date(payment.createdAt),
+              updatedAt: new Date(payment.updatedAt),
+            })),
+          };
+          setOrder(formattedOrder);
 
-      if (!validation.isValid) {
-        toast.error("Address validation failed - please review");
-      } else if (validation.warnings.length > 0) {
-        toast.warning("Address has warnings - please review");
+          // Validate address
+          const addressToValidate: Address = {
+            line1: formattedOrder.shippingLine1,
+            line2: formattedOrder.shippingLine2,
+            city: formattedOrder.shippingCity,
+            state: formattedOrder.shippingState,
+            postalCode: formattedOrder.shippingPostalCode,
+            country: formattedOrder.shippingCountry,
+            name: formattedOrder.shippingName,
+          };
+          const validation = validateAddress(addressToValidate);
+          setAddressValidation(validation);
+
+          if (!validation.isValid) {
+            toast.error("Address validation failed - please review");
+          } else if (validation.warnings.length > 0) {
+            toast.warning("Address has warnings - please review");
+          }
+        } else {
+          toast.error("Failed to load order");
+          router.push("/dashboard/orders");
+        }
+      } catch (error: any) {
+        console.error("Error fetching order:", error);
+        toast.error(error.message || "Failed to load order");
+        router.push("/dashboard/orders");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setLoading(false);
-    }, 500);
-  }, [params.id]);
+    fetchOrder();
+  }, [params.id, router]);
 
   const getStatusBadge = (status: EnumOrderStatus) => {
     const config: Record<
@@ -250,10 +231,16 @@ export default function OrderDetailPage({
     return config[risk];
   };
 
-  const handleStatusChange = (newStatus: EnumOrderStatus) => {
-    if (order) {
+  const handleStatusChange = async (newStatus: EnumOrderStatus) => {
+    if (!order) return;
+
+    try {
+      await api.orders.updateStatus(order.id, newStatus);
       setOrder({ ...order, orderStatus: newStatus });
       toast.success("Order status updated successfully");
+    } catch (error: any) {
+      console.error("Error updating order status:", error);
+      toast.error(error.message || "Failed to update order status");
     }
   };
 
@@ -282,14 +269,36 @@ export default function OrderDetailPage({
     setTrackingRows(updated);
   };
 
-  const handleSaveTracking = () => {
+  const handleSaveTracking = async () => {
     const validTracking = trackingRows.filter(
       (row) => row.provider && row.trackingNumber
     );
-    if (validTracking.length > 0) {
-      toast.success(`${validTracking.length} tracking detail(s) saved`);
-    } else {
+    if (validTracking.length === 0) {
       toast.error("Please add at least one tracking detail");
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      for (const row of validTracking) {
+        try {
+          await api.orders.addTracking(params.id, row.trackingNumber);
+          successCount++;
+        } catch (error: any) {
+          // Skip if tracking already exists
+          if (!error.message?.includes("already exists")) {
+            throw error;
+          }
+        }
+      }
+      if (successCount > 0) {
+        toast.success(`${successCount} tracking detail(s) saved`);
+      } else {
+        toast.info("All tracking numbers already exist");
+      }
+    } catch (error: any) {
+      console.error("Error saving tracking:", error);
+      toast.error(error.message || "Failed to save tracking");
     }
   };
 
@@ -317,16 +326,14 @@ export default function OrderDetailPage({
     setShowFulfillDialog(true);
   };
 
-  const confirmFulfillment = () => {
-    handleStatusChange(EnumOrderStatus.FULFILLED);
+  const confirmFulfillment = async () => {
+    await handleStatusChange(EnumOrderStatus.FULFILLED);
     setShowFulfillDialog(false);
-    toast.success("Order marked as fulfilled");
   };
 
-  const confirmCancellation = () => {
-    handleStatusChange(EnumOrderStatus.CANCELLED);
+  const confirmCancellation = async () => {
+    await handleStatusChange(EnumOrderStatus.CANCELLED);
     setShowCancelDialog(false);
-    toast.success("Order cancelled");
   };
 
   if (loading || !order) {
@@ -567,7 +574,9 @@ export default function OrderDetailPage({
                                 {(item.customisationPrice || 0) > 0 && (
                                   <p className="text-xs text-muted-foreground">
                                     +€
-                                    {(item.customisationPrice || 0).toFixed(2)}{" "}
+                                    {(item.customisationPrice || 0).toFixed(
+                                      2
+                                    )}{" "}
                                     custom
                                   </p>
                                 )}

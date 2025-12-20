@@ -102,64 +102,6 @@ export default function RefundsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Old mock data
-  const oldMockEffect = () => {
-    setTimeout(() => {
-      const mockRefunds: Refund[] = [
-        {
-          id: "1",
-          orderId: "ord1",
-          orderID: "FUTGY@44613",
-          customerName: "John Doe",
-          transactionId: "TXN_123456",
-          amountPaid: 104.99,
-          currency: "EUR",
-          reason: "Product defect",
-          status: "PENDING",
-          createdAt: new Date("2024-11-11T10:30:00"),
-        },
-        {
-          id: "2",
-          orderId: "ord2",
-          orderID: "FUTGY@44612",
-          customerName: "Jane Smith",
-          transactionId: "TXN_123457",
-          amountPaid: 89.99,
-          currency: "EUR",
-          reason: "Wrong size",
-          status: "REFUNDED",
-          createdAt: new Date("2024-11-10T14:20:00"),
-        },
-        {
-          id: "3",
-          orderId: "ord3",
-          orderID: "FUTGY@44611",
-          customerName: "Mike Johnson",
-          transactionId: "TXN_123458",
-          amountPaid: 169.98,
-          currency: "EUR",
-          reason: "Customer changed mind",
-          status: "PARTIALLY_REFUNDED",
-          createdAt: new Date("2024-11-09T09:15:00"),
-        },
-        {
-          id: "4",
-          orderId: "ord4",
-          orderID: "FUTGY@44610",
-          customerName: "Sarah Williams",
-          transactionId: "TXN_123459",
-          amountPaid: 54.99,
-          currency: "EUR",
-          reason: "Item not as described",
-          status: "FAILED",
-          createdAt: new Date("2024-11-08T16:45:00"),
-        },
-      ];
-      setRefunds(mockRefunds);
-      setLoading(false);
-    }, 1000);
-  };
-
   const filteredRefunds = refunds.filter((refund) => {
     const matchesSearch =
       refund.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||

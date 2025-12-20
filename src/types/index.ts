@@ -1,21 +1,46 @@
 // Types based on Prisma Schema
 
 export enum EnumCurrency {
-  INR = "INR",
+  // Major currencies
   EUR = "EUR",
   USD = "USD",
   GBP = "GBP",
   CHF = "CHF",
+  JPY = "JPY",
+  // Middle East
+  AED = "AED",
+  // Asia Pacific
   AUD = "AUD",
-  BGN = "BGN",
   CAD = "CAD",
+  NZD = "NZD",
   CNY = "CNY",
+  HKD = "HKD",
+  SGD = "SGD",
+  INR = "INR",
+  IDR = "IDR",
+  KRW = "KRW",
+  MYR = "MYR",
+  PHP = "PHP",
+  THB = "THB",
+  VND = "VND",
+  // Americas
+  MXN = "MXN",
+  BRL = "BRL",
+  // Africa
+  ZAR = "ZAR",
+  // Israel
+  ILS = "ILS",
+  // European (non-EUR)
+  BGN = "BGN",
   CZK = "CZK",
   DKK = "DKK",
-  HKD = "HKD",
   HUF = "HUF",
-  JPY = "JPY",
-  KRW = "KRW",
+  ISK = "ISK",
+  NOK = "NOK",
+  PLN = "PLN",
+  RON = "RON",
+  SEK = "SEK",
+  TRY = "TRY",
 }
 
 export enum EnumPatch {
@@ -125,6 +150,7 @@ export enum EnumDiscountReason {
   EUROPE_MISTAKE = "EUROPE_MISTAKE",
   OTHERS = "OTHERS",
   NO_MISTAKE_EQUAL_HIT = "NO_MISTAKE_EQUAL_HIT",
+  PROMOTION = "PROMOTION",
 }
 
 export enum EnumRiskChargeback {

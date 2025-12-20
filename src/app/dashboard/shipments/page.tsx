@@ -36,21 +36,25 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { Shipment, EnumShipmentStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { api } from "@/lib/api";
+
+interface Shipment {
+  id: string;
+  trackingNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  emailSentAt?: string;
+  orderId: string;
+  orderID: string;
+  orderStatus: string;
+  orderCreatedAt: string;
+  customerName: string;
+  customerEmail: string;
+}
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -60,19 +64,25 @@ export default function ShipmentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [pendingStatusChange, setPendingStatusChange] = useState<{
-    shipmentId: string;
-    newStatus: EnumShipmentStatus;
-    shipmentNumber: string;
-  } | null>(null);
 
   // Fetch shipments from API
   const fetchShipments = async () => {
     try {
       setLoading(true);
-      // Shipments feature has been removed from the admin dashboard.
-      // We keep this page compiling, but no data is loaded.
-      setShipments([]);
+      const response = await api.shipments.getAll({
+        page: 1,
+        limit: 100,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+        search: debouncedSearch || undefined,
+      });
+
+      if (response.success && response.data?.data) {
+        setShipments(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching shipments:", error);
+      toast.error(error.message || "Failed to load shipments");
     } finally {
       setLoading(false);
     }
@@ -82,52 +92,6 @@ export default function ShipmentsPage() {
     fetchShipments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortColumn, sortDirection, debouncedSearch]);
-
-  // Old mock data
-  const oldMockEffect = () => {
-    setTimeout(() => {
-      const mockShipments: Shipment[] = [
-        {
-          id: "1",
-          createdAt: new Date("2024-01-15"),
-          updatedAt: new Date(),
-          trackingNumber: "DHL1234567890",
-          orderId: "ord1",
-          provider: "DHL",
-          status: EnumShipmentStatus.IN_TRANSIT,
-        },
-        {
-          id: "2",
-          createdAt: new Date("2024-01-14"),
-          updatedAt: new Date(),
-          trackingNumber: "FEDEX9876543210",
-          orderId: "ord2",
-          provider: "FEDEX",
-          status: EnumShipmentStatus.DELIVERED,
-        },
-        {
-          id: "3",
-          createdAt: new Date("2024-01-16"),
-          updatedAt: new Date(),
-          trackingNumber: "UPS5551234567",
-          orderId: "ord3",
-          provider: "UPS",
-          status: EnumShipmentStatus.LABEL_CREATED,
-        },
-        {
-          id: "4",
-          createdAt: new Date("2024-01-13"),
-          updatedAt: new Date(),
-          trackingNumber: "RM4449876543",
-          orderId: "ord4",
-          provider: "ROYAL_MAIL",
-          status: EnumShipmentStatus.IN_TRANSIT,
-        },
-      ];
-      setShipments(mockShipments);
-      setLoading(false);
-    }, 1000);
-  };
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -149,94 +113,30 @@ export default function ShipmentsPage() {
     );
   };
 
-  const filteredAndSortedShipments = shipments
-    .filter((shipment) => {
-      const matchesSearch =
-        shipment.trackingNumber
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        shipment.provider.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || shipment.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let aValue: any = a[sortColumn as keyof Shipment];
-      let bValue: any = b[sortColumn as keyof Shipment];
+  // Filter shipments - search is done server-side, but we can filter by status client-side
+  const filteredAndSortedShipments = shipments.filter((shipment) => {
+    const matchesStatus =
+      statusFilter === "all" || shipment.orderStatus === statusFilter;
+    return matchesStatus;
+  });
 
-      if (sortColumn === "createdAt") {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      }
-
-      if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-
-  const getStatusBadge = (status: EnumShipmentStatus) => {
+  const getStatusBadge = (status: string) => {
     const variants: Record<
-      EnumShipmentStatus,
+      string,
       {
         variant: "default" | "secondary" | "destructive" | "outline";
         label: string;
       }
     > = {
-      LABEL_CREATED: { variant: "secondary", label: "Label Created" },
-      IN_TRANSIT: { variant: "default", label: "In Transit" },
-      DELIVERED: { variant: "outline", label: "Delivered" },
-      RETURNED: { variant: "destructive", label: "Returned" },
+      RECEIVED: { variant: "secondary", label: "Received" },
+      PROCESSING: { variant: "default", label: "Processing" },
+      SHIPPED: { variant: "default", label: "Shipped" },
+      FULFILLED: { variant: "outline", label: "Fulfilled" },
       CANCELLED: { variant: "destructive", label: "Cancelled" },
+      FULLY_REFUNDED: { variant: "destructive", label: "Refunded" },
     };
-    return (
-      <Badge variant={variants[status].variant}>{variants[status].label}</Badge>
-    );
-  };
-
-  const handleStatusChange = (
-    shipmentId: string,
-    newStatus: EnumShipmentStatus,
-    shipmentNumber: string
-  ) => {
-    setPendingStatusChange({ shipmentId, newStatus, shipmentNumber });
-  };
-
-  const confirmStatusChange = () => {
-    if (!pendingStatusChange) return;
-
-    setShipments(
-      shipments.map((shipment) =>
-        shipment.id === pendingStatusChange.shipmentId
-          ? {
-              ...shipment,
-              status: pendingStatusChange.newStatus,
-              updatedAt: new Date(),
-            }
-          : shipment
-      )
-    );
-    toast.success("Shipment status updated successfully");
-    setPendingStatusChange(null);
-  };
-
-  const getProviderIcon = (provider: string) => {
-    switch (provider) {
-      case "DHL":
-      case "FEDEX":
-      case "UPS":
-        return <Truck className="h-4 w-4" />;
-      case "ROYAL_MAIL":
-        return <Package className="h-4 w-4" />;
-      default:
-        return <MapPin className="h-4 w-4" />;
-    }
+    const config = variants[status] || { variant: "secondary", label: status };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   return (
@@ -266,32 +166,24 @@ export default function ShipmentsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
+            <CardTitle className="text-sm font-medium">Shipped</CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {
-                shipments.filter(
-                  (s) => s.status === EnumShipmentStatus.IN_TRANSIT
-                ).length
-              }
+              {shipments.filter((s) => s.orderStatus === "SHIPPED").length}
             </div>
             <p className="text-xs text-muted-foreground">Currently shipping</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+            <CardTitle className="text-sm font-medium">Fulfilled</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {
-                shipments.filter(
-                  (s) => s.status === EnumShipmentStatus.DELIVERED
-                ).length
-              }
+              {shipments.filter((s) => s.orderStatus === "FULFILLED").length}
             </div>
             <p className="text-xs text-muted-foreground">
               Successfully delivered
@@ -300,18 +192,16 @@ export default function ShipmentsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Email Sent</CardTitle>
+            <Check className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {
-                shipments.filter(
-                  (s) => s.status === EnumShipmentStatus.LABEL_CREATED
-                ).length
-              }
+              {shipments.filter((s) => !!s.emailSentAt).length}
             </div>
-            <p className="text-xs text-muted-foreground">Awaiting pickup</p>
+            <p className="text-xs text-muted-foreground">
+              Tracking emails sent
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -372,26 +262,8 @@ export default function ShipmentsPage() {
                       {getSortIcon("trackingNumber")}
                     </Button>
                   </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("provider")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Provider
-                      {getSortIcon("provider")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("orderId")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Order ID
-                      {getSortIcon("orderId")}
-                    </Button>
-                  </TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Order ID</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -402,17 +274,8 @@ export default function ShipmentsPage() {
                       {getSortIcon("createdAt")}
                     </Button>
                   </TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort("status")}
-                      className="h-auto p-0 font-semibold"
-                    >
-                      Status
-                      {getSortIcon("status")}
-                    </Button>
-                  </TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Order Status</TableHead>
+                  <TableHead>Email Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -432,42 +295,36 @@ export default function ShipmentsPage() {
                         {shipment.trackingNumber}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getProviderIcon(shipment.provider)}
-                          <span>{shipment.provider.replace(/_/g, " ")}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {shipment.customerName}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {shipment.customerEmail}
+                          </span>
                         </div>
                       </TableCell>
-                      <TableCell>{shipment.orderId}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {shipment.orderID}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(shipment.createdAt), "MMM dd, yyyy")}
                       </TableCell>
-                      <TableCell>{getStatusBadge(shipment.status)}</TableCell>
                       <TableCell>
-                        <Select
-                          value={shipment.status}
-                          onValueChange={(value) =>
-                            handleStatusChange(
-                              shipment.id,
-                              value as EnumShipmentStatus,
-                              shipment.trackingNumber
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-[160px] h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="LABEL_CREATED">
-                              Label Created
-                            </SelectItem>
-                            <SelectItem value="IN_TRANSIT">
-                              In Transit
-                            </SelectItem>
-                            <SelectItem value="DELIVERED">Delivered</SelectItem>
-                            <SelectItem value="RETURNED">Returned</SelectItem>
-                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {getStatusBadge(shipment.orderStatus)}
+                      </TableCell>
+                      <TableCell>
+                        {shipment.emailSentAt ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-green-50 text-green-700"
+                          >
+                            <Check className="mr-1 h-3 w-3" />
+                            Email Sent
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Pending</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -477,40 +334,6 @@ export default function ShipmentsPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog
-        open={!!pendingStatusChange}
-        onOpenChange={() => setPendingStatusChange(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the status of shipment{" "}
-              <span className="font-semibold">
-                {pendingStatusChange?.shipmentNumber}
-              </span>{" "}
-              to{" "}
-              <span className="font-semibold">
-                {pendingStatusChange?.newStatus
-                  .replace(/_/g, " ")
-                  .toLowerCase()}
-              </span>
-              ?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingStatusChange(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmStatusChange}>
-              <Check className="mr-2 h-4 w-4" />
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
