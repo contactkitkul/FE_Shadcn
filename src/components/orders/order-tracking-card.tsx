@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Truck, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Truck, Plus, Trash2, ExternalLink, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -56,6 +56,7 @@ export function OrderTrackingCard({
     { provider: "", trackingNumber: "" },
   ]);
   const [saving, setSaving] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleAddRow = () => {
     setTrackingRows([...trackingRows, { provider: "", trackingNumber: "" }]);
@@ -73,6 +74,22 @@ export function OrderTrackingCard({
     const updated = [...trackingRows];
     updated[index][field] = value;
     setTrackingRows(updated);
+  };
+
+  const handleResendEmail = async () => {
+    setSendingEmail(true);
+    try {
+      const response = await api.orders.resendTrackingEmail(orderId);
+      if (response.success) {
+        toast.success("Tracking email sent successfully");
+      } else {
+        toast.error(response.message || "Failed to send email");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send tracking email");
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const handleSave = async () => {
@@ -185,9 +202,20 @@ export function OrderTrackingCard({
 
         <Separator />
 
-        <Button onClick={handleSave} disabled={saving} className="w-full">
-          {saving ? "Saving..." : "Save Tracking"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
+            {saving ? "Saving..." : "Save Tracking"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleResendEmail}
+            disabled={sendingEmail}
+            title="Resend tracking email to customer"
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            {sendingEmail ? "Sending..." : "Resend Email"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

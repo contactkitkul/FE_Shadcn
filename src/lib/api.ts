@@ -282,6 +282,10 @@ export const api = {
       fetchAPI(`/orders/${orderId}/tracking?trackingId=${trackingId}`, {
         method: "DELETE",
       }),
+    resendTrackingEmail: (orderId: string) =>
+      fetchAPI(`/orders/${orderId}/resend-tracking-email`, {
+        method: "POST",
+      }),
   },
 
   // Order Items
