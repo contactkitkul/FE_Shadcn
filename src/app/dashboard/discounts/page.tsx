@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -72,15 +72,13 @@ export default function DiscountsPage() {
     description: "",
   });
 
-  // Fetch discounts from API
+  // Fetch discounts from API - sorting done client-side for speed
   const fetchDiscounts = async () => {
     try {
       setLoading(true);
       const response = await api.discounts.getAll({
         page: 1,
         limit: 100,
-        sortBy: sortColumn,
-        sortOrder: sortDirection,
         search: searchTerm,
       });
 
@@ -100,7 +98,31 @@ export default function DiscountsPage() {
   useEffect(() => {
     fetchDiscounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch]);
+  }, [debouncedSearch]); // Removed sort deps - sorting is client-side
+
+  // Client-side sorting for instant response
+  const sortedDiscounts = useMemo(() => {
+    return [...discounts].sort((a, b) => {
+      let aVal: any = a[sortColumn as keyof Discount];
+      let bVal: any = b[sortColumn as keyof Discount];
+
+      if (
+        sortColumn === "createdAt" ||
+        sortColumn === "expiryDate" ||
+        sortColumn === "updatedAt"
+      ) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || "";
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [discounts, sortColumn, sortDirection]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -522,12 +544,15 @@ export default function DiscountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(
-                discounts.reduce(
-                  (sum, d) => sum + (d.timesUsed / d.usageLimit) * 100,
-                  0
-                ) / discounts.length
-              )}
+              {discounts.length > 0
+                ? Math.round(
+                    discounts.reduce(
+                      (sum, d) =>
+                        sum + (d.timesUsed / (d.usageLimit || 1)) * 100,
+                      0
+                    ) / discounts.length
+                  )
+                : 0}
               %
             </div>
             <p className="text-xs text-muted-foreground">Of usage limit</p>
@@ -556,7 +581,7 @@ export default function DiscountsPage() {
         </CardHeader>
         <CardContent>
           <CrudDataTable<Discount>
-            data={discounts}
+            data={sortedDiscounts}
             loading={loading}
             sortColumn={sortColumn}
             sortDirection={sortDirection}

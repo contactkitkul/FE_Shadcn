@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,15 +116,13 @@ export default function ProductsPage() {
 
   const PAGE_SIZE = 50;
 
-  // Fetch products from API
+  // Fetch products from API - sorting done client-side for speed
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await api.products.getAll({
         page,
         limit: PAGE_SIZE,
-        sortBy: sortColumn,
-        sortOrder: sortDirection,
         search: searchTerm,
       });
 
@@ -146,7 +144,7 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch, page]);
+  }, [debouncedSearch, page]); // Removed sort deps - sorting is client-side
 
   // Auto-generation functions
   const generateProductName = (
@@ -227,10 +225,32 @@ export default function ProductsPage() {
     }
   };
 
-  // Filter products by status (sorting handled by CrudDataTable)
-  const filteredProducts = products.filter((product) => {
-    return statusFilter === "ALL" || product.productStatus === statusFilter;
-  });
+  // Filter and sort products client-side for better performance
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = products.filter((product) => {
+      return statusFilter === "ALL" || product.productStatus === statusFilter;
+    });
+
+    // Client-side sorting
+    result.sort((a, b) => {
+      let aVal: any = a[sortColumn as keyof Product];
+      let bVal: any = b[sortColumn as keyof Product];
+
+      if (sortColumn === "createdAt" || sortColumn === "updatedAt") {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || "";
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [products, statusFilter, sortColumn, sortDirection]);
 
   const getStatusBadge = (status: EnumProductStatus) => {
     const variants: Record<
@@ -613,7 +633,7 @@ export default function ProductsPage() {
         </CardHeader>
         <CardContent>
           <CrudDataTable<Product>
-            data={filteredProducts}
+            data={filteredAndSortedProducts}
             loading={loading}
             sortColumn={sortColumn}
             sortDirection={sortDirection}
