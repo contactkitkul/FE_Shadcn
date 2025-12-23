@@ -42,6 +42,7 @@ interface CustomerWithOrders {
     orderID: string;
     orderStatus: string;
     totalAmount: number;
+    currencyPayment: string;
     createdAt: string;
   }>;
 }
@@ -248,15 +249,28 @@ export default function CustomersPage() {
               },
               {
                 key: "totalSpent",
-                header: "Total Spent",
+                header: "Total Spent (EUR)",
                 render: (customer) => {
-                  const total =
-                    customer.Order?.reduce(
-                      (sum, o) => sum + (o.totalAmount || 0),
-                      0
-                    ) || 0;
+                  // Only sum EUR orders for accurate totals
+                  const eurTotal =
+                    customer.Order?.filter(
+                      (o) => o.currencyPayment === "EUR"
+                    ).reduce((sum, o) => sum + (o.totalAmount || 0), 0) || 0;
+                  const hasOtherCurrencies = customer.Order?.some(
+                    (o) => o.currencyPayment !== "EUR"
+                  );
                   return (
-                    <span className="font-semibold">€{total.toFixed(2)}</span>
+                    <span
+                      className="font-semibold"
+                      title={hasOtherCurrencies ? "EUR orders only" : ""}
+                    >
+                      €{eurTotal.toFixed(2)}
+                      {hasOtherCurrencies && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          *
+                        </span>
+                      )}
+                    </span>
                   );
                 },
               },
