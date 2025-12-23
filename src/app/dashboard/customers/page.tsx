@@ -249,28 +249,15 @@ export default function CustomersPage() {
               },
               {
                 key: "totalSpent",
-                header: "Total Spent (EUR)",
+                header: "Total Spent",
                 render: (customer) => {
-                  // Only sum EUR orders for accurate totals
-                  const eurTotal =
-                    customer.Order?.filter(
-                      (o) => o.currencyPayment === "EUR"
-                    ).reduce((sum, o) => sum + (o.totalAmount || 0), 0) || 0;
-                  const hasOtherCurrencies = customer.Order?.some(
-                    (o) => o.currencyPayment !== "EUR"
-                  );
+                  const total =
+                    customer.Order?.reduce(
+                      (sum, o) => sum + (o.totalAmount || 0),
+                      0
+                    ) || 0;
                   return (
-                    <span
-                      className="font-semibold"
-                      title={hasOtherCurrencies ? "EUR orders only" : ""}
-                    >
-                      €{eurTotal.toFixed(2)}
-                      {hasOtherCurrencies && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          *
-                        </span>
-                      )}
-                    </span>
+                    <span className="font-semibold">€{total.toFixed(2)}</span>
                   );
                 },
               },

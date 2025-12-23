@@ -133,52 +133,44 @@ export default function PaymentsPage() {
   };
 
   // Memoized filtering and stats for performance
-  const {
-    filteredPayments,
-    eurTotalAmount,
-    eurPendingAmount,
-    eurRefundedAmount,
-    hasOtherCurrencies,
-  } = useMemo(() => {
-    const filtered = payments.filter((payment) => {
-      const orderID = payment.order?.orderID || "";
-      const customerName = payment.order?.shippingName || "";
-      const matchesSearch =
-        orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || payment.paymentStatus === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+  const { filteredPayments, totalAmount, pendingAmount, refundedAmount } =
+    useMemo(() => {
+      const filtered = payments.filter((payment) => {
+        const orderID = payment.order?.orderID || "";
+        const customerName = payment.order?.shippingName || "";
+        const matchesSearch =
+          orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          payment.transactionId
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" || payment.paymentStatus === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
 
-    // Calculate totals - ONLY sum EUR payments for accurate totals
-    const eurTotal = payments
-      .filter((p) => p.paymentStatus === "SUCCESS" && p.currencyPaid === "EUR")
-      .reduce((sum, p) => sum + p.amountPaid, 0);
-    const eurPending = payments
-      .filter((p) => p.paymentStatus === "PENDING" && p.currencyPaid === "EUR")
-      .reduce((sum, p) => sum + p.amountPaid, 0);
-    const eurRefunded = payments
-      .filter(
-        (p) =>
-          (p.paymentStatus === "REFUNDED" ||
-            p.paymentStatus === "PARTIALLY_REFUNDED") &&
-          p.currencyPaid === "EUR"
-      )
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      // Calculate totals - amountPaid is always stored, sum all successful payments
+      const total = payments
+        .filter((p) => p.paymentStatus === "SUCCESS")
+        .reduce((sum, p) => sum + p.amountPaid, 0);
+      const pending = payments
+        .filter((p) => p.paymentStatus === "PENDING")
+        .reduce((sum, p) => sum + p.amountPaid, 0);
+      const refunded = payments
+        .filter(
+          (p) =>
+            p.paymentStatus === "REFUNDED" ||
+            p.paymentStatus === "PARTIALLY_REFUNDED"
+        )
+        .reduce((sum, p) => sum + p.amountPaid, 0);
 
-    // Check if there are non-EUR payments
-    const otherCurrencies = payments.some((p) => p.currencyPaid !== "EUR");
-
-    return {
-      filteredPayments: filtered,
-      eurTotalAmount: eurTotal,
-      eurPendingAmount: eurPending,
-      eurRefundedAmount: eurRefunded,
-      hasOtherCurrencies: otherCurrencies,
-    };
-  }, [payments, searchTerm, statusFilter]);
+      return {
+        filteredPayments: filtered,
+        totalAmount: total,
+        pendingAmount: pending,
+        refundedAmount: refunded,
+      };
+    }, [payments, searchTerm, statusFilter]);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -201,17 +193,10 @@ export default function PaymentsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              €{eurTotalAmount.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold">€{totalAmount.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {
-                payments.filter(
-                  (p) =>
-                    p.paymentStatus === "SUCCESS" && p.currencyPaid === "EUR"
-                ).length
-              }{" "}
-              EUR payments{hasOtherCurrencies && " (EUR only)"}
+              {payments.filter((p) => p.paymentStatus === "SUCCESS").length}{" "}
+              successful payments
             </p>
           </CardContent>
         </Card>
@@ -223,16 +208,11 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              €{eurPendingAmount.toFixed(2)}
+              €{pendingAmount.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {
-                payments.filter(
-                  (p) =>
-                    p.paymentStatus === "PENDING" && p.currencyPaid === "EUR"
-                ).length
-              }{" "}
-              EUR pending
+              {payments.filter((p) => p.paymentStatus === "PENDING").length}{" "}
+              pending
             </p>
           </CardContent>
         </Card>
@@ -244,18 +224,17 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              €{eurRefundedAmount.toFixed(2)}
+              €{refundedAmount.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               {
                 payments.filter(
                   (p) =>
-                    (p.paymentStatus === "REFUNDED" ||
-                      p.paymentStatus === "PARTIALLY_REFUNDED") &&
-                    p.currencyPaid === "EUR"
+                    p.paymentStatus === "REFUNDED" ||
+                    p.paymentStatus === "PARTIALLY_REFUNDED"
                 ).length
               }{" "}
-              EUR refunds
+              refunds
             </p>
           </CardContent>
         </Card>
