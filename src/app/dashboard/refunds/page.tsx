@@ -52,15 +52,23 @@ import { getEntityMessages } from "@/config/messages";
 
 interface Refund {
   id: string;
+  paymentId: string;
   orderId: string;
-  orderID: string;
-  customerName: string;
-  transactionId: string;
   amountPaid: number;
-  currency: string;
-  reason: string;
+  currencyPaid: string;
+  reason?: string;
   status: "PENDING" | "REFUNDED" | "PARTIALLY_REFUNDED" | "FAILED";
-  createdAt: Date;
+  refundType: "FULL" | "PARTIAL";
+  airwallexRefundId?: string;
+  createdAt: string;
+  payment?: {
+    transactionId: string;
+    order?: {
+      orderID: string;
+      shippingName: string;
+      shippingEmail: string;
+    };
+  };
 }
 
 export default function RefundsPage() {
@@ -103,10 +111,13 @@ export default function RefundsPage() {
   }, [debouncedSearch]);
 
   const filteredRefunds = refunds.filter((refund) => {
+    const orderID = refund.payment?.order?.orderID || "";
+    const customerName = refund.payment?.order?.shippingName || "";
+    const transactionId = refund.payment?.transactionId || "";
     const matchesSearch =
-      refund.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      refund.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      refund.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
+      orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transactionId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || refund.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -310,23 +321,25 @@ export default function RefundsPage() {
                     return (
                       <TableRow key={refund.id}>
                         <TableCell className="font-medium">
-                          {refund.orderID}
+                          {refund.payment?.order?.orderID || "N/A"}
                         </TableCell>
-                        <TableCell>{refund.customerName}</TableCell>
+                        <TableCell>
+                          {refund.payment?.order?.shippingName || "N/A"}
+                        </TableCell>
                         <TableCell className="font-mono text-sm">
-                          {refund.transactionId}
+                          {refund.payment?.transactionId || "N/A"}
                         </TableCell>
                         <TableCell className="font-semibold">
                           €{refund.amountPaid.toFixed(2)}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          {refund.reason}
+                          {refund.reason || "N/A"}
                         </TableCell>
                         <TableCell>
-                          {format(refund.createdAt, "MMM dd, yyyy")}
+                          {format(new Date(refund.createdAt), "MMM dd, yyyy")}
                           <br />
                           <span className="text-xs text-muted-foreground">
-                            {format(refund.createdAt, "h:mm a")}
+                            {format(new Date(refund.createdAt), "h:mm a")}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -365,7 +378,8 @@ export default function RefundsPage() {
           <DialogHeader>
             <DialogTitle>Process Refund</DialogTitle>
             <DialogDescription>
-              {selectedRefund?.orderID} - {selectedRefund?.customerName}
+              {selectedRefund?.payment?.order?.orderID || "N/A"} -{" "}
+              {selectedRefund?.payment?.order?.shippingName || "N/A"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

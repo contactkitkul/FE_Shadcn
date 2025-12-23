@@ -28,24 +28,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface CustomerWithOrders extends Omit<Customer, "countryCode"> {
-  orderCount: number;
-  totalSpent: number;
-  lastOrderDate?: Date;
+interface CustomerWithOrders {
+  id: string;
   email: string;
-  countryId: string;
-  country: {
-    name: string;
-    countryCode: string;
-  };
-  createdAt: Date;
-  updatedAt: Date;
-  orders?: Array<{
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+  totalOrders: number;
+  createdAt: string;
+  updatedAt: string;
+  Order?: Array<{
     id: string;
     orderID: string;
-    date: Date;
-    amount: number;
-    status: string;
+    orderStatus: string;
+    totalAmount: number;
+    createdAt: string;
   }>;
 }
 
@@ -211,40 +208,50 @@ export default function CustomersPage() {
                 ),
               },
               {
-                key: "phone",
-                header: "Phone",
-                render: (customer) =>
-                  `+${customer.country.countryCode} ${customer.phone}`,
+                key: "email",
+                header: "Email",
+                render: (customer) => customer.email,
               },
               {
-                key: "orderCount",
+                key: "phone",
+                header: "Phone",
+                render: (customer) => customer.phone || "N/A",
+              },
+              {
+                key: "totalOrders",
                 header: "Orders",
                 sortable: true,
                 render: (customer) => (
                   <div className="flex items-center gap-1">
                     <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{customer.orderCount}</span>
+                    <span className="font-medium">{customer.totalOrders}</span>
                   </div>
                 ),
               },
               {
                 key: "totalSpent",
                 header: "Total Spent",
-                sortable: true,
-                render: (customer) => (
-                  <span className="font-semibold">
-                    €{customer.totalSpent.toFixed(2)}
-                  </span>
-                ),
+                render: (customer) => {
+                  const total =
+                    customer.Order?.reduce(
+                      (sum, o) => sum + (o.totalAmount || 0),
+                      0
+                    ) || 0;
+                  return (
+                    <span className="font-semibold">€{total.toFixed(2)}</span>
+                  );
+                },
               },
               {
-                key: "lastOrderDate",
-                header: "Last Order",
+                key: "createdAt",
+                header: "Joined",
                 sortable: true,
-                render: (customer) =>
-                  customer.lastOrderDate
-                    ? format(customer.lastOrderDate, "MMM dd, yyyy")
-                    : "N/A",
+                render: (customer) => {
+                  const date = new Date(customer.createdAt);
+                  return isNaN(date.getTime())
+                    ? "N/A"
+                    : format(date, "MMM dd, yyyy");
+                },
               },
               {
                 key: "actions",
@@ -286,24 +293,37 @@ export default function CustomersPage() {
                     Name: {selectedCustomer.firstName}{" "}
                     {selectedCustomer.lastName}
                   </p>
-                  <div className="text-sm text-muted-foreground">
-                    +{selectedCustomer.country.countryCode}{" "}
-                    {selectedCustomer.phone}
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Email: {selectedCustomer.email}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Phone: {selectedCustomer.phone || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2">Statistics</h4>
                   <p className="text-sm text-muted-foreground">
-                    Total Orders: {selectedCustomer.orderCount}
+                    Total Orders: {selectedCustomer.totalOrders}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Total Spent: €{selectedCustomer.totalSpent.toFixed(2)}
+                    Total Spent: €
+                    {(
+                      selectedCustomer.Order?.reduce(
+                        (sum, o) => sum + (o.totalAmount || 0),
+                        0
+                      ) || 0
+                    ).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Average Order: €
-                    {(
-                      selectedCustomer.totalSpent / selectedCustomer.orderCount
-                    ).toFixed(2)}
+                    {selectedCustomer.totalOrders > 0
+                      ? (
+                          (selectedCustomer.Order?.reduce(
+                            (sum, o) => sum + (o.totalAmount || 0),
+                            0
+                          ) || 0) / selectedCustomer.totalOrders
+                        ).toFixed(2)
+                      : "0.00"}
                   </p>
                 </div>
               </div>
@@ -311,33 +331,38 @@ export default function CustomersPage() {
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4" />
-                  Order History ({selectedCustomer.orders?.length || 0})
+                  Order History ({selectedCustomer.Order?.length || 0})
                 </h4>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {selectedCustomer.orders &&
-                  selectedCustomer.orders.length > 0 ? (
-                    selectedCustomer.orders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between text-sm p-3 bg-muted rounded hover:bg-muted/80 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">{order.orderID}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(order.date, "MMM dd, yyyy")}
+                  {selectedCustomer.Order &&
+                  selectedCustomer.Order.length > 0 ? (
+                    selectedCustomer.Order.map((order) => {
+                      const orderDate = new Date(order.createdAt);
+                      return (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between text-sm p-3 bg-muted rounded hover:bg-muted/80 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{order.orderID}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <Calendar className="h-3 w-3" />
+                              {isNaN(orderDate.getTime())
+                                ? "N/A"
+                                : format(orderDate, "MMM dd, yyyy")}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              €{(order.totalAmount || 0).toFixed(2)}
+                            </p>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {order.orderStatus}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            €{order.amount.toFixed(2)}
-                          </p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            {order.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No orders found

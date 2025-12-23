@@ -472,14 +472,24 @@ export default function OrdersPage() {
                       key: "createdAt",
                       header: "Date & Time",
                       sortable: true,
-                      render: (order: Order) => (
-                        <div className="text-sm">
-                          <div>{format(order.createdAt, "MMM dd, yyyy")}</div>
-                          <div className="text-muted-foreground">
-                            {format(order.createdAt, "h:mm a")}
+                      render: (order: Order) => {
+                        const date = new Date(order.createdAt);
+                        if (isNaN(date.getTime())) {
+                          return (
+                            <div className="text-sm text-muted-foreground">
+                              Invalid date
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="text-sm">
+                            <div>{format(date, "MMM dd, yyyy")}</div>
+                            <div className="text-muted-foreground">
+                              {format(date, "h:mm a")}
+                            </div>
                           </div>
-                        </div>
-                      ),
+                        );
+                      },
                     },
                   ]
                 : []),

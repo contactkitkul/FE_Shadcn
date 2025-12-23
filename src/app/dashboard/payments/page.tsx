@@ -42,16 +42,24 @@ import { getEntityMessages } from "@/config/messages";
 
 interface Payment {
   id: string;
-  createdAt: Date;
+  createdAt: string;
   orderId: string;
-  orderID: string;
-  customerName: string;
   paymentMethod: string;
   paymentStatus: string;
   transactionId: string;
   paymentGateway: string;
   amountPaid: number;
-  currency: string;
+  currencyPaid: string;
+  order?: {
+    orderID: string;
+    shippingName: string;
+    shippingEmail: string;
+    totalAmount: number;
+  };
+  refunds?: Array<{
+    id: string;
+    amountPaid: number;
+  }>;
 }
 
 export default function PaymentsPage() {
@@ -134,9 +142,11 @@ export default function PaymentsPage() {
   };
 
   const filteredPayments = payments.filter((payment) => {
+    const orderID = payment.order?.orderID || "";
+    const customerName = payment.order?.shippingName || "";
     const matchesSearch =
-      payment.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || payment.paymentStatus === statusFilter;
@@ -311,9 +321,11 @@ export default function PaymentsPage() {
                         className="cursor-pointer hover:bg-muted/50"
                       >
                         <TableCell className="font-medium">
-                          {payment.orderID}
+                          {payment.order?.orderID || "N/A"}
                         </TableCell>
-                        <TableCell>{payment.customerName}</TableCell>
+                        <TableCell>
+                          {payment.order?.shippingName || "N/A"}
+                        </TableCell>
                         <TableCell className="font-mono text-sm">
                           {payment.transactionId}
                         </TableCell>
@@ -326,7 +338,7 @@ export default function PaymentsPage() {
                           </span>
                         </TableCell>
                         <TableCell className="font-semibold">
-                          {getCurrencySymbol(payment.currency)}
+                          {getCurrencySymbol(payment.currencyPaid)}
                           {payment.amountPaid.toFixed(2)}
                         </TableCell>
                         <TableCell>
