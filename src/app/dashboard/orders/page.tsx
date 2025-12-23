@@ -479,8 +479,19 @@ export default function OrdersPage() {
                       key: "payableAmount",
                       header: "Amount",
                       sortable: true,
-                      render: (order: Order) =>
-                        `€${order.payableAmount.toFixed(2)}`,
+                      render: (order: Order) => {
+                        const symbol =
+                          order.currencyPayment === "EUR"
+                            ? "€"
+                            : order.currencyPayment === "GBP"
+                            ? "£"
+                            : order.currencyPayment === "USD"
+                            ? "$"
+                            : order.currencyPayment === "INR"
+                            ? "₹"
+                            : `${order.currencyPayment} `;
+                        return `${symbol}${order.payableAmount.toFixed(2)}`;
+                      },
                     },
                   ]
                 : []),

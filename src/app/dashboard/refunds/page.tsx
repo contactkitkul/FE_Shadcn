@@ -334,7 +334,16 @@ export default function RefundsPage() {
                           {refund.payment?.transactionId || "N/A"}
                         </TableCell>
                         <TableCell className="font-semibold">
-                          €{refund.amountPaid.toFixed(2)}
+                          {refund.currencyPaid === "EUR"
+                            ? "€"
+                            : refund.currencyPaid === "GBP"
+                            ? "£"
+                            : refund.currencyPaid === "USD"
+                            ? "$"
+                            : refund.currencyPaid === "INR"
+                            ? "₹"
+                            : `${refund.currencyPaid} `}
+                          {refund.amountPaid.toFixed(2)}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {refund.reason || "N/A"}
@@ -390,7 +399,16 @@ export default function RefundsPage() {
             <div className="space-y-2">
               <Label>Original Amount</Label>
               <div className="text-2xl font-bold">
-                €{selectedRefund?.amountPaid.toFixed(2)}
+                {selectedRefund?.currencyPaid === "EUR"
+                  ? "€"
+                  : selectedRefund?.currencyPaid === "GBP"
+                  ? "£"
+                  : selectedRefund?.currencyPaid === "USD"
+                  ? "$"
+                  : selectedRefund?.currencyPaid === "INR"
+                  ? "₹"
+                  : `${selectedRefund?.currencyPaid || ""} `}
+                {selectedRefund?.amountPaid.toFixed(2)}
               </div>
             </div>
             <div className="space-y-2">
