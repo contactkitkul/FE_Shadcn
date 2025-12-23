@@ -41,123 +41,70 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface OrderLog {
   id: string;
   orderId: string;
-  orderID: string;
-  actorId: string;
-  actorType: "customer" | "admin" | "system";
+  actorId?: string;
+  actorType: string;
   event: string;
-  details: any;
-  createdAt: Date;
+  details?: any;
+  createdAt: string;
+  eventDisplay?: string;
+  actorDisplay?: string;
+  order?: {
+    orderID: string;
+    orderStatus: string;
+    shippingName: string;
+    shippingEmail: string;
+    totalAmount: number;
+    currencyPayment: string;
+  };
 }
 
 export default function ActivityPage() {
   const [logs, setLogs] = useState<OrderLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 500);
   const [actorFilter, setActorFilter] = useState<string>("all");
   const [eventFilter, setEventFilter] = useState<string>("all");
 
-  useEffect(() => {
-    // Mock data
-    setTimeout(() => {
-      const mockLogs: OrderLog[] = [
-        {
-          id: "1",
-          orderId: "ord1",
-          orderID: "FUTGY@44613",
-          actorId: "admin1",
-          actorType: "admin",
-          event: "ORDER_CREATED",
-          details: { amount: 104.99, items: 2 },
-          createdAt: new Date("2024-11-11T10:30:00"),
-        },
-        {
-          id: "2",
-          orderId: "ord1",
-          orderID: "FUTGY@44613",
-          actorId: "system",
-          actorType: "system",
-          event: "PAYMENT_PROCESSED",
-          details: { transactionId: "TXN_123456", amount: 104.99 },
-          createdAt: new Date("2024-11-11T10:31:00"),
-        },
-        {
-          id: "3",
-          orderId: "ord1",
-          orderID: "FUTGY@44613",
-          actorId: "admin2",
-          actorType: "admin",
-          event: "STATUS_CHANGED",
-          details: { from: "RECEIVED", to: "FULFILLED" },
-          createdAt: new Date("2024-11-11T11:00:00"),
-        },
-        {
-          id: "4",
-          orderId: "ord2",
-          orderID: "FUTGY@44612",
-          actorId: "customer1",
-          actorType: "customer",
-          event: "ORDER_CREATED",
-          details: { amount: 89.99, items: 1 },
-          createdAt: new Date("2024-11-10T15:45:00"),
-        },
-        {
-          id: "5",
-          orderId: "ord2",
-          orderID: "FUTGY@44612",
-          actorId: "admin1",
-          actorType: "admin",
-          event: "SHIPMENT_CREATED",
-          details: { trackingNumber: "DHL123456", provider: "DHL" },
-          createdAt: new Date("2024-11-10T16:00:00"),
-        },
-        {
-          id: "6",
-          orderId: "ord3",
-          orderID: "FUTGY@44611",
-          actorId: "customer2",
-          actorType: "customer",
-          event: "ITEM_CANCELLED",
-          details: { itemId: "item1", reason: "Changed mind" },
-          createdAt: new Date("2024-11-09T14:20:00"),
-        },
-        {
-          id: "7",
-          orderId: "ord3",
-          orderID: "FUTGY@44611",
-          actorId: "admin2",
-          actorType: "admin",
-          event: "REFUND_ISSUED",
-          details: { amount: 45.0, reason: "Item cancelled" },
-          createdAt: new Date("2024-11-09T14:30:00"),
-        },
-        {
-          id: "8",
-          orderId: "ord4",
-          orderID: "FUTGY@44610",
-          actorId: "system",
-          actorType: "system",
-          event: "PAYMENT_FAILED",
-          details: { reason: "Insufficient funds" },
-          createdAt: new Date("2024-11-08T09:15:00"),
-        },
-      ];
-      setLogs(mockLogs);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  // Fetch order logs from API
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const response = await api.orderLogs.getAll({
+        page: 1,
+        limit: 100,
+        search: debouncedSearch || undefined,
+        actorType:
+          actorFilter !== "all" ? actorFilter.toUpperCase() : undefined,
+        event: eventFilter !== "all" ? eventFilter : undefined,
+      });
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.event.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesActor = actorFilter === "all" || log.actorType === actorFilter;
-    const matchesEvent = eventFilter === "all" || log.event === eventFilter;
-    return matchesSearch && matchesActor && matchesEvent;
-  });
+      if (response.success && response.data?.data) {
+        setLogs(response.data.data);
+      } else {
+        toast.error("Failed to load activity logs");
+      }
+    } catch (error: any) {
+      console.error("Error fetching logs:", error);
+      toast.error(error.message || "Failed to load activity logs");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, actorFilter, eventFilter]);
+
+  // Filtering is now done server-side, but keep local filter for instant feedback
+  const filteredLogs = logs;
 
   const getEventIcon = (event: string) => {
     const icons: Record<string, any> = {
@@ -237,7 +184,7 @@ export default function ActivityPage() {
               {
                 logs.filter(
                   (log) =>
-                    format(log.createdAt, "yyyy-MM-dd") ===
+                    format(new Date(log.createdAt), "yyyy-MM-dd") ===
                     format(new Date(), "yyyy-MM-dd")
                 ).length
               }
@@ -363,7 +310,7 @@ export default function ActivityPage() {
                     return (
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
-                          {log.orderID}
+                          {log.order?.orderID || "N/A"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -384,10 +331,10 @@ export default function ActivityPage() {
                           </code>
                         </TableCell>
                         <TableCell>
-                          {format(log.createdAt, "MMM dd, yyyy")}
+                          {format(new Date(log.createdAt), "MMM dd, yyyy")}
                           <br />
                           <span className="text-xs text-muted-foreground">
-                            {format(log.createdAt, "h:mm:ss a")}
+                            {format(new Date(log.createdAt), "h:mm:ss a")}
                           </span>
                         </TableCell>
                       </TableRow>

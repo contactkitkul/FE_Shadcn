@@ -475,4 +475,33 @@ export const api = {
       return fetchAPI(`/shipments${queryStr}`);
     },
   },
+
+  // Order Logs (Activity / Audit Trail)
+  orderLogs: {
+    getAll: (
+      params?: PaginationParams & {
+        orderId?: string;
+        orderID?: string;
+        event?: string;
+        actorType?: string;
+        startDate?: string;
+        endDate?: string;
+      }
+    ) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.append("page", params.page.toString());
+      if (params?.limit) query.append("limit", params.limit.toString());
+      if (params?.sortBy) query.append("sortBy", params.sortBy);
+      if (params?.sortOrder) query.append("sortOrder", params.sortOrder);
+      if (params?.search) query.append("search", params.search);
+      if (params?.orderId) query.append("orderId", params.orderId);
+      if (params?.orderID) query.append("orderID", params.orderID);
+      if (params?.event) query.append("event", params.event);
+      if (params?.actorType) query.append("actorType", params.actorType);
+      if (params?.startDate) query.append("startDate", params.startDate);
+      if (params?.endDate) query.append("endDate", params.endDate);
+      const queryStr = query.toString() ? `?${query.toString()}` : "";
+      return fetchAPI(`/order-logs${queryStr}`);
+    },
+  },
 };
