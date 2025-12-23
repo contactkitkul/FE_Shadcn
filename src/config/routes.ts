@@ -9,8 +9,8 @@ import {
   CreditCard,
   Percent,
   ShoppingBag,
-  RefreshCcw,
   Activity,
+  Truck,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -18,67 +18,53 @@ export interface Route {
   label: string;
   icon: LucideIcon;
   href: string;
+  group?: string;
 }
 
-export const dashboardRoutes: Route[] = [
+export interface RouteGroup {
+  label: string;
+  routes: Route[];
+}
+
+// Grouped routes for professional sidebar organization
+export const routeGroups: RouteGroup[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
+    label: "Overview",
+    routes: [
+      { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+      { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+      { label: "Reports", icon: FileText, href: "/dashboard/reports" },
+    ],
   },
   {
-    label: "Orders",
-    icon: ShoppingCart,
-    href: "/dashboard/orders",
+    label: "Management",
+    routes: [
+      { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
+      { label: "Products", icon: Package, href: "/dashboard/products" },
+      { label: "Discounts", icon: Percent, href: "/dashboard/discounts" },
+      { label: "Shipping Fees", icon: Truck, href: "/dashboard/shipping" },
+    ],
   },
   {
-    label: "Products",
-    icon: Package,
-    href: "/dashboard/products",
-  },
-  {
-    label: "Discounts",
-    icon: Percent,
-    href: "/dashboard/discounts",
-  },
-  {
-    label: "Shipping Fees",
-    icon: Settings,
-    href: "/dashboard/shipping",
-  },
-  {
-    label: "Customers",
-    icon: Users,
-    href: "/dashboard/customers",
-  },
-  {
-    label: "Abandoned Carts",
-    icon: ShoppingBag,
-    href: "/dashboard/abandoned-carts",
-  },
-  {
-    label: "Activity",
-    icon: Activity,
-    href: "/dashboard/activity",
-  },
-  {
-    label: "Payments",
-    icon: CreditCard,
-    href: "/dashboard/payments",
-  },
-  {
-    label: "Refunds",
-    icon: RefreshCcw,
-    href: "/dashboard/refunds",
-  },
-  {
-    label: "Analytics",
-    icon: BarChart3,
-    href: "/dashboard/analytics",
-  },
-  {
-    label: "Reports",
-    icon: FileText,
-    href: "/dashboard/reports",
+    label: "Audit",
+    routes: [
+      { label: "Customers", icon: Users, href: "/dashboard/customers" },
+      {
+        label: "Transactions",
+        icon: CreditCard,
+        href: "/dashboard/transactions",
+      },
+      {
+        label: "Abandoned Carts",
+        icon: ShoppingBag,
+        href: "/dashboard/abandoned-carts",
+      },
+      { label: "Activity Log", icon: Activity, href: "/dashboard/activity" },
+    ],
   },
 ];
+
+// Flat list for backward compatibility
+export const dashboardRoutes: Route[] = routeGroups.flatMap(
+  (group) => group.routes
+);
