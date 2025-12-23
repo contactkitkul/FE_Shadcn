@@ -389,8 +389,8 @@ export default function OrderDetailPage({
                       <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                       <div className="flex-1">
                         <p className="text-sm">
-                          €{order.payments[0].amountPaid.toFixed(2)} EUR will be
-                          added to your Nov 14, 2025 payout
+                          €{order.totalAmount.toFixed(2)} EUR will be added to
+                          your payout
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(order.createdAt), "h:mm a")}
@@ -404,10 +404,8 @@ export default function OrderDetailPage({
                       <div className="w-2 h-2 rounded-full bg-foreground mt-2" />
                       <div className="flex-1">
                         <p className="text-sm">
-                          A €{order.payments[0].amountPaid.toFixed(2)} EUR
-                          payment was processed using a{" "}
-                          {order.payments[0].paymentGateway} ending in{" "}
-                          {order.payments[0].transactionId}
+                          A €{order.totalAmount.toFixed(2)} EUR payment was
+                          processed using {order.payments[0].paymentGateway}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(
