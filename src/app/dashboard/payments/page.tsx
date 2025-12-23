@@ -149,20 +149,20 @@ export default function PaymentsPage() {
         return matchesSearch && matchesStatus;
       });
 
-      // Calculate totals - amountPaid is always stored, sum all successful payments
+      // Calculate totals - use order.totalAmount (EUR) for accurate totals
       const total = payments
         .filter((p) => p.paymentStatus === "SUCCESS")
-        .reduce((sum, p) => sum + p.amountPaid, 0);
+        .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
       const pending = payments
         .filter((p) => p.paymentStatus === "PENDING")
-        .reduce((sum, p) => sum + p.amountPaid, 0);
+        .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
       const refunded = payments
         .filter(
           (p) =>
             p.paymentStatus === "REFUNDED" ||
             p.paymentStatus === "PARTIALLY_REFUNDED"
         )
-        .reduce((sum, p) => sum + p.amountPaid, 0);
+        .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
 
       return {
         filteredPayments: filtered,

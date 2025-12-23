@@ -51,6 +51,7 @@ interface Payment {
     orderID: string;
     shippingName: string;
     shippingEmail: string;
+    totalAmount: number;
   };
 }
 
@@ -128,14 +129,14 @@ export default function TransactionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Memoized stats
+  // Memoized stats - use order.totalAmount (EUR) for accurate totals
   const stats = useMemo(() => {
     const totalReceived = payments
       .filter((p) => p.paymentStatus === "SUCCESS")
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
     const pendingPayments = payments
       .filter((p) => p.paymentStatus === "PENDING")
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
     const totalRefunded = refunds
       .filter((r) => r.status === "REFUNDED")
       .reduce((sum, r) => sum + r.amountPaid, 0);
