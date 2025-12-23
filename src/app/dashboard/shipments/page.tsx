@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -91,7 +91,7 @@ export default function ShipmentsPage() {
   useEffect(() => {
     fetchShipments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch]);
+  }, [debouncedSearch]); // Removed sort deps - sorting is client-side
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -113,12 +113,38 @@ export default function ShipmentsPage() {
     );
   };
 
-  // Filter shipments - search is done server-side, but we can filter by status client-side
-  const filteredAndSortedShipments = shipments.filter((shipment) => {
-    const matchesStatus =
-      statusFilter === "all" || shipment.orderStatus === statusFilter;
-    return matchesStatus;
-  });
+  // Filter and sort shipments client-side for instant response
+  const filteredAndSortedShipments = useMemo(() => {
+    let result = shipments.filter((shipment) => {
+      const matchesStatus =
+        statusFilter === "all" || shipment.orderStatus === statusFilter;
+      return matchesStatus;
+    });
+
+    // Client-side sorting
+    result.sort((a, b) => {
+      let aVal: any = a[sortColumn as keyof typeof a];
+      let bVal: any = b[sortColumn as keyof typeof b];
+
+      if (
+        sortColumn === "createdAt" ||
+        sortColumn === "updatedAt" ||
+        sortColumn === "orderCreatedAt"
+      ) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || "";
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [shipments, statusFilter, sortColumn, sortDirection]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<

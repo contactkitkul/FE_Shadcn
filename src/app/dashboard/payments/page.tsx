@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,6 +39,7 @@ import { format } from "date-fns";
 import { api } from "@/lib/api";
 import { useDebounce } from "@/hooks/useDebounce";
 import { getEntityMessages } from "@/config/messages";
+import { getCurrencySymbol, formatCurrency } from "@/lib/currency";
 
 interface Payment {
   id: string;
@@ -131,41 +132,45 @@ export default function PaymentsPage() {
     return config[status] || config.PENDING;
   };
 
-  const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = {
-      EUR: "€",
-      GBP: "£",
-      USD: "$",
-      INR: "₹",
-    };
-    return symbols[currency] || currency;
-  };
+  // Memoized filtering and stats for performance
+  const { filteredPayments, totalAmount, pendingAmount, refundedAmount } =
+    useMemo(() => {
+      const filtered = payments.filter((payment) => {
+        const orderID = payment.order?.orderID || "";
+        const customerName = payment.order?.shippingName || "";
+        const matchesSearch =
+          orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          payment.transactionId
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" || payment.paymentStatus === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
 
-  const filteredPayments = payments.filter((payment) => {
-    const orderID = payment.order?.orderID || "";
-    const customerName = payment.order?.shippingName || "";
-    const matchesSearch =
-      orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || payment.paymentStatus === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+      // Calculate totals (note: these sum across all currencies - display shows EUR)
+      const total = payments
+        .filter((p) => p.paymentStatus === "SUCCESS")
+        .reduce((sum, p) => sum + p.amountPaid, 0);
+      const pending = payments
+        .filter((p) => p.paymentStatus === "PENDING")
+        .reduce((sum, p) => sum + p.amountPaid, 0);
+      const refunded = payments
+        .filter(
+          (p) =>
+            p.paymentStatus === "REFUNDED" ||
+            p.paymentStatus === "PARTIALLY_REFUNDED"
+        )
+        .reduce((sum, p) => sum + p.amountPaid, 0);
 
-  const totalAmount = payments
-    .filter((p) => p.paymentStatus === "SUCCESS")
-    .reduce((sum, p) => sum + p.amountPaid, 0);
-  const pendingAmount = payments
-    .filter((p) => p.paymentStatus === "PENDING")
-    .reduce((sum, p) => sum + p.amountPaid, 0);
-  const refundedAmount = payments
-    .filter(
-      (p) =>
-        p.paymentStatus === "REFUNDED" ||
-        p.paymentStatus === "PARTIALLY_REFUNDED"
-    )
-    .reduce((sum, p) => sum + p.amountPaid, 0);
+      return {
+        filteredPayments: filtered,
+        totalAmount: total,
+        pendingAmount: pending,
+        refundedAmount: refunded,
+      };
+    }, [payments, searchTerm, statusFilter]);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
