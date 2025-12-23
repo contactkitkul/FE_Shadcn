@@ -190,7 +190,7 @@ export default function OrdersPage() {
     toast.success(`Downloaded ${filteredAndSortedOrders.length} orders`);
   };
 
-  // Calculate stats
+  // Calculate stats - only sum EUR for accurate revenue total
   const totalOrders = orders.length;
   const receivedOrders = orders.filter(
     (o) => o.orderStatus === EnumOrderStatus.RECEIVED
@@ -201,7 +201,12 @@ export default function OrdersPage() {
   const cancelledOrders = orders.filter(
     (o) => o.orderStatus === EnumOrderStatus.CANCELLED
   ).length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.payableAmount, 0);
+  const eurRevenue = orders
+    .filter((o) => o.currencyPayment === EnumCurrency.EUR)
+    .reduce((sum, o) => sum + o.payableAmount, 0);
+  const hasOtherCurrencies = orders.some(
+    (o) => o.currencyPayment !== EnumCurrency.EUR
+  );
 
   return (
     <div className="flex-1 space-y-4 p-4">
@@ -338,9 +343,11 @@ export default function OrdersPage() {
                   Revenue
                 </p>
                 <div className="text-xl font-bold">
-                  €{totalRevenue.toFixed(2)}
+                  €{eurRevenue.toFixed(2)}
                 </div>
-                <p className="text-xs text-muted-foreground">Total revenue</p>
+                <p className="text-xs text-muted-foreground">
+                  {hasOtherCurrencies ? "EUR only" : "Total revenue"}
+                </p>
               </div>
               <DollarSign className="h-4 w-4 text-yellow-400" />
             </div>

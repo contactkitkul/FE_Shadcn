@@ -172,10 +172,12 @@ export default function RefundsPage() {
     setRefundReason("");
   };
 
-  const totalRefunded = refunds
-    .filter((r) => r.status === "REFUNDED")
+  // Only sum EUR refunds for accurate totals
+  const eurTotalRefunded = refunds
+    .filter((r) => r.status === "REFUNDED" && r.currencyPaid === "EUR")
     .reduce((sum, r) => sum + r.amountPaid, 0);
   const pendingCount = refunds.filter((r) => r.status === "PENDING").length;
+  const hasOtherCurrencies = refunds.some((r) => r.currencyPaid !== "EUR");
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -210,9 +212,11 @@ export default function RefundsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              €{totalRefunded.toFixed(2)}
+              €{eurTotalRefunded.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground">Processed amount</p>
+            <p className="text-xs text-muted-foreground">
+              {hasOtherCurrencies ? "EUR only" : "Processed amount"}
+            </p>
           </CardContent>
         </Card>
 
