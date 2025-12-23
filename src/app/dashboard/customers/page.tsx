@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -63,15 +63,13 @@ export default function CustomersPage() {
     email: string;
   }>({ firstName: "", lastName: "", email: "" });
 
-  // Fetch customers from API
+  // Fetch customers from API - sorting done client-side for speed
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const response = await api.customers.getAll({
         page: 1,
         limit: 100,
-        sortBy: sortColumn,
-        sortOrder: sortDirection,
         search: searchTerm,
       });
 
@@ -91,7 +89,27 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch]);
+  }, [debouncedSearch]); // Removed sort deps - sorting is client-side
+
+  // Client-side sorting for instant response
+  const sortedCustomers = useMemo(() => {
+    return [...customers].sort((a, b) => {
+      let aVal: any = a[sortColumn as keyof CustomerWithOrders];
+      let bVal: any = b[sortColumn as keyof CustomerWithOrders];
+
+      if (sortColumn === "createdAt" || sortColumn === "updatedAt") {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || "";
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [customers, sortColumn, sortDirection]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -188,7 +206,7 @@ export default function CustomersPage() {
         </CardHeader>
         <CardContent>
           <CrudDataTable<CustomerWithOrders>
-            data={customers}
+            data={sortedCustomers}
             loading={loading}
             sortColumn={sortColumn}
             sortDirection={sortDirection}

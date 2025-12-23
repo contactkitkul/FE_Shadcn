@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,11 +71,10 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      // Fetch without sort params - sorting done client-side for speed
       const response = await api.orders.getAll({
         page,
         limit: PAGE_SIZE,
-        sortBy: sortColumn,
-        sortOrder: sortDirection,
         search: searchTerm,
       });
 
@@ -97,7 +96,7 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortColumn, sortDirection, debouncedSearch, page]);
+  }, [debouncedSearch, page]); // Removed sortColumn/sortDirection - sorting is client-side
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -115,10 +114,33 @@ export default function OrdersPage() {
     }));
   };
 
-  // Filter orders by status (sorting handled by CrudDataTable)
-  const filteredOrders = orders.filter((order) => {
-    return statusFilter === "all" || order.orderStatus === statusFilter;
-  });
+  // Filter and sort orders client-side for better performance
+  const filteredAndSortedOrders = useMemo(() => {
+    let result = orders.filter((order) => {
+      return statusFilter === "all" || order.orderStatus === statusFilter;
+    });
+
+    // Client-side sorting
+    result.sort((a, b) => {
+      let aVal: any = a[sortColumn as keyof Order];
+      let bVal: any = b[sortColumn as keyof Order];
+
+      // Handle nested fields and dates
+      if (sortColumn === "createdAt" || sortColumn === "updatedAt") {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || "";
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [orders, statusFilter, sortColumn, sortDirection]);
 
   const getStatusBadge = (status: EnumOrderStatus) => {
     const variants: Record<
@@ -144,7 +166,7 @@ export default function OrdersPage() {
 
   const handleDownloadOrders = () => {
     const headers = ["Order ID", "Customer", "Amount", "Status", "Date"];
-    const rows = filteredOrders.map((order) => [
+    const rows = filteredAndSortedOrders.map((order) => [
       order.orderID,
       order.shippingName,
       `€${order.payableAmount.toFixed(2)}`,
@@ -165,7 +187,7 @@ export default function OrdersPage() {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 
-    toast.success(`Downloaded ${filteredOrders.length} orders`);
+    toast.success(`Downloaded ${filteredAndSortedOrders.length} orders`);
   };
 
   // Calculate stats
@@ -405,7 +427,7 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent>
           <CrudDataTable<Order>
-            data={filteredOrders}
+            data={filteredAndSortedOrders}
             loading={loading}
             sortColumn={sortColumn}
             sortDirection={sortDirection}
