@@ -363,12 +363,14 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Products</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Products
+          </h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() => router.push("/dashboard/products/bulk-upload")}
@@ -598,18 +600,18 @@ export default function ProductsPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Products</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={statusFilter}
                 onValueChange={(value) =>
                   setStatusFilter(value as "ALL" | EnumProductStatus)
                 }
               >
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -619,11 +621,11 @@ export default function ProductsPage() {
                   <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search products..."
-                  className="pl-8 w-[300px]"
+                  className="pl-8 w-full sm:w-[300px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

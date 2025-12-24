@@ -118,9 +118,8 @@ export default function AbandonedCartsPage() {
     // Implement actual email sending
   };
 
-  // totalPrice is in cents, convert to EUR
-  const totalValue =
-    carts.reduce((sum, cart) => sum + cart.totalPrice, 0) / 100;
+  // totalPrice is in EUR
+  const totalValue = carts.reduce((sum, cart) => sum + cart.totalPrice, 0);
   const recoveredCount = carts.filter((cart) => !!cart.recoveredOrderId).length;
   const recoveryRate =
     carts.length > 0 ? (recoveredCount / carts.length) * 100 : 0;
@@ -249,7 +248,7 @@ export default function AbandonedCartsPage() {
                       <TableCell>{cart.email || "-"}</TableCell>
                       <TableCell>{cart.items?.length || 0} items</TableCell>
                       <TableCell className="font-semibold">
-                        €{(cart.totalPrice / 100).toFixed(2)}
+                        €{cart.totalPrice.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {format(cart.createdAt, "MMM dd, yyyy")}
@@ -363,7 +362,7 @@ export default function AbandonedCartsPage() {
                 <div className="flex justify-between mt-4 pt-4 border-t">
                   <span className="font-semibold">Total:</span>
                   <span className="font-bold text-lg">
-                    €{(selectedCart.totalPrice / 100).toFixed(2)}
+                    €{selectedCart.totalPrice.toFixed(2)}
                   </span>
                 </div>
               </div>

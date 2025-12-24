@@ -215,7 +215,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Date Filter Buttons */}
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         <Button
           variant={dateFilter === "all" ? "default" : "outline"}
           size="sm"
@@ -259,7 +259,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-3 grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <Card className="border-l-4 border-l-gray-300">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -351,16 +351,16 @@ export default function OrdersPage() {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Order Management</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search orders..."
-                  className="pl-8 w-[300px]"
+                  className="pl-8 w-full sm:w-[300px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
