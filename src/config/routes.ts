@@ -12,13 +12,13 @@ import {
   Truck,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import { PERMISSIONS } from "./permissions";
+import { PAGE_VISIBILITY } from "./permissions";
 
 export interface Route {
   label: string;
   icon: LucideIcon;
   href: string;
-  resource: keyof typeof PERMISSIONS; // Resource for permission check
+  resource: keyof typeof PAGE_VISIBILITY; // Page for visibility check
 }
 
 export interface RouteGroup {
@@ -27,7 +27,7 @@ export interface RouteGroup {
 }
 
 // Grouped routes for professional sidebar organization
-// Each route has a 'resource' that maps to PERMISSIONS for RBAC
+// Each route has a 'resource' that maps to PAGE_VISIBILITY for access control
 export const routeGroups: RouteGroup[] = [
   {
     label: "Overview",
@@ -71,7 +71,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Shipping Fees",
         icon: Truck,
         href: "/dashboard/shipping",
-        resource: "shipments", // Uses shipments permission
+        resource: "shipping", // Shipping fees page
       },
     ],
   },
@@ -88,7 +88,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Transactions",
         icon: CreditCard,
         href: "/dashboard/transactions",
-        resource: "payments", // Uses payments permission (Admin+)
+        resource: "transactions", // Transactions page (Admin+)
       },
       {
         label: "Abandoned Carts",
@@ -100,7 +100,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Activity Log",
         icon: Activity,
         href: "/dashboard/activity",
-        resource: "orderLogs", // Uses orderLogs permission
+        resource: "activity", // Activity log page
       },
     ],
   },

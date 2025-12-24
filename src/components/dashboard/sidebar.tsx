@@ -22,7 +22,7 @@ export function Sidebar() {
     .map((group) => ({
       ...group,
       routes: group.routes.filter((route) =>
-        canAccess(userPriority, route.resource, "read")
+        canAccess(userPriority, route.resource)
       ),
     }))
     .filter((group) => group.routes.length > 0);

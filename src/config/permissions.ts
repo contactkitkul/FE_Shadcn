@@ -1,7 +1,10 @@
 /**
  * Frontend Permission Configuration
- * Mirrors BE_Internal/src/config/permissions.ts
- * Used for RBAC-based UI visibility
+ *
+ * PURPOSE: Controls UI VISIBILITY (what users can SEE)
+ * This is different from backend permissions which control API access.
+ *
+ * Frontend uses simple "minimum priority to view" for each page/feature.
  */
 
 // Role priorities matching backend schema
@@ -15,212 +18,122 @@ export enum RolePriority {
   God = 100,
 }
 
-export interface ResourcePermissions {
-  create: number;
-  read: number;
-  update: number;
-  delete: number;
-}
-
 /**
- * Permission definitions - must match backend
+ * PAGE VISIBILITY PERMISSIONS
+ *
+ * Defines minimum priority required to VIEW each dashboard page.
  *
  * ACCESS LEVELS:
  * - NewUser (0) / ReadOnly (10): No dashboard access → "Insufficient Permissions" page
- * - DataEntry (20): Orders only (no refunds/payments)
- * - Moderator (40): Orders, Products, Customers, Abandoned Carts, Discounts
- * - Admin (60)+: Full access including Dashboard, Analytics, Transactions
+ * - DataEntry (20): Orders page only
+ * - Moderator (40): Orders, Products, Customers, Abandoned Carts, Discounts, Shipping
+ * - Admin (60)+: Full access including Dashboard, Analytics, Transactions, Activity
  */
-export const PERMISSIONS: Record<string, ResourcePermissions> = {
-  // ============================================================
-  // DASHBOARD & ANALYTICS (Admin+ only)
-  // ============================================================
-  dashboard: {
-    create: RolePriority.God, // 100 - no create
-    read: RolePriority.Admin, // 60 - Admin+ only
-    update: RolePriority.God, // 100 - no update
-    delete: RolePriority.God, // 100 - no delete
-  },
+export const PAGE_VISIBILITY: Record<string, number> = {
+  // Overview pages (Admin+ only)
+  dashboard: RolePriority.Admin, // 60 - Main dashboard with stats
+  analytics: RolePriority.Admin, // 60 - Analytics & reports
 
-  analytics: {
-    create: RolePriority.God, // 100 - no create
-    read: RolePriority.Admin, // 60 - Admin+ only
-    update: RolePriority.God, // 100 - no update
-    delete: RolePriority.God, // 100 - no delete
-  },
+  // Core business pages
+  orders: RolePriority.DataEntry, // 20 - Order management
+  products: RolePriority.Moderator, // 40 - Product catalog
+  customers: RolePriority.Moderator, // 40 - Customer data (PII)
 
-  // ============================================================
-  // CORE BUSINESS (DataEntry can see orders, Moderator+ for rest)
-  // ============================================================
-  orders: {
-    create: RolePriority.Admin, // 60 - system creates via API key
-    read: RolePriority.DataEntry, // 20 - DataEntry can view orders
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.SuperAdmin, // 80 - orders should rarely be deleted
-  },
+  // Financial pages (Admin+ only)
+  transactions: RolePriority.Admin, // 60 - Payments & refunds
+  payments: RolePriority.Admin, // 60 - Payment records
+  refunds: RolePriority.Admin, // 60 - Refund records
 
-  products: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40 - Moderator+ only
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
+  // Marketing pages
+  discounts: RolePriority.Moderator, // 40 - Discount codes
+  abandonedCarts: RolePriority.Moderator, // 40 - Cart recovery
 
-  customers: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40 - sensitive PII
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
+  // Shipping & logistics
+  shipping: RolePriority.Moderator, // 40 - Shipping fees
+  shipments: RolePriority.Moderator, // 40 - Shipment tracking
 
-  // ============================================================
-  // FINANCIAL (Admin+ only - sensitive data)
-  // ============================================================
-  payments: {
-    create: RolePriority.Admin, // 60 - system creates via API key
-    read: RolePriority.Admin, // 60 - Admin+ only
-    update: RolePriority.SuperAdmin, // 80
-    delete: RolePriority.God, // 100 - never delete payments
-  },
+  // Audit & activity
+  activity: RolePriority.Moderator, // 40 - Activity logs
+  orderLogs: RolePriority.Moderator, // 40 - Order audit trail
 
-  refunds: {
-    create: RolePriority.Admin, // 60 - system creates via API key
-    read: RolePriority.Admin, // 60 - Admin+ only
-    update: RolePriority.SuperAdmin, // 80
-    delete: RolePriority.God, // 100
-  },
-
-  // ============================================================
-  // MARKETING & DISCOUNTS (Moderator+)
-  // ============================================================
-  discounts: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40 - Moderator+ only
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  abandonedCarts: {
-    create: RolePriority.Admin, // 60 - system creates
-    read: RolePriority.Moderator, // 40 - marketing data
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  // ============================================================
-  // SHIPPING & LOGISTICS (Moderator+)
-  // ============================================================
-  shipments: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  orderTracking: {
-    create: RolePriority.Admin, // 60 - system creates
-    read: RolePriority.DataEntry, // 20 - DataEntry can see tracking
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  // ============================================================
-  // CONTENT & CATALOG (Moderator+)
-  // ============================================================
-  leagues: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  leagueIdentifiers: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  // ============================================================
-  // USER MANAGEMENT (Admin+)
-  // ============================================================
-  users: {
-    create: RolePriority.Admin, // 60
-    read: RolePriority.Admin, // 60
-    update: RolePriority.Admin, // 60
-    delete: RolePriority.SuperAdmin, // 80
-  },
-
-  userRoles: {
-    create: RolePriority.SuperAdmin, // 80
-    read: RolePriority.Admin, // 60
-    update: RolePriority.SuperAdmin, // 80
-    delete: RolePriority.God, // 100
-  },
-
-  // ============================================================
-  // IMAGES & MEDIA (Moderator+)
-  // ============================================================
-  images: {
-    create: RolePriority.Moderator, // 40
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  // ============================================================
-  // ORDER ITEMS & LOGS (DataEntry can read items, Moderator+ for logs)
-  // ============================================================
-  orderItems: {
-    create: RolePriority.Admin, // 60 - system creates
-    read: RolePriority.DataEntry, // 20 - DataEntry can see order items
-    update: RolePriority.Moderator, // 40
-    delete: RolePriority.Admin, // 60
-  },
-
-  orderLogs: {
-    create: RolePriority.Admin, // 60 - system creates audit logs
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.God, // 100 - never update logs
-    delete: RolePriority.God, // 100 - never delete logs
-  },
-
-  // ============================================================
-  // DISCOUNT USAGE (Moderator+)
-  // ============================================================
-  discountUsage: {
-    create: RolePriority.Admin, // 60 - system creates
-    read: RolePriority.Moderator, // 40
-    update: RolePriority.Admin, // 60
-    delete: RolePriority.SuperAdmin, // 80
-  },
+  // Settings & admin
+  settings: RolePriority.Admin, // 60 - System settings
+  users: RolePriority.Admin, // 60 - User management
 };
 
 /**
- * Check if a user with given priority can access a resource
+ * FEATURE VISIBILITY
+ *
+ * Controls visibility of specific UI features within pages.
+ * For example: can user see "Export" button, "Delete" action, etc.
  */
-export function canAccess(
+export const FEATURE_VISIBILITY: Record<string, number> = {
+  // Export features
+  exportOrders: RolePriority.Moderator, // 40
+  exportCustomers: RolePriority.Admin, // 60 - PII export
+  exportTransactions: RolePriority.Admin, // 60 - Financial data
+
+  // Destructive actions
+  deleteOrders: RolePriority.SuperAdmin, // 80
+  deleteProducts: RolePriority.Admin, // 60
+  deleteCustomers: RolePriority.Admin, // 60
+
+  // Create actions
+  createProducts: RolePriority.Moderator, // 40
+  createDiscounts: RolePriority.Moderator, // 40
+  createShipping: RolePriority.Moderator, // 40
+
+  // Edit actions
+  editOrders: RolePriority.Moderator, // 40
+  editProducts: RolePriority.Moderator, // 40
+  editCustomers: RolePriority.Moderator, // 40
+
+  // Admin features
+  manageUsers: RolePriority.Admin, // 60
+  viewAuditLogs: RolePriority.Moderator, // 40
+  systemSettings: RolePriority.SuperAdmin, // 80
+};
+
+/**
+ * Check if user can VIEW a page
+ */
+export function canViewPage(
   userPriority: number,
-  resource: keyof typeof PERMISSIONS,
-  operation: keyof ResourcePermissions = "read"
+  page: keyof typeof PAGE_VISIBILITY
 ): boolean {
-  const resourcePerms = PERMISSIONS[resource];
-  if (!resourcePerms) {
+  const requiredPriority = PAGE_VISIBILITY[page];
+  if (requiredPriority === undefined) {
     return false;
   }
-  return userPriority >= resourcePerms[operation];
+  return userPriority >= requiredPriority;
 }
 
 /**
- * Get the minimum priority required for a resource
+ * Check if user can see a specific feature
  */
-export function getRequiredPriority(
-  resource: keyof typeof PERMISSIONS,
-  operation: keyof ResourcePermissions = "read"
-): number {
-  const resourcePerms = PERMISSIONS[resource];
-  if (!resourcePerms) {
-    return RolePriority.God;
+export function canUseFeature(
+  userPriority: number,
+  feature: keyof typeof FEATURE_VISIBILITY
+): boolean {
+  const requiredPriority = FEATURE_VISIBILITY[feature];
+  if (requiredPriority === undefined) {
+    return false;
   }
-  return resourcePerms[operation];
+  return userPriority >= requiredPriority;
+}
+
+/**
+ * Get minimum priority required to view a page
+ */
+export function getPagePriority(page: string): number {
+  return PAGE_VISIBILITY[page] ?? RolePriority.God;
+}
+
+/**
+ * Legacy compatibility - maps to PAGE_VISIBILITY for route checks
+ * Used by sidebar/routes to check page access
+ */
+export function canAccess(userPriority: number, resource: string): boolean {
+  const requiredPriority = PAGE_VISIBILITY[resource] ?? RolePriority.God;
+  return userPriority >= requiredPriority;
 }
