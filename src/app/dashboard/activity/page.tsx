@@ -9,14 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable } from "@/components/ui/crud-data-table";
+import { StatsGrid } from "@/components/ui/stats-grid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,7 +32,6 @@ import {
   Edit,
   Download,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -162,63 +155,47 @@ export default function ActivityPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{logs.length}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {
-                logs.filter(
-                  (log) =>
-                    format(new Date(log.createdAt), "yyyy-MM-dd") ===
-                    format(new Date(), "yyyy-MM-dd")
-                ).length
-              }
-            </div>
-            <p className="text-xs text-muted-foreground">Events today</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admin Actions</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter((log) => log.actorType === "admin").length}
-            </div>
-            <p className="text-xs text-muted-foreground">Manual actions</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Events</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter((log) => log.actorType === "system").length}
-            </div>
-            <p className="text-xs text-muted-foreground">Automated</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid
+        loading={loading}
+        columns={4}
+        stats={[
+          {
+            label: "Total Events",
+            value: logs.length,
+            subLabel: "All time",
+            icon: Activity,
+            borderColor: "border-l-blue-400",
+          },
+          {
+            label: "Today",
+            value: logs.filter(
+              (log) =>
+                format(new Date(log.createdAt), "yyyy-MM-dd") ===
+                format(new Date(), "yyyy-MM-dd")
+            ).length,
+            subLabel: "Events today",
+            icon: Activity,
+            iconColor: "text-green-500",
+            borderColor: "border-l-green-400",
+          },
+          {
+            label: "Admin Actions",
+            value: logs.filter((log) => log.actorType === "admin").length,
+            subLabel: "Manual actions",
+            icon: User,
+            iconColor: "text-purple-500",
+            borderColor: "border-l-purple-400",
+          },
+          {
+            label: "System Events",
+            value: logs.filter((log) => log.actorType === "system").length,
+            subLabel: "Automated",
+            icon: Activity,
+            iconColor: "text-orange-500",
+            borderColor: "border-l-orange-400",
+          },
+        ]}
+      />
 
       {/* Activity Logs Table */}
       <Card>
@@ -274,76 +251,76 @@ export default function ActivityPage() {
             </Select>
           </div>
 
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Actor</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">
-                        No activity logs found
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLogs.map((log) => {
-                    const EventIcon = getEventIcon(log.event);
-                    const eventBadge = getEventBadge(log.event);
-                    const actorBadge = getActorBadge(log.actorType);
-
-                    return (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">
-                          {log.order?.orderID || "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <EventIcon className="h-4 w-4 text-muted-foreground" />
-                            <Badge className={eventBadge.className}>
-                              {log.event.replace(/_/g, " ")}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={actorBadge.className}>
-                            {actorBadge.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[300px]">
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {JSON.stringify(log.details)}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(log.createdAt), "MMM dd, yyyy")}
-                          <br />
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(log.createdAt), "h:mm:ss a")}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          )}
+          <CrudDataTable<OrderLog>
+            data={filteredLogs}
+            loading={loading}
+            getRowKey={(log) => log.id}
+            emptyIcon={<Activity className="h-12 w-12 text-muted-foreground" />}
+            emptyMessage="No activity logs found"
+            columns={[
+              {
+                key: "orderID",
+                header: "Order ID",
+                isPrimary: true,
+                render: (log) => log.order?.orderID || "N/A",
+              },
+              {
+                key: "event",
+                header: "Event",
+                isSecondary: true,
+                render: (log) => {
+                  const EventIcon = getEventIcon(log.event);
+                  const eventBadge = getEventBadge(log.event);
+                  return (
+                    <div className="flex items-center gap-2">
+                      <EventIcon className="h-4 w-4 text-muted-foreground" />
+                      <Badge className={eventBadge.className}>
+                        {log.event.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "actor",
+                header: "Actor",
+                mobileLabel: "Actor",
+                render: (log) => {
+                  const actorBadge = getActorBadge(log.actorType);
+                  return (
+                    <Badge className={actorBadge.className}>
+                      {actorBadge.label}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                key: "details",
+                header: "Details",
+                hideOnMobile: true,
+                className: "max-w-[300px]",
+                render: (log) => (
+                  <code className="text-xs bg-muted px-2 py-1 rounded">
+                    {JSON.stringify(log.details)}
+                  </code>
+                ),
+              },
+              {
+                key: "timestamp",
+                header: "Timestamp",
+                mobileLabel: "Time",
+                render: (log) => (
+                  <div>
+                    {format(new Date(log.createdAt), "MMM dd, yyyy")}
+                    <br />
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(log.createdAt), "h:mm:ss a")}
+                    </span>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
     </div>
