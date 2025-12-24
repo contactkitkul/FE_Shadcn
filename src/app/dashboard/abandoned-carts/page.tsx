@@ -9,14 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable } from "@/components/ui/crud-data-table";
+import { StatsGrid } from "@/components/ui/stats-grid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,7 +28,6 @@ import {
   DollarSign,
   Eye,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -136,53 +129,43 @@ export default function AbandonedCartsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Abandoned
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{carts.length}</div>
-            <p className="text-xs text-muted-foreground">Active carts</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">€{totalValue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Potential revenue</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recovered</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recoveredCount}</div>
-            <p className="text-xs text-muted-foreground">Converted to orders</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recovery Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recoveryRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">Success rate</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid
+        loading={loading}
+        columns={4}
+        stats={[
+          {
+            label: "Total Abandoned",
+            value: carts.length,
+            subLabel: "Active carts",
+            icon: ShoppingCart,
+            borderColor: "border-l-orange-400",
+          },
+          {
+            label: "Total Value",
+            value: `€${totalValue.toFixed(2)}`,
+            subLabel: "Potential revenue",
+            icon: DollarSign,
+            iconColor: "text-yellow-500",
+            borderColor: "border-l-yellow-400",
+          },
+          {
+            label: "Recovered",
+            value: recoveredCount,
+            subLabel: "Converted to orders",
+            icon: TrendingUp,
+            iconColor: "text-green-500",
+            borderColor: "border-l-green-400",
+          },
+          {
+            label: "Recovery Rate",
+            value: `${recoveryRate.toFixed(1)}%`,
+            subLabel: "Success rate",
+            icon: TrendingUp,
+            iconColor: "text-blue-500",
+            borderColor: "border-l-blue-400",
+          },
+        ]}
+      />
 
       {/* Carts Table */}
       <Card>
@@ -209,93 +192,142 @@ export default function AbandonedCartsPage() {
             </div>
           </div>
 
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Cart Value</TableHead>
-                  <TableHead>Abandoned</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCarts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground">
-                        No abandoned carts found
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCarts.map((cart) => (
-                    <TableRow key={cart.id}>
-                      <TableCell className="font-medium">
-                        {cart.shippingName || "Unknown"}
-                      </TableCell>
-                      <TableCell>{cart.email || "-"}</TableCell>
-                      <TableCell>{cart.items?.length || 0} items</TableCell>
-                      <TableCell className="font-semibold">
-                        €{cart.totalPrice.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        {format(cart.createdAt, "MMM dd, yyyy")}
-                        <br />
-                        <span className="text-xs text-muted-foreground">
-                          {format(cart.createdAt, "h:mm a")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{cart.source || "-"}</TableCell>
-                      <TableCell>
-                        {cart.recoveredOrderId ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            Recovered
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Pending</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCart(cart);
-                              setIsDetailOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {!cart.recoveredOrderId && cart.email && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleSendRecoveryEmail(cart)}
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+          <CrudDataTable<AbandonedCart>
+            data={filteredCarts}
+            loading={loading}
+            getRowKey={(cart) => cart.id}
+            emptyIcon={
+              <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+            }
+            emptyMessage="No abandoned carts found"
+            onRowClick={(cart) => {
+              setSelectedCart(cart);
+              setIsDetailOpen(true);
+            }}
+            mobileCardActions={(cart) => (
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCart(cart);
+                    setIsDetailOpen(true);
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                {!cart.recoveredOrderId && cart.email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSendRecoveryEmail(cart);
+                    }}
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
                 )}
-              </TableBody>
-            </Table>
-          )}
+              </div>
+            )}
+            columns={[
+              {
+                key: "customer",
+                header: "Customer",
+                isPrimary: true,
+                render: (cart) => cart.shippingName || "Unknown",
+              },
+              {
+                key: "email",
+                header: "Email",
+                mobileLabel: "Email",
+                render: (cart) => cart.email || "-",
+              },
+              {
+                key: "items",
+                header: "Items",
+                mobileLabel: "Items",
+                render: (cart) => `${cart.items?.length || 0} items`,
+              },
+              {
+                key: "totalPrice",
+                header: "Cart Value",
+                isSecondary: true,
+                render: (cart) => (
+                  <span className="font-semibold">
+                    €{cart.totalPrice.toFixed(2)}
+                  </span>
+                ),
+              },
+              {
+                key: "createdAt",
+                header: "Abandoned",
+                hideOnMobile: true,
+                render: (cart) => (
+                  <div>
+                    {format(cart.createdAt, "MMM dd, yyyy")}
+                    <br />
+                    <span className="text-xs text-muted-foreground">
+                      {format(cart.createdAt, "h:mm a")}
+                    </span>
+                  </div>
+                ),
+              },
+              {
+                key: "source",
+                header: "Source",
+                hideOnMobile: true,
+                render: (cart) => cart.source || "-",
+              },
+              {
+                key: "status",
+                header: "Status",
+                mobileLabel: "Status",
+                render: (cart) =>
+                  cart.recoveredOrderId ? (
+                    <Badge className="bg-green-100 text-green-800">
+                      Recovered
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Pending</Badge>
+                  ),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                className: "text-right",
+                hideOnMobile: true,
+                render: (cart) => (
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCart(cart);
+                        setIsDetailOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {!cart.recoveredOrderId && cart.email && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSendRecoveryEmail(cart);
+                        }}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
 
