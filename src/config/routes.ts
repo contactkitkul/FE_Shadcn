@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  Settings,
   FileText,
   BarChart3,
   Package,
@@ -13,12 +12,13 @@ import {
   Truck,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { PERMISSIONS } from "./permissions";
 
 export interface Route {
   label: string;
   icon: LucideIcon;
   href: string;
-  group?: string;
+  resource: keyof typeof PERMISSIONS; // Resource for permission check
 }
 
 export interface RouteGroup {
@@ -27,39 +27,87 @@ export interface RouteGroup {
 }
 
 // Grouped routes for professional sidebar organization
+// Each route has a 'resource' that maps to PERMISSIONS for RBAC
 export const routeGroups: RouteGroup[] = [
   {
     label: "Overview",
     routes: [
-      { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-      { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-      { label: "Reports", icon: FileText, href: "/dashboard/reports" },
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/dashboard",
+        resource: "dashboard",
+      },
+      {
+        label: "Analytics",
+        icon: BarChart3,
+        href: "/dashboard/analytics",
+        resource: "analytics",
+      },
+      {
+        label: "Reports",
+        icon: FileText,
+        href: "/dashboard/reports",
+        resource: "reports",
+      },
     ],
   },
   {
     label: "Management",
     routes: [
-      { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-      { label: "Products", icon: Package, href: "/dashboard/products" },
-      { label: "Discounts", icon: Percent, href: "/dashboard/discounts" },
-      { label: "Shipping Fees", icon: Truck, href: "/dashboard/shipping" },
+      {
+        label: "Orders",
+        icon: ShoppingCart,
+        href: "/dashboard/orders",
+        resource: "orders",
+      },
+      {
+        label: "Products",
+        icon: Package,
+        href: "/dashboard/products",
+        resource: "products",
+      },
+      {
+        label: "Discounts",
+        icon: Percent,
+        href: "/dashboard/discounts",
+        resource: "discounts",
+      },
+      {
+        label: "Shipping Fees",
+        icon: Truck,
+        href: "/dashboard/shipping",
+        resource: "shipping",
+      },
     ],
   },
   {
     label: "Audit",
     routes: [
-      { label: "Customers", icon: Users, href: "/dashboard/customers" },
+      {
+        label: "Customers",
+        icon: Users,
+        href: "/dashboard/customers",
+        resource: "customers",
+      },
       {
         label: "Transactions",
         icon: CreditCard,
         href: "/dashboard/transactions",
+        resource: "transactions",
       },
       {
         label: "Abandoned Carts",
         icon: ShoppingBag,
         href: "/dashboard/abandoned-carts",
+        resource: "abandonedCarts",
       },
-      { label: "Activity Log", icon: Activity, href: "/dashboard/activity" },
+      {
+        label: "Activity Log",
+        icon: Activity,
+        href: "/dashboard/activity",
+        resource: "activity",
+      },
     ],
   },
 ];

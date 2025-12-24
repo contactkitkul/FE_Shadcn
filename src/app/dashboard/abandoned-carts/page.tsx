@@ -118,7 +118,7 @@ export default function AbandonedCartsPage() {
     // Implement actual email sending
   };
 
-  // totalPrice is always in EUR (base currency), stored in cents
+  // totalPrice is in cents, convert to EUR
   const totalValue =
     carts.reduce((sum, cart) => sum + cart.totalPrice, 0) / 100;
   const recoveredCount = carts.filter((cart) => !!cart.recoveredOrderId).length;
@@ -249,16 +249,7 @@ export default function AbandonedCartsPage() {
                       <TableCell>{cart.email || "-"}</TableCell>
                       <TableCell>{cart.items?.length || 0} items</TableCell>
                       <TableCell className="font-semibold">
-                        {cart.currency === "EUR"
-                          ? "€"
-                          : cart.currency === "GBP"
-                          ? "£"
-                          : cart.currency === "USD"
-                          ? "$"
-                          : cart.currency === "INR"
-                          ? "₹"
-                          : `${cart.currency} `}
-                        {(cart.totalPrice / 100).toFixed(2)}
+                        €{(cart.totalPrice / 100).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {format(cart.createdAt, "MMM dd, yyyy")}
@@ -364,7 +355,7 @@ export default function AbandonedCartsPage() {
                         </p>
                       </div>
                       <p className="font-semibold">
-                        €{((item.price || 0) / 100).toFixed(2)}
+                        €{(item.price || 0).toFixed(2)}
                       </p>
                     </div>
                   ))}

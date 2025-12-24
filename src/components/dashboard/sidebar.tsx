@@ -5,9 +5,23 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { routeGroups } from "@/config/routes";
 import { siteConfig } from "@/config/site";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccess } from "@/config/permissions";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const userPriority = user?.priority ?? 0;
+
+  // Filter route groups based on user permissions
+  const visibleGroups = routeGroups
+    .map((group) => ({
+      ...group,
+      routes: group.routes.filter((route) =>
+        canAccess(userPriority, route.resource, "read")
+      ),
+    }))
+    .filter((group) => group.routes.length > 0);
 
   return (
     <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white">
@@ -16,7 +30,7 @@ export function Sidebar() {
           <h1 className="text-2xl font-bold">{siteConfig.name}</h1>
         </Link>
         <div className="space-y-6">
-          {routeGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label}>
               <h3 className="px-3 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                 {group.label}
