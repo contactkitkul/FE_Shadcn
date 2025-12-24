@@ -3,77 +3,60 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
-import { StatsGrid, StatItem } from "@/components/ui/stats-grid";
-import { PageHeader, DateFilter } from "@/components/ui/page-header";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  CrudPage,
+  useCrudPageState,
+  CrudColumn,
+} from "@/components/crud/crud-page";
+import { StatItem } from "@/components/ui/stats-grid";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
   Eye,
   Package,
-  Download,
   CheckCircle,
   AlertCircle,
   Clock,
   DollarSign,
-  Settings2,
 } from "lucide-react";
-import { Order, EnumOrderStatus, EnumCurrency } from "@/types";
+import { Order, EnumOrderStatus } from "@/types";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
-import { useDebounce } from "@/hooks/useDebounce";
 import { getEntityMessages } from "@/config/messages";
 
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 500);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<string>("all");
-  const [sortColumn, setSortColumn] = useState<string>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [visibleColumns, setVisibleColumns] = useState({
-    orderID: true,
-    customer: true,
-    amount: true,
-    status: true,
-    date: true,
-    actions: true,
-  });
-
-  // Fetch orders from API
-  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<{
     page: number;
-    limit: number;
-    total: number;
     totalPages: number;
   } | null>(null);
 
+  // Use the CRUD page state hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    debouncedSearch,
+    sortColumn,
+    sortDirection,
+    handleSort,
+    filterValues,
+    handleFilterChange,
+    dateFilter,
+    setDateFilter,
+    page,
+    setPage,
+    sortData,
+    filterByDate,
+  } = useCrudPageState("createdAt", "desc");
+
   const PAGE_SIZE = 50;
 
+  // Fetch orders
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      // Fetch without sort params - sorting done client-side for speed
       const response = await api.orders.getAll({
         page,
         limit: PAGE_SIZE,
@@ -81,9 +64,8 @@ export default function OrdersPage() {
       });
 
       if (response.success) {
-        const data = response.data;
-        setOrders(data?.data || []);
-        setPagination(data?.pagination || null);
+        setOrders(response.data?.data || []);
+        setPagination(response.data?.pagination || null);
       } else {
         toast.error(getEntityMessages("orders").loadError);
       }
@@ -97,53 +79,36 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, page]); // Removed sortColumn/sortDirection - sorting is client-side
+  }, [debouncedSearch, page]);
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
-
-  const toggleColumn = (column: string) => {
-    setVisibleColumns((prev) => ({
-      ...prev,
-      [column]: !prev[column as keyof typeof prev],
-    }));
-  };
-
-  // Filter and sort orders client-side for better performance
+  // Filter and sort data
   const filteredAndSortedOrders = useMemo(() => {
-    let result = orders.filter((order) => {
-      return statusFilter === "all" || order.orderStatus === statusFilter;
-    });
+    let result = orders;
 
-    // Client-side sorting
-    result.sort((a, b) => {
-      let aVal: any = a[sortColumn as keyof Order];
-      let bVal: any = b[sortColumn as keyof Order];
+    // Status filter
+    const statusFilter = filterValues.status || "all";
+    if (statusFilter !== "all") {
+      result = result.filter((o) => o.orderStatus === statusFilter);
+    }
 
-      // Handle nested fields and dates
-      if (sortColumn === "createdAt" || sortColumn === "updatedAt") {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
-      } else if (typeof aVal === "string") {
-        aVal = aVal.toLowerCase();
-        bVal = bVal?.toLowerCase() || "";
-      }
+    // Date filter
+    result = filterByDate(result, dateFilter);
 
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
+    // Sort
+    result = sortData(result, sortColumn, sortDirection);
 
     return result;
-  }, [orders, statusFilter, sortColumn, sortDirection]);
+  }, [
+    orders,
+    filterValues.status,
+    dateFilter,
+    sortColumn,
+    sortDirection,
+    sortData,
+    filterByDate,
+  ]);
 
+  // Status badge helper
   const getStatusBadge = (status: EnumOrderStatus) => {
     const variants: Record<
       EnumOrderStatus,
@@ -166,33 +131,7 @@ export default function OrdersPage() {
     );
   };
 
-  const handleDownloadOrders = () => {
-    const headers = ["Order ID", "Customer", "Amount", "Status", "Date"];
-    const rows = filteredAndSortedOrders.map((order) => [
-      order.orderID,
-      order.shippingName,
-      `€${order.payableAmount.toFixed(2)}`,
-      order.orderStatus,
-      format(order.createdAt, "MMM dd, yyyy"),
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map((row) => row.join(","))
-      .join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `orders-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    toast.success(`Downloaded ${filteredAndSortedOrders.length} orders`);
-  };
-
-  // Calculate stats - payableAmount is always in EUR (base currency)
+  // Stats
   const stats: StatItem[] = useMemo(
     () => [
       {
@@ -243,275 +182,173 @@ export default function OrdersPage() {
     [orders]
   );
 
-  return (
-    <div className="flex-1 space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage and track customer orders
-          </p>
-        </div>
-      </div>
-
-      {/* Date Filter Buttons */}
-      <div className="flex flex-wrap gap-1">
-        <Button
-          variant={dateFilter === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDateFilter("all")}
-          className={
-            dateFilter === "all"
-              ? "bg-pink-500 hover:bg-pink-600 text-white border-0"
-              : ""
-          }
-        >
-          All Time
-        </Button>
-        <Button
-          variant={dateFilter === "today" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDateFilter("today")}
-        >
-          Today
-        </Button>
-        <Button
-          variant={dateFilter === "yesterday" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDateFilter("yesterday")}
-        >
-          Yesterday
-        </Button>
-        <Button
-          variant={dateFilter === "last7days" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDateFilter("last7days")}
-        >
-          Last 7 Days
-        </Button>
-        <Button
-          variant={dateFilter === "last30days" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDateFilter("last30days")}
-        >
-          Last 30 Days
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <StatsGrid stats={stats} columns={5} loading={loading} />
-
-      {/* Orders Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle>Order Management</CardTitle>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  className="pl-8 w-full sm:w-[300px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Columns
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.orderID}
-                    onCheckedChange={() => toggleColumn("orderID")}
-                  >
-                    Order ID
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.customer}
-                    onCheckedChange={() => toggleColumn("customer")}
-                  >
-                    Customer
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.amount}
-                    onCheckedChange={() => toggleColumn("amount")}
-                  >
-                    Amount
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.status}
-                    onCheckedChange={() => toggleColumn("status")}
-                  >
-                    Status
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.date}
-                    onCheckedChange={() => toggleColumn("date")}
-                  >
-                    Date & Time
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.actions}
-                    onCheckedChange={() => toggleColumn("actions")}
-                  >
-                    Actions
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button variant="outline" size="sm">
-                All Orders
-              </Button>
-              <Button
-                onClick={handleDownloadOrders}
-                variant="outline"
-                size="sm"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Orders
-              </Button>
+  // Columns
+  const columns: CrudColumn<Order>[] = [
+    {
+      key: "orderID",
+      header: "Order ID",
+      sortable: true,
+      isPrimary: true,
+      render: (order) => <span className="font-medium">{order.orderID}</span>,
+    },
+    {
+      key: "shippingName",
+      header: "Customer",
+      sortable: true,
+      mobileLabel: "Customer",
+    },
+    {
+      key: "payableAmount",
+      header: "Amount",
+      sortable: true,
+      isSecondary: true,
+      render: (order) => {
+        const symbol =
+          order.currencyPayment === "EUR"
+            ? "€"
+            : order.currencyPayment === "GBP"
+            ? "£"
+            : order.currencyPayment === "USD"
+            ? "$"
+            : order.currencyPayment === "INR"
+            ? "₹"
+            : `${order.currencyPayment} `;
+        return `${symbol}${order.payableAmount.toFixed(2)}`;
+      },
+    },
+    {
+      key: "orderStatus",
+      header: "Status",
+      sortable: true,
+      mobileLabel: "Status",
+      render: (order) => getStatusBadge(order.orderStatus),
+    },
+    {
+      key: "createdAt",
+      header: "Date & Time",
+      sortable: true,
+      minWidth: "md",
+      render: (order) => {
+        const date = new Date(order.createdAt);
+        if (isNaN(date.getTime()))
+          return <span className="text-muted-foreground">Invalid date</span>;
+        return (
+          <div className="text-sm">
+            <div>{format(date, "MMM dd, yyyy")}</div>
+            <div className="text-muted-foreground">
+              {format(date, "h:mm a")}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <CrudDataTable<Order>
-            data={filteredAndSortedOrders}
-            loading={loading}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            getRowKey={(order) => order.id}
-            emptyIcon={<Package className="h-12 w-12 text-muted-foreground" />}
-            emptyMessage="No orders found"
-            pagination={
-              pagination && pagination.totalPages > 1
-                ? {
-                    page: pagination.page,
-                    totalPages: pagination.totalPages,
-                    onPageChange: setPage,
-                  }
-                : undefined
+        );
+      },
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      hideOnMobile: true,
+      render: (order) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/dashboard/orders/${order.id}`);
+          }}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  // Filters
+  const filters = [
+    {
+      key: "status",
+      label: "Status",
+      type: "select" as const,
+      defaultValue: "all",
+      options: [
+        { value: "all", label: "All Status" },
+        { value: "RECEIVED", label: "Received" },
+        { value: "FULFILLED", label: "Fulfilled" },
+        { value: "CANCELLED", label: "Cancelled" },
+        { value: "FULLY_REFUNDED", label: "Refunded" },
+      ],
+    },
+  ];
+
+  // Date filter options
+  const dateFilterOptions = [
+    { value: "all", label: "All Time" },
+    { value: "today", label: "Today" },
+    { value: "yesterday", label: "Yesterday" },
+    { value: "last7days", label: "Last 7 Days" },
+    { value: "last30days", label: "Last 30 Days" },
+  ];
+
+  // Export config
+  const exportConfig = {
+    filename: "orders",
+    headers: ["Order ID", "Customer", "Amount", "Status", "Date"],
+    rowMapper: (order: Order) => [
+      order.orderID,
+      order.shippingName,
+      `€${order.payableAmount.toFixed(2)}`,
+      order.orderStatus,
+      format(new Date(order.createdAt), "MMM dd, yyyy"),
+    ],
+  };
+
+  return (
+    <CrudPage<Order>
+      title="Orders"
+      description="Manage and track customer orders"
+      data={filteredAndSortedOrders}
+      loading={loading}
+      getRowKey={(order) => order.id}
+      columns={columns}
+      stats={stats}
+      statsColumns={5}
+      searchPlaceholder="Search orders..."
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      filters={filters}
+      filterValues={filterValues}
+      onFilterChange={handleFilterChange}
+      dateFilterOptions={dateFilterOptions}
+      dateFilterValue={dateFilter}
+      onDateFilterChange={setDateFilter}
+      sortColumn={sortColumn}
+      sortDirection={sortDirection}
+      onSort={handleSort}
+      pagination={
+        pagination && pagination.totalPages > 1
+          ? {
+              page: pagination.page,
+              totalPages: pagination.totalPages,
+              onPageChange: setPage,
             }
-            onRowClick={(order) => router.push(`/dashboard/orders/${order.id}`)}
-            mobileCardActions={(order) => (
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-1" /> View
-              </Button>
-            )}
-            columns={[
-              ...(visibleColumns.orderID
-                ? [
-                    {
-                      key: "orderID",
-                      header: "Order ID",
-                      sortable: true,
-                      isPrimary: true,
-                      render: (order: Order) => (
-                        <span className="font-medium">{order.orderID}</span>
-                      ),
-                    },
-                  ]
-                : []),
-              ...(visibleColumns.customer
-                ? [
-                    {
-                      key: "shippingName",
-                      header: "Customer",
-                      sortable: true,
-                      mobileLabel: "Customer",
-                    },
-                  ]
-                : []),
-              ...(visibleColumns.amount
-                ? [
-                    {
-                      key: "payableAmount",
-                      header: "Amount",
-                      sortable: true,
-                      isSecondary: true,
-                      render: (order: Order) => {
-                        const symbol =
-                          order.currencyPayment === "EUR"
-                            ? "€"
-                            : order.currencyPayment === "GBP"
-                            ? "£"
-                            : order.currencyPayment === "USD"
-                            ? "$"
-                            : order.currencyPayment === "INR"
-                            ? "₹"
-                            : `${order.currencyPayment} `;
-                        return `${symbol}${order.payableAmount.toFixed(2)}`;
-                      },
-                    },
-                  ]
-                : []),
-              ...(visibleColumns.status
-                ? [
-                    {
-                      key: "orderStatus",
-                      header: "Status",
-                      sortable: true,
-                      mobileLabel: "Status",
-                      render: (order: Order) =>
-                        getStatusBadge(order.orderStatus),
-                    },
-                  ]
-                : []),
-              ...(visibleColumns.date
-                ? [
-                    {
-                      key: "createdAt",
-                      header: "Date & Time",
-                      sortable: true,
-                      render: (order: Order) => {
-                        const date = new Date(order.createdAt);
-                        if (isNaN(date.getTime())) {
-                          return (
-                            <div className="text-sm text-muted-foreground">
-                              Invalid date
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="text-sm">
-                            <div>{format(date, "MMM dd, yyyy")}</div>
-                            <div className="text-muted-foreground">
-                              {format(date, "h:mm a")}
-                            </div>
-                          </div>
-                        );
-                      },
-                    },
-                  ]
-                : []),
-              ...(visibleColumns.actions
-                ? [
-                    {
-                      key: "actions",
-                      header: "Actions",
-                      render: (order: Order) => (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/dashboard/orders/${order.id}`)
-                          }
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      ),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        </CardContent>
-      </Card>
-    </div>
+          : undefined
+      }
+      actions={{
+        onRowClick: (order) => router.push(`/dashboard/orders/${order.id}`),
+        customActions: (order) => (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/dashboard/orders/${order.id}`);
+            }}
+          >
+            <Eye className="h-4 w-4 mr-1" /> View
+          </Button>
+        ),
+      }}
+      exportConfig={exportConfig}
+      emptyIcon={<Package className="h-12 w-12 text-muted-foreground" />}
+      emptyMessage="No orders found"
+    />
   );
 }
