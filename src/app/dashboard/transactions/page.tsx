@@ -3,14 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CrudDataTable } from "@/components/ui/crud-data-table";
+import { StatsGrid, StatItem } from "@/components/ui/stats-grid";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,7 +24,6 @@ import {
   AlertCircle,
   RefreshCcw,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
@@ -205,75 +198,50 @@ export default function TransactionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Received
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              €{stats.totalReceived.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentStatus === "SUCCESS").length}{" "}
-              successful
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Payments
-            </CardTitle>
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              €{stats.pendingPayments.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentStatus === "PENDING").length}{" "}
-              pending
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Refunded
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              €{stats.totalRefunded.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {refunds.filter((r) => r.status === "REFUNDED").length} processed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Refunds
-            </CardTitle>
-            <RefreshCcw className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {stats.pendingRefunds}
-            </div>
-            <p className="text-xs text-muted-foreground">Awaiting processing</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid
+        loading={loading}
+        columns={4}
+        stats={[
+          {
+            label: "Total Received",
+            value: `€${stats.totalReceived.toFixed(2)}`,
+            subLabel: `${
+              payments.filter((p) => p.paymentStatus === "SUCCESS").length
+            } successful`,
+            icon: DollarSign,
+            iconColor: "text-green-600",
+            borderColor: "border-l-green-400",
+          },
+          {
+            label: "Pending Payments",
+            value: `€${stats.pendingPayments.toFixed(2)}`,
+            subLabel: `${
+              payments.filter((p) => p.paymentStatus === "PENDING").length
+            } pending`,
+            icon: AlertCircle,
+            iconColor: "text-yellow-600",
+            borderColor: "border-l-yellow-400",
+          },
+          {
+            label: "Total Refunded",
+            value: `€${stats.totalRefunded.toFixed(2)}`,
+            subLabel: `${
+              refunds.filter((r) => r.status === "REFUNDED").length
+            } processed`,
+            icon: TrendingDown,
+            iconColor: "text-red-600",
+            borderColor: "border-l-red-400",
+          },
+          {
+            label: "Pending Refunds",
+            value: stats.pendingRefunds,
+            subLabel: "Awaiting processing",
+            icon: RefreshCcw,
+            iconColor: "text-orange-600",
+            borderColor: "border-l-orange-400",
+          },
+        ]}
+      />
 
       {/* Tabs for Payments and Refunds */}
       <Card>
@@ -346,137 +314,151 @@ export default function TransactionsPage() {
             </div>
 
             <TabsContent value="payments">
-              {loading ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Transaction ID</TableHead>
-                      <TableHead>Gateway</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
-                          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                          <p className="text-muted-foreground">
-                            No payments found
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredPayments.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">
-                            {payment.order?.orderID || "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            {payment.order?.shippingName || "N/A"}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {payment.transactionId}
-                          </TableCell>
-                          <TableCell>{payment.paymentGateway}</TableCell>
-                          <TableCell>
-                            {format(
-                              new Date(payment.createdAt),
-                              "MMM dd, yyyy"
-                            )}
-                            <br />
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(payment.createdAt), "h:mm a")}
-                            </span>
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {getCurrencySymbol(payment.currencyPaid)}
-                            {payment.amountPaid.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            {getPaymentStatusBadge(payment.paymentStatus)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+              <CrudDataTable<Payment>
+                data={filteredPayments}
+                loading={loading}
+                getRowKey={(p) => p.id}
+                emptyIcon={
+                  <CreditCard className="h-12 w-12 text-muted-foreground" />
+                }
+                emptyMessage="No payments found"
+                columns={[
+                  {
+                    key: "orderID",
+                    header: "Order ID",
+                    isPrimary: true,
+                    render: (p) => p.order?.orderID || "N/A",
+                  },
+                  {
+                    key: "customer",
+                    header: "Customer",
+                    mobileLabel: "Customer",
+                    render: (p) => p.order?.shippingName || "N/A",
+                  },
+                  {
+                    key: "transactionId",
+                    header: "Transaction ID",
+                    hideOnMobile: true,
+                    render: (p) => (
+                      <span className="font-mono text-sm">
+                        {p.transactionId}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "gateway",
+                    header: "Gateway",
+                    hideOnMobile: true,
+                    render: (p) => p.paymentGateway,
+                  },
+                  {
+                    key: "date",
+                    header: "Date",
+                    mobileLabel: "Date",
+                    render: (p) => (
+                      <div className="text-sm">
+                        <div>
+                          {format(new Date(p.createdAt), "MMM dd, yyyy")}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {format(new Date(p.createdAt), "h:mm a")}
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "amount",
+                    header: "Amount",
+                    isSecondary: true,
+                    render: (p) => (
+                      <span className="font-semibold">
+                        {getCurrencySymbol(p.currencyPaid)}
+                        {p.amountPaid.toFixed(2)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    mobileLabel: "Status",
+                    render: (p) => getPaymentStatusBadge(p.paymentStatus),
+                  },
+                ]}
+              />
             </TabsContent>
 
             <TabsContent value="refunds">
-              {loading ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Transaction ID</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRefunds.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
-                          <RefreshCcw className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                          <p className="text-muted-foreground">
-                            No refunds found
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredRefunds.map((refund) => (
-                        <TableRow key={refund.id}>
-                          <TableCell className="font-medium">
-                            {refund.payment?.order?.orderID || "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            {refund.payment?.order?.shippingName || "N/A"}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {refund.payment?.transactionId || "N/A"}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            €{refund.amountPaid.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {refund.reason || "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(refund.createdAt), "MMM dd, yyyy")}
-                            <br />
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(refund.createdAt), "h:mm a")}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {getRefundStatusBadge(refund.status)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+              <CrudDataTable<Refund>
+                data={filteredRefunds}
+                loading={loading}
+                getRowKey={(r) => r.id}
+                emptyIcon={
+                  <RefreshCcw className="h-12 w-12 text-muted-foreground" />
+                }
+                emptyMessage="No refunds found"
+                columns={[
+                  {
+                    key: "orderID",
+                    header: "Order ID",
+                    isPrimary: true,
+                    render: (r) => r.payment?.order?.orderID || "N/A",
+                  },
+                  {
+                    key: "customer",
+                    header: "Customer",
+                    mobileLabel: "Customer",
+                    render: (r) => r.payment?.order?.shippingName || "N/A",
+                  },
+                  {
+                    key: "transactionId",
+                    header: "Transaction ID",
+                    hideOnMobile: true,
+                    render: (r) => (
+                      <span className="font-mono text-sm">
+                        {r.payment?.transactionId || "N/A"}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "amount",
+                    header: "Amount",
+                    isSecondary: true,
+                    render: (r) => (
+                      <span className="font-semibold">
+                        €{r.amountPaid.toFixed(2)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "reason",
+                    header: "Reason",
+                    hideOnMobile: true,
+                    className: "max-w-[200px] truncate",
+                    render: (r) => r.reason || "N/A",
+                  },
+                  {
+                    key: "date",
+                    header: "Date",
+                    mobileLabel: "Date",
+                    render: (r) => (
+                      <div className="text-sm">
+                        <div>
+                          {format(new Date(r.createdAt), "MMM dd, yyyy")}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {format(new Date(r.createdAt), "h:mm a")}
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    mobileLabel: "Status",
+                    render: (r) => getRefundStatusBadge(r.status),
+                  },
+                ]}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
