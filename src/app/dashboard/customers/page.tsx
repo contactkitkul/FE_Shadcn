@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CrudDataTable } from "@/components/ui/crud-data-table";
+import { StatsGrid } from "@/components/ui/stats-grid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Users, Eye, ShoppingBag, Calendar } from "lucide-react";
@@ -136,52 +137,35 @@ export default function CustomersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Customers
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{customers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              +15% from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Customers
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.floor(customers.length * 0.7)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Made purchase in last 30 days
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              New This Month
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.floor(customers.length * 0.2)}
-            </div>
-            <p className="text-xs text-muted-foreground">First-time buyers</p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid
+        loading={loading}
+        columns={3}
+        stats={[
+          {
+            label: "Total Customers",
+            value: customers.length,
+            subLabel: "+15% from last month",
+            icon: Users,
+            borderColor: "border-l-blue-400",
+          },
+          {
+            label: "Active Customers",
+            value: Math.floor(customers.length * 0.7),
+            subLabel: "Made purchase in last 30 days",
+            icon: Users,
+            iconColor: "text-green-500",
+            borderColor: "border-l-green-400",
+          },
+          {
+            label: "New This Month",
+            value: Math.floor(customers.length * 0.2),
+            subLabel: "First-time buyers",
+            icon: Users,
+            iconColor: "text-purple-500",
+            borderColor: "border-l-purple-400",
+          },
+        ]}
+      />
 
       <Card>
         <CardHeader>
@@ -215,11 +199,25 @@ export default function CustomersPage() {
             getRowKey={(customer) => customer.id}
             emptyIcon={<Users className="h-12 w-12 text-muted-foreground" />}
             emptyMessage="No customers found"
+            onRowClick={(customer) => handleViewDetails(customer)}
+            mobileCardActions={(customer) => (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(customer);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" /> View
+              </Button>
+            )}
             columns={[
               {
                 key: "firstName",
                 header: "Name",
                 sortable: true,
+                isPrimary: true,
                 render: (customer) => (
                   <span className="font-medium">
                     {customer.firstName} {customer.lastName}
@@ -229,17 +227,20 @@ export default function CustomersPage() {
               {
                 key: "email",
                 header: "Email",
+                mobileLabel: "Email",
                 render: (customer) => customer.email,
               },
               {
                 key: "phone",
                 header: "Phone",
+                hideOnMobile: true,
                 render: (customer) => customer.phone || "N/A",
               },
               {
                 key: "totalOrders",
                 header: "Orders",
                 sortable: true,
+                mobileLabel: "Orders",
                 render: (customer) => (
                   <div className="flex items-center gap-1">
                     <ShoppingBag className="h-4 w-4 text-muted-foreground" />
@@ -250,6 +251,7 @@ export default function CustomersPage() {
               {
                 key: "totalSpent",
                 header: "Total Spent",
+                isSecondary: true,
                 render: (customer) => {
                   const total =
                     customer.Order?.reduce(
@@ -265,6 +267,7 @@ export default function CustomersPage() {
                 key: "createdAt",
                 header: "Joined",
                 sortable: true,
+                hideOnMobile: true,
                 render: (customer) => {
                   const date = new Date(customer.createdAt);
                   return isNaN(date.getTime())
