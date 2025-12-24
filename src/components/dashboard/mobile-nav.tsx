@@ -16,8 +16,8 @@ export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  // Default to ReadOnly for authenticated users without priority
-  const userPriority = user?.priority || RolePriority.ReadOnly;
+  // Use nullish coalescing to preserve priority 0 (NewUser)
+  const userPriority = user?.priority ?? RolePriority.ReadOnly;
 
   // Filter route groups based on user permissions
   const visibleGroups = routeGroups

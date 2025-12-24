@@ -13,9 +13,9 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
 
-  // If user is authenticated but priority is missing/0, default to ReadOnly (10)
-  // This handles legacy user data that might not have priority set
-  const userPriority = user?.priority || RolePriority.ReadOnly;
+  // Use nullish coalescing to preserve priority 0 (NewUser)
+  // Only default to ReadOnly if priority is null/undefined (legacy data)
+  const userPriority = user?.priority ?? RolePriority.ReadOnly;
 
   // Filter route groups based on user permissions
   const visibleGroups = routeGroups
