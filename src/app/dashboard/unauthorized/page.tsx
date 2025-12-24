@@ -49,7 +49,7 @@ export default function UnauthorizedPage() {
               className="w-full"
               onClick={() =>
                 (window.location.href =
-                  "mailto:support@example.com?subject=Permission Request")
+                  "mailto:contact@kitkul.com?subject=Permission Request")
               }
             >
               <Mail className="mr-2 h-4 w-4" />
