@@ -6,12 +6,16 @@ import { cn } from "@/lib/utils";
 import { routeGroups } from "@/config/routes";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/contexts/AuthContext";
-import { canAccess } from "@/config/permissions";
+import { canAccess, RolePriority } from "@/config/permissions";
+import { Loader2, Shield } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const userPriority = user?.priority ?? 0;
+  const { user, loading } = useAuth();
+
+  // If user is authenticated but priority is missing/0, default to ReadOnly (10)
+  // This handles legacy user data that might not have priority set
+  const userPriority = user?.priority || RolePriority.ReadOnly;
 
   // Filter route groups based on user permissions
   const visibleGroups = routeGroups
@@ -22,6 +26,17 @@ export function Sidebar() {
       ),
     }))
     .filter((group) => group.routes.length > 0);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white">
+        <div className="px-3 py-2 flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white">
@@ -56,6 +71,19 @@ export function Sidebar() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* User Info Footer - helps debug permission issues */}
+      <div className="px-3 py-3 border-t border-zinc-700">
+        <div className="flex items-center gap-2 px-3">
+          <Shield className="h-4 w-4 text-zinc-500" />
+          <div className="text-xs text-zinc-500">
+            <p className="truncate">{user?.email || "Not logged in"}</p>
+            <p>
+              {user?.roleName || "Unknown"} (P:{userPriority})
+            </p>
+          </div>
         </div>
       </div>
     </div>

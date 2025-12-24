@@ -6,17 +6,18 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Shield } from "lucide-react";
 import { routeGroups } from "@/config/routes";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/contexts/AuthContext";
-import { canAccess } from "@/config/permissions";
+import { canAccess, RolePriority } from "@/config/permissions";
 
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  const userPriority = user?.priority ?? 0;
+  // Default to ReadOnly for authenticated users without priority
+  const userPriority = user?.priority || RolePriority.ReadOnly;
 
   // Filter route groups based on user permissions
   const visibleGroups = routeGroups
@@ -73,6 +74,19 @@ export function MobileNav() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* User Info Footer */}
+          <div className="px-3 py-3 border-t border-zinc-700 mt-auto">
+            <div className="flex items-center gap-2 px-3">
+              <Shield className="h-4 w-4 text-zinc-500" />
+              <div className="text-xs text-zinc-500">
+                <p className="truncate">{user?.email || "Not logged in"}</p>
+                <p>
+                  {user?.roleName || "Unknown"} (P:{userPriority})
+                </p>
+              </div>
             </div>
           </div>
         </div>
