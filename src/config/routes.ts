@@ -42,13 +42,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Analytics",
         icon: BarChart3,
         href: "/dashboard/analytics",
-        resource: "analytics",
-      },
-      {
-        label: "Reports",
-        icon: FileText,
-        href: "/dashboard/reports",
-        resource: "reports",
+        resource: "dashboard", // Uses dashboard permission
       },
     ],
   },
@@ -77,7 +71,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Shipping Fees",
         icon: Truck,
         href: "/dashboard/shipping",
-        resource: "shipping",
+        resource: "shipments", // Uses shipments permission
       },
     ],
   },
@@ -94,7 +88,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Transactions",
         icon: CreditCard,
         href: "/dashboard/transactions",
-        resource: "transactions",
+        resource: "payments", // Uses payments permission (Admin+)
       },
       {
         label: "Abandoned Carts",
@@ -106,7 +100,7 @@ export const routeGroups: RouteGroup[] = [
         label: "Activity Log",
         icon: Activity,
         href: "/dashboard/activity",
-        resource: "activity",
+        resource: "orderLogs", // Uses orderLogs permission
       },
     ],
   },
