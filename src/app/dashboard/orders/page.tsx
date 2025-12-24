@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
+import { StatsGrid, StatItem } from "@/components/ui/stats-grid";
+import { PageHeader, DateFilter } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -191,17 +193,55 @@ export default function OrdersPage() {
   };
 
   // Calculate stats - payableAmount is always in EUR (base currency)
-  const totalOrders = orders.length;
-  const receivedOrders = orders.filter(
-    (o) => o.orderStatus === EnumOrderStatus.RECEIVED
-  ).length;
-  const fulfilledOrders = orders.filter(
-    (o) => o.orderStatus === EnumOrderStatus.FULFILLED
-  ).length;
-  const cancelledOrders = orders.filter(
-    (o) => o.orderStatus === EnumOrderStatus.CANCELLED
-  ).length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.payableAmount, 0);
+  const stats: StatItem[] = useMemo(
+    () => [
+      {
+        label: "Total Orders",
+        value: orders.length,
+        subLabel: "All time",
+        icon: Package,
+        borderColor: "border-l-gray-300",
+      },
+      {
+        label: "Received",
+        value: orders.filter((o) => o.orderStatus === EnumOrderStatus.RECEIVED)
+          .length,
+        subLabel: "Pending fulfillment",
+        icon: Clock,
+        iconColor: "text-blue-400",
+        borderColor: "border-l-blue-400",
+      },
+      {
+        label: "Fulfilled",
+        value: orders.filter((o) => o.orderStatus === EnumOrderStatus.FULFILLED)
+          .length,
+        subLabel: "Completed",
+        icon: CheckCircle,
+        iconColor: "text-green-400",
+        borderColor: "border-l-green-400",
+      },
+      {
+        label: "Cancelled",
+        value: orders.filter((o) => o.orderStatus === EnumOrderStatus.CANCELLED)
+          .length,
+        subLabel: "Cancelled orders",
+        icon: AlertCircle,
+        iconColor: "text-red-400",
+        borderColor: "border-l-red-400",
+      },
+      {
+        label: "Revenue",
+        value: `€${orders
+          .reduce((sum, o) => sum + o.payableAmount, 0)
+          .toFixed(2)}`,
+        subLabel: "Total earnings",
+        icon: DollarSign,
+        iconColor: "text-yellow-400",
+        borderColor: "border-l-yellow-400",
+      },
+    ],
+    [orders]
+  );
 
   return (
     <div className="flex-1 space-y-4 p-4">
@@ -259,94 +299,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <Card className="border-l-4 border-l-gray-300">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Total Orders
-                </p>
-                <div className="text-xl font-bold">{totalOrders}</div>
-                <p className="text-xs text-muted-foreground">All time</p>
-              </div>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-blue-400">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Received
-                </p>
-                <div className="text-xl font-bold text-blue-600">
-                  {receivedOrders}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pending fulfillment
-                </p>
-              </div>
-              <Clock className="h-4 w-4 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-400">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Fulfilled
-                </p>
-                <div className="text-xl font-bold text-green-600">
-                  {fulfilledOrders}
-                </div>
-                <p className="text-xs text-muted-foreground">Completed</p>
-              </div>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-400">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Cancelled
-                </p>
-                <div className="text-xl font-bold text-red-600">
-                  {cancelledOrders}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Cancelled orders
-                </p>
-              </div>
-              <AlertCircle className="h-4 w-4 text-red-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-yellow-400">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Revenue
-                </p>
-                <div className="text-xl font-bold">
-                  €{totalRevenue.toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">Total revenue</p>
-              </div>
-              <DollarSign className="h-4 w-4 text-yellow-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid stats={stats} columns={5} loading={loading} />
 
       {/* Orders Table */}
       <Card>
@@ -444,6 +397,12 @@ export default function OrdersPage() {
                   }
                 : undefined
             }
+            onRowClick={(order) => router.push(`/dashboard/orders/${order.id}`)}
+            mobileCardActions={(order) => (
+              <Button variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-1" /> View
+              </Button>
+            )}
             columns={[
               ...(visibleColumns.orderID
                 ? [
@@ -451,6 +410,7 @@ export default function OrdersPage() {
                       key: "orderID",
                       header: "Order ID",
                       sortable: true,
+                      isPrimary: true,
                       render: (order: Order) => (
                         <span className="font-medium">{order.orderID}</span>
                       ),
@@ -463,6 +423,7 @@ export default function OrdersPage() {
                       key: "shippingName",
                       header: "Customer",
                       sortable: true,
+                      mobileLabel: "Customer",
                     },
                   ]
                 : []),
@@ -472,6 +433,7 @@ export default function OrdersPage() {
                       key: "payableAmount",
                       header: "Amount",
                       sortable: true,
+                      isSecondary: true,
                       render: (order: Order) => {
                         const symbol =
                           order.currencyPayment === "EUR"
@@ -494,6 +456,7 @@ export default function OrdersPage() {
                       key: "orderStatus",
                       header: "Status",
                       sortable: true,
+                      mobileLabel: "Status",
                       render: (order: Order) =>
                         getStatusBadge(order.orderStatus),
                     },
