@@ -652,58 +652,92 @@ export default function ProductsPage() {
                   }
                 : undefined
             }
+            mobileCardActions={(product) => (
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedProductForVariants(product);
+                    setVariantManagerOpen(true);
+                  }}
+                >
+                  <Package className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(product);
+                  }}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             columns={[
+              {
+                key: "name",
+                header: "Name",
+                sortable: true,
+                isPrimary: true,
+              },
               {
                 key: "sku",
                 header: "SKU",
                 sortable: true,
+                mobileLabel: "SKU",
                 render: (product) => (
                   <span className="font-medium">{product.sku}</span>
                 ),
               },
               {
-                key: "name",
-                header: "Name",
-                sortable: true,
-              },
-              {
                 key: "team",
                 header: "Team",
                 sortable: true,
+                mobileLabel: "Team",
                 render: (product) => product.team?.replace(/_/g, " "),
               },
               {
                 key: "league",
                 header: "League",
                 sortable: true,
+                hideOnMobile: true,
                 render: (product) => product.league?.replace(/_/g, " "),
               },
               {
                 key: "year",
                 header: "Year",
                 sortable: true,
+                mobileLabel: "Year",
               },
               {
                 key: "homeAway",
                 header: "Type",
                 sortable: true,
+                hideOnMobile: true,
               },
               {
                 key: "productStatus",
                 header: "Status",
                 sortable: true,
+                isSecondary: true,
                 render: (product) => getStatusBadge(product.productStatus),
               },
               {
                 key: "actions",
                 header: "Actions",
                 className: "text-right",
+                hideOnMobile: true,
                 render: (product) => (
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedProductForVariants(product);
                         setVariantManagerOpen(true);
                       }}
@@ -714,7 +748,10 @@ export default function ProductsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDuplicate(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicate(product);
+                      }}
                       title="Duplicate product"
                     >
                       <Copy className="h-4 w-4" />
@@ -722,14 +759,20 @@ export default function ProductsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleEdit(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(product);
+                      }}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(product.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(product.id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
