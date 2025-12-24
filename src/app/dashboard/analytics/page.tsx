@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
                   <Skeleton className="h-8 w-24" />
                 ) : (
                   <div className="text-2xl font-bold">
-                    €{((stats?.totalRevenue || 0) / 100).toLocaleString()}
+                    €{(stats?.totalRevenue || 0).toLocaleString()}
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
                   <Skeleton className="h-8 w-20" />
                 ) : (
                   <div className="text-2xl font-bold">
-                    €{((stats?.averageOrderValue || 0) / 100).toFixed(2)}
+                    €{(stats?.averageOrderValue || 0).toFixed(2)}
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
