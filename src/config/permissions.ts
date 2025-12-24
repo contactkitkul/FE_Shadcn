@@ -22,102 +22,131 @@ export interface ResourcePermissions {
   delete: number;
 }
 
-// Permission definitions - must match backend
+/**
+ * Permission definitions - must match backend
+ *
+ * ACCESS LEVELS:
+ * - NewUser (0) / ReadOnly (10): No dashboard access → "Insufficient Permissions" page
+ * - DataEntry (20): Orders only (no refunds/payments)
+ * - Moderator (40): Orders, Products, Customers, Abandoned Carts, Discounts
+ * - Admin (60)+: Full access including Dashboard, Analytics, Transactions
+ */
 export const PERMISSIONS: Record<string, ResourcePermissions> = {
-  // Core Business Resources
-  products: {
-    create: RolePriority.DataEntry, // 20
-    read: RolePriority.ReadOnly, // 10
-    update: RolePriority.DataEntry, // 20
-    delete: RolePriority.Admin, // 60
+  // ============================================================
+  // DASHBOARD & ANALYTICS (Admin+ only)
+  // ============================================================
+  dashboard: {
+    create: RolePriority.God, // 100 - no create
+    read: RolePriority.Admin, // 60 - Admin+ only
+    update: RolePriority.God, // 100 - no update
+    delete: RolePriority.God, // 100 - no delete
   },
 
+  analytics: {
+    create: RolePriority.God, // 100 - no create
+    read: RolePriority.Admin, // 60 - Admin+ only
+    update: RolePriority.God, // 100 - no update
+    delete: RolePriority.God, // 100 - no delete
+  },
+
+  // ============================================================
+  // CORE BUSINESS (DataEntry can see orders, Moderator+ for rest)
+  // ============================================================
   orders: {
-    create: RolePriority.DataEntry, // 20
-    read: RolePriority.ReadOnly, // 10
+    create: RolePriority.Admin, // 60 - system creates via API key
+    read: RolePriority.DataEntry, // 20 - DataEntry can view orders
     update: RolePriority.Moderator, // 40
     delete: RolePriority.SuperAdmin, // 80 - orders should rarely be deleted
   },
 
+  products: {
+    create: RolePriority.Moderator, // 40
+    read: RolePriority.Moderator, // 40 - Moderator+ only
+    update: RolePriority.Moderator, // 40
+    delete: RolePriority.Admin, // 60
+  },
+
   customers: {
-    create: RolePriority.DataEntry, // 20
+    create: RolePriority.Moderator, // 40
     read: RolePriority.Moderator, // 40 - sensitive PII
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
-  // Financial Resources (Higher Security)
+  // ============================================================
+  // FINANCIAL (Admin+ only - sensitive data)
+  // ============================================================
   payments: {
-    create: RolePriority.Admin, // 60
-    read: RolePriority.Admin, // 60 - sensitive financial data
+    create: RolePriority.Admin, // 60 - system creates via API key
+    read: RolePriority.Admin, // 60 - Admin+ only
     update: RolePriority.SuperAdmin, // 80
     delete: RolePriority.God, // 100 - never delete payments
   },
 
   refunds: {
-    create: RolePriority.Admin, // 60
-    read: RolePriority.Admin, // 60
+    create: RolePriority.Admin, // 60 - system creates via API key
+    read: RolePriority.Admin, // 60 - Admin+ only
     update: RolePriority.SuperAdmin, // 80
     delete: RolePriority.God, // 100
   },
 
-  // Marketing & Discounts
+  // ============================================================
+  // MARKETING & DISCOUNTS (Moderator+)
+  // ============================================================
   discounts: {
     create: RolePriority.Moderator, // 40
-    read: RolePriority.ReadOnly, // 10
+    read: RolePriority.Moderator, // 40 - Moderator+ only
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
   abandonedCarts: {
-    create: RolePriority.DataEntry, // 20
+    create: RolePriority.Admin, // 60 - system creates
     read: RolePriority.Moderator, // 40 - marketing data
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
-  // Shipping & Logistics
+  // ============================================================
+  // SHIPPING & LOGISTICS (Moderator+)
+  // ============================================================
   shipments: {
-    create: RolePriority.DataEntry, // 20
+    create: RolePriority.Moderator, // 40
     read: RolePriority.Moderator, // 40
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
   orderTracking: {
-    create: RolePriority.DataEntry, // 20
-    read: RolePriority.ReadOnly, // 10
+    create: RolePriority.Admin, // 60 - system creates
+    read: RolePriority.DataEntry, // 20 - DataEntry can see tracking
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
-  // Content & Catalog
+  // ============================================================
+  // CONTENT & CATALOG (Moderator+)
+  // ============================================================
   leagues: {
     create: RolePriority.Moderator, // 40
-    read: RolePriority.NewUser, // 0 - public data
+    read: RolePriority.Moderator, // 40
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
   leagueIdentifiers: {
     create: RolePriority.Moderator, // 40
-    read: RolePriority.ReadOnly, // 10
+    read: RolePriority.Moderator, // 40
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
-  // Dashboard & Analytics
-  dashboard: {
-    create: RolePriority.God, // 100 - no create
-    read: RolePriority.ReadOnly, // 10
-    update: RolePriority.God, // 100 - no update
-    delete: RolePriority.God, // 100 - no delete
-  },
-
-  // User Management (Highest Security)
+  // ============================================================
+  // USER MANAGEMENT (Admin+)
+  // ============================================================
   users: {
     create: RolePriority.Admin, // 60
-    read: RolePriority.Moderator, // 40
+    read: RolePriority.Admin, // 60
     update: RolePriority.Admin, // 60
     delete: RolePriority.SuperAdmin, // 80
   },
@@ -129,33 +158,38 @@ export const PERMISSIONS: Record<string, ResourcePermissions> = {
     delete: RolePriority.God, // 100
   },
 
-  // Images & Media
+  // ============================================================
+  // IMAGES & MEDIA (Moderator+)
+  // ============================================================
   images: {
-    create: RolePriority.DataEntry, // 20
-    read: RolePriority.NewUser, // 0 - public
-    update: RolePriority.DataEntry, // 20
-    delete: RolePriority.Moderator, // 40
-  },
-
-  // Order Items
-  orderItems: {
-    create: RolePriority.DataEntry, // 20
-    read: RolePriority.ReadOnly, // 10
+    create: RolePriority.Moderator, // 40
+    read: RolePriority.Moderator, // 40
     update: RolePriority.Moderator, // 40
     delete: RolePriority.Admin, // 60
   },
 
-  // Order Logs (Audit Trail)
+  // ============================================================
+  // ORDER ITEMS & LOGS (DataEntry can read items, Moderator+ for logs)
+  // ============================================================
+  orderItems: {
+    create: RolePriority.Admin, // 60 - system creates
+    read: RolePriority.DataEntry, // 20 - DataEntry can see order items
+    update: RolePriority.Moderator, // 40
+    delete: RolePriority.Admin, // 60
+  },
+
   orderLogs: {
-    create: RolePriority.DataEntry, // 20 - system creates these
+    create: RolePriority.Admin, // 60 - system creates audit logs
     read: RolePriority.Moderator, // 40
     update: RolePriority.God, // 100 - never update logs
     delete: RolePriority.God, // 100 - never delete logs
   },
 
-  // Discount Usage
+  // ============================================================
+  // DISCOUNT USAGE (Moderator+)
+  // ============================================================
   discountUsage: {
-    create: RolePriority.DataEntry, // 20
+    create: RolePriority.Admin, // 60 - system creates
     read: RolePriority.Moderator, // 40
     update: RolePriority.Admin, // 60
     delete: RolePriority.SuperAdmin, // 80

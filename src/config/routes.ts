@@ -36,13 +36,13 @@ export const routeGroups: RouteGroup[] = [
         label: "Dashboard",
         icon: LayoutDashboard,
         href: "/dashboard",
-        resource: "dashboard",
+        resource: "dashboard", // Admin+ (60)
       },
       {
         label: "Analytics",
         icon: BarChart3,
         href: "/dashboard/analytics",
-        resource: "dashboard", // Uses dashboard permission
+        resource: "analytics", // Admin+ (60)
       },
     ],
   },
