@@ -2,25 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CrudDataTable } from "@/components/ui/crud-data-table";
-import { StatsGrid } from "@/components/ui/stats-grid";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Users, Eye, ShoppingBag, Calendar } from "lucide-react";
-import { Customer } from "@/types";
-import { format } from "date-fns";
-import { api } from "@/lib/api";
-import { useDebounce } from "@/hooks/useDebounce";
-import { getEntityMessages } from "@/config/messages";
+import {
+  CrudPage,
+  useCrudPageState,
+  CrudColumn,
+} from "@/components/crud/crud-page";
+import { StatItem } from "@/components/ui/stats-grid";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Users, Eye, ShoppingBag, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { getEntityMessages } from "@/config/messages";
 
 interface CustomerWithOrders {
   id: string;
@@ -51,21 +45,21 @@ interface CustomerWithOrders {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerWithOrders[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 500);
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerWithOrders | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [sortColumn, setSortColumn] = useState<string>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{
-    firstName: string;
-    lastName: string;
-    email: string;
-  }>({ firstName: "", lastName: "", email: "" });
 
-  // Fetch customers from API - sorting done client-side for speed
+  const {
+    searchTerm,
+    setSearchTerm,
+    debouncedSearch,
+    sortColumn,
+    sortDirection,
+    handleSort,
+    sortData,
+  } = useCrudPageState("createdAt", "desc");
+
+  // Fetch customers
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -90,212 +84,178 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]); // Removed sort deps - sorting is client-side
+  }, [debouncedSearch]);
 
-  // Client-side sorting for instant response
+  // Sort data
   const sortedCustomers = useMemo(() => {
-    return [...customers].sort((a, b) => {
-      let aVal: any = a[sortColumn as keyof CustomerWithOrders];
-      let bVal: any = b[sortColumn as keyof CustomerWithOrders];
-
-      if (sortColumn === "createdAt" || sortColumn === "updatedAt") {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
-      } else if (typeof aVal === "string") {
-        aVal = aVal.toLowerCase();
-        bVal = bVal?.toLowerCase() || "";
-      }
-
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [customers, sortColumn, sortDirection]);
-
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
+    return sortData(customers, sortColumn, sortDirection);
+  }, [customers, sortColumn, sortDirection, sortData]);
 
   const handleViewDetails = (customer: CustomerWithOrders) => {
     setSelectedCustomer(customer);
     setIsDetailOpen(true);
   };
 
-  return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-          <p className="text-muted-foreground">Manage your customer database</p>
+  // Stats
+  const stats: StatItem[] = useMemo(
+    () => [
+      {
+        label: "Total Customers",
+        value: customers.length,
+        subLabel: "+15% from last month",
+        icon: Users,
+        borderColor: "border-l-blue-400",
+      },
+      {
+        label: "Active Customers",
+        value: Math.floor(customers.length * 0.7),
+        subLabel: "Made purchase in last 30 days",
+        icon: Users,
+        iconColor: "text-green-500",
+        borderColor: "border-l-green-400",
+      },
+      {
+        label: "New This Month",
+        value: Math.floor(customers.length * 0.2),
+        subLabel: "First-time buyers",
+        icon: Users,
+        iconColor: "text-purple-500",
+        borderColor: "border-l-purple-400",
+      },
+    ],
+    [customers]
+  );
+
+  // Columns
+  const columns: CrudColumn<CustomerWithOrders>[] = [
+    {
+      key: "firstName",
+      header: "Name",
+      sortable: true,
+      isPrimary: true,
+      render: (customer) => (
+        <span className="font-medium">
+          {customer.firstName} {customer.lastName}
+        </span>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      mobileLabel: "Email",
+      render: (customer) => customer.email,
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      minWidth: "md",
+      render: (customer) => customer.phone || "N/A",
+    },
+    {
+      key: "totalOrders",
+      header: "Orders",
+      sortable: true,
+      mobileLabel: "Orders",
+      render: (customer) => (
+        <div className="flex items-center gap-1">
+          <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">{customer.totalOrders}</span>
         </div>
-      </div>
+      ),
+    },
+    {
+      key: "totalSpent",
+      header: "Total Spent",
+      isSecondary: true,
+      render: (customer) => {
+        const total =
+          customer.Order?.reduce((sum, o) => sum + (o.totalAmount || 0), 0) ||
+          0;
+        return <span className="font-semibold">€{total.toFixed(2)}</span>;
+      },
+    },
+    {
+      key: "createdAt",
+      header: "Joined",
+      sortable: true,
+      minWidth: "lg",
+      render: (customer) => {
+        const date = new Date(customer.createdAt);
+        return isNaN(date.getTime()) ? "N/A" : format(date, "MMM dd, yyyy");
+      },
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      className: "text-right",
+      hideOnMobile: true,
+      render: (customer) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleViewDetails(customer);
+          }}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
 
-      {/* Stats Cards */}
-      <StatsGrid
+  // Export config
+  const exportConfig = {
+    filename: "customers",
+    headers: ["Name", "Email", "Phone", "Orders", "Total Spent", "Joined"],
+    rowMapper: (customer: CustomerWithOrders) => [
+      `${customer.firstName} ${customer.lastName || ""}`,
+      customer.email,
+      customer.phone || "N/A",
+      customer.totalOrders,
+      `€${(
+        customer.Order?.reduce((sum, o) => sum + (o.totalAmount || 0), 0) || 0
+      ).toFixed(2)}`,
+      format(new Date(customer.createdAt), "MMM dd, yyyy"),
+    ],
+  };
+
+  return (
+    <>
+      <CrudPage<CustomerWithOrders>
+        title="Customers"
+        description="Manage your customer database"
+        data={sortedCustomers}
         loading={loading}
-        columns={3}
-        stats={[
-          {
-            label: "Total Customers",
-            value: customers.length,
-            subLabel: "+15% from last month",
-            icon: Users,
-            borderColor: "border-l-blue-400",
-          },
-          {
-            label: "Active Customers",
-            value: Math.floor(customers.length * 0.7),
-            subLabel: "Made purchase in last 30 days",
-            icon: Users,
-            iconColor: "text-green-500",
-            borderColor: "border-l-green-400",
-          },
-          {
-            label: "New This Month",
-            value: Math.floor(customers.length * 0.2),
-            subLabel: "First-time buyers",
-            icon: Users,
-            iconColor: "text-purple-500",
-            borderColor: "border-l-purple-400",
-          },
-        ]}
+        getRowKey={(customer) => customer.id}
+        columns={columns}
+        stats={stats}
+        statsColumns={3}
+        searchPlaceholder="Search customers..."
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        actions={{
+          onRowClick: handleViewDetails,
+          customActions: (customer) => (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewDetails(customer);
+              }}
+            >
+              <Eye className="h-4 w-4 mr-1" /> View
+            </Button>
+          ),
+        }}
+        exportConfig={exportConfig}
+        emptyIcon={<Users className="h-12 w-12 text-muted-foreground" />}
+        emptyMessage="No customers found"
       />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Customer Directory</CardTitle>
-              {/* <CardDescription> */}
-              {/* View and manage customer information */}
-              {/* </CardDescription> */}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search customers..."
-                  className="pl-8 w-[300px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <CrudDataTable<CustomerWithOrders>
-            data={sortedCustomers}
-            loading={loading}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            getRowKey={(customer) => customer.id}
-            emptyIcon={<Users className="h-12 w-12 text-muted-foreground" />}
-            emptyMessage="No customers found"
-            onRowClick={(customer) => handleViewDetails(customer)}
-            mobileCardActions={(customer) => (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewDetails(customer);
-                }}
-              >
-                <Eye className="h-4 w-4 mr-1" /> View
-              </Button>
-            )}
-            columns={[
-              {
-                key: "firstName",
-                header: "Name",
-                sortable: true,
-                isPrimary: true,
-                render: (customer) => (
-                  <span className="font-medium">
-                    {customer.firstName} {customer.lastName}
-                  </span>
-                ),
-              },
-              {
-                key: "email",
-                header: "Email",
-                mobileLabel: "Email",
-                render: (customer) => customer.email,
-              },
-              {
-                key: "phone",
-                header: "Phone",
-                hideOnMobile: true,
-                render: (customer) => customer.phone || "N/A",
-              },
-              {
-                key: "totalOrders",
-                header: "Orders",
-                sortable: true,
-                mobileLabel: "Orders",
-                render: (customer) => (
-                  <div className="flex items-center gap-1">
-                    <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{customer.totalOrders}</span>
-                  </div>
-                ),
-              },
-              {
-                key: "totalSpent",
-                header: "Total Spent",
-                isSecondary: true,
-                render: (customer) => {
-                  const total =
-                    customer.Order?.reduce(
-                      (sum, o) => sum + (o.totalAmount || 0),
-                      0
-                    ) || 0;
-                  return (
-                    <span className="font-semibold">€{total.toFixed(2)}</span>
-                  );
-                },
-              },
-              {
-                key: "createdAt",
-                header: "Joined",
-                sortable: true,
-                hideOnMobile: true,
-                render: (customer) => {
-                  const date = new Date(customer.createdAt);
-                  return isNaN(date.getTime())
-                    ? "N/A"
-                    : format(date, "MMM dd, yyyy");
-                },
-              },
-              {
-                key: "actions",
-                header: "Actions",
-                className: "text-right",
-                render: (customer) => (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetails(customer);
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                ),
-              },
-            ]}
-          />
-        </CardContent>
-      </Card>
 
       {/* Customer Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
@@ -396,6 +356,6 @@ export default function CustomersPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

@@ -1,41 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CrudDataTable } from "@/components/ui/crud-data-table";
-import { StatsGrid } from "@/components/ui/stats-grid";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  CrudPage,
+  useCrudPageState,
+  CrudColumn,
+} from "@/components/crud/crud-page";
+import { StatItem } from "@/components/ui/stats-grid";
 import {
-  Search,
   Activity,
   User,
   Package,
   CreditCard,
   Truck,
   XCircle,
-  CheckCircle,
   Edit,
-  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { useDebounce } from "@/hooks/useDebounce";
 
 interface OrderLog {
   id: string;
@@ -60,15 +44,22 @@ interface OrderLog {
 export default function ActivityPage() {
   const [logs, setLogs] = useState<OrderLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 500);
-  const [actorFilter, setActorFilter] = useState<string>("all");
-  const [eventFilter, setEventFilter] = useState<string>("all");
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    debouncedSearch,
+    filterValues,
+    handleFilterChange,
+  } = useCrudPageState();
 
   // Fetch order logs from API
   const fetchLogs = async () => {
     try {
       setLoading(true);
+      const actorFilter = filterValues.actor || "all";
+      const eventFilter = filterValues.event || "all";
+
       const response = await api.orderLogs.getAll({
         page: 1,
         limit: 100,
@@ -93,12 +84,9 @@ export default function ActivityPage() {
 
   useEffect(() => {
     fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, actorFilter, eventFilter]);
+  }, [debouncedSearch, filterValues.actor, filterValues.event]);
 
-  // Filtering is now done server-side, but keep local filter for instant feedback
-  const filteredLogs = logs;
-
+  // Helper functions
   const getEventIcon = (event: string) => {
     const icons: Record<string, any> = {
       ORDER_CREATED: Package,
@@ -134,195 +122,174 @@ export default function ActivityPage() {
     return config[actorType] || config.system;
   };
 
-  const handleExport = () => {
-    toast.success("Exporting activity logs to CSV...");
-    // Implement CSV export
+  // Stats
+  const stats: StatItem[] = useMemo(
+    () => [
+      {
+        label: "Total Events",
+        value: logs.length,
+        subLabel: "All time",
+        icon: Activity,
+        borderColor: "border-l-blue-400",
+      },
+      {
+        label: "Today",
+        value: logs.filter(
+          (log) =>
+            format(new Date(log.createdAt), "yyyy-MM-dd") ===
+            format(new Date(), "yyyy-MM-dd")
+        ).length,
+        subLabel: "Events today",
+        icon: Activity,
+        iconColor: "text-green-500",
+        borderColor: "border-l-green-400",
+      },
+      {
+        label: "Admin Actions",
+        value: logs.filter((log) => log.actorType === "admin").length,
+        subLabel: "Manual actions",
+        icon: User,
+        iconColor: "text-purple-500",
+        borderColor: "border-l-purple-400",
+      },
+      {
+        label: "System Events",
+        value: logs.filter((log) => log.actorType === "system").length,
+        subLabel: "Automated",
+        icon: Activity,
+        iconColor: "text-orange-500",
+        borderColor: "border-l-orange-400",
+      },
+    ],
+    [logs]
+  );
+
+  // Columns
+  const columns: CrudColumn<OrderLog>[] = [
+    {
+      key: "orderID",
+      header: "Order ID",
+      isPrimary: true,
+      render: (log) => log.order?.orderID || "N/A",
+    },
+    {
+      key: "event",
+      header: "Event",
+      isSecondary: true,
+      render: (log) => {
+        const EventIcon = getEventIcon(log.event);
+        const eventBadge = getEventBadge(log.event);
+        return (
+          <div className="flex items-center gap-2">
+            <EventIcon className="h-4 w-4 text-muted-foreground" />
+            <Badge className={eventBadge.className}>
+              {log.event.replace(/_/g, " ")}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      key: "actor",
+      header: "Actor",
+      mobileLabel: "Actor",
+      render: (log) => {
+        const actorBadge = getActorBadge(log.actorType);
+        return (
+          <Badge className={actorBadge.className}>{actorBadge.label}</Badge>
+        );
+      },
+    },
+    {
+      key: "details",
+      header: "Details",
+      minWidth: "lg",
+      className: "max-w-[300px]",
+      render: (log) => (
+        <code className="text-xs bg-muted px-2 py-1 rounded">
+          {JSON.stringify(log.details)}
+        </code>
+      ),
+    },
+    {
+      key: "timestamp",
+      header: "Timestamp",
+      mobileLabel: "Time",
+      render: (log) => (
+        <div>
+          {format(new Date(log.createdAt), "MMM dd, yyyy")}
+          <br />
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(log.createdAt), "h:mm:ss a")}
+          </span>
+        </div>
+      ),
+    },
+  ];
+
+  // Filters
+  const filters = [
+    {
+      key: "actor",
+      label: "Actor",
+      type: "select" as const,
+      defaultValue: "all",
+      options: [
+        { value: "all", label: "All Actors" },
+        { value: "admin", label: "Admin" },
+        { value: "customer", label: "Customer" },
+        { value: "system", label: "System" },
+      ],
+    },
+    {
+      key: "event",
+      label: "Event Type",
+      type: "select" as const,
+      defaultValue: "all",
+      options: [
+        { value: "all", label: "All Events" },
+        { value: "ORDER_CREATED", label: "Order Created" },
+        { value: "PAYMENT_PROCESSED", label: "Payment Processed" },
+        { value: "STATUS_CHANGED", label: "Status Changed" },
+        { value: "SHIPMENT_CREATED", label: "Shipment Created" },
+        { value: "ITEM_CANCELLED", label: "Item Cancelled" },
+        { value: "REFUND_ISSUED", label: "Refund Issued" },
+      ],
+    },
+  ];
+
+  // Export config
+  const exportConfig = {
+    filename: "activity-logs",
+    headers: ["Order ID", "Event", "Actor", "Details", "Timestamp"],
+    rowMapper: (log: OrderLog) => [
+      log.order?.orderID || "N/A",
+      log.event.replace(/_/g, " "),
+      getActorBadge(log.actorType).label,
+      JSON.stringify(log.details),
+      format(new Date(log.createdAt), "MMM dd, yyyy h:mm:ss a"),
+    ],
   };
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Order Activity</h2>
-          <p className="text-muted-foreground">
-            Audit trail and activity monitoring
-          </p>
-        </div>
-        <Button onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export Logs
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <StatsGrid
-        loading={loading}
-        columns={4}
-        stats={[
-          {
-            label: "Total Events",
-            value: logs.length,
-            subLabel: "All time",
-            icon: Activity,
-            borderColor: "border-l-blue-400",
-          },
-          {
-            label: "Today",
-            value: logs.filter(
-              (log) =>
-                format(new Date(log.createdAt), "yyyy-MM-dd") ===
-                format(new Date(), "yyyy-MM-dd")
-            ).length,
-            subLabel: "Events today",
-            icon: Activity,
-            iconColor: "text-green-500",
-            borderColor: "border-l-green-400",
-          },
-          {
-            label: "Admin Actions",
-            value: logs.filter((log) => log.actorType === "admin").length,
-            subLabel: "Manual actions",
-            icon: User,
-            iconColor: "text-purple-500",
-            borderColor: "border-l-purple-400",
-          },
-          {
-            label: "System Events",
-            value: logs.filter((log) => log.actorType === "system").length,
-            subLabel: "Automated",
-            icon: Activity,
-            iconColor: "text-orange-500",
-            borderColor: "border-l-orange-400",
-          },
-        ]}
-      />
-
-      {/* Activity Logs Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Activity Logs</CardTitle>
-              {/* <CardDescription>
-                Complete audit trail of all order activities
-              </CardDescription> */}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by order ID or event..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <Select value={actorFilter} onValueChange={setActorFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Actor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Actors</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="customer">Customer</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={eventFilter} onValueChange={setEventFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Event Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Events</SelectItem>
-                <SelectItem value="ORDER_CREATED">Order Created</SelectItem>
-                <SelectItem value="PAYMENT_PROCESSED">
-                  Payment Processed
-                </SelectItem>
-                <SelectItem value="STATUS_CHANGED">Status Changed</SelectItem>
-                <SelectItem value="SHIPMENT_CREATED">
-                  Shipment Created
-                </SelectItem>
-                <SelectItem value="ITEM_CANCELLED">Item Cancelled</SelectItem>
-                <SelectItem value="REFUND_ISSUED">Refund Issued</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <CrudDataTable<OrderLog>
-            data={filteredLogs}
-            loading={loading}
-            getRowKey={(log) => log.id}
-            emptyIcon={<Activity className="h-12 w-12 text-muted-foreground" />}
-            emptyMessage="No activity logs found"
-            columns={[
-              {
-                key: "orderID",
-                header: "Order ID",
-                isPrimary: true,
-                render: (log) => log.order?.orderID || "N/A",
-              },
-              {
-                key: "event",
-                header: "Event",
-                isSecondary: true,
-                render: (log) => {
-                  const EventIcon = getEventIcon(log.event);
-                  const eventBadge = getEventBadge(log.event);
-                  return (
-                    <div className="flex items-center gap-2">
-                      <EventIcon className="h-4 w-4 text-muted-foreground" />
-                      <Badge className={eventBadge.className}>
-                        {log.event.replace(/_/g, " ")}
-                      </Badge>
-                    </div>
-                  );
-                },
-              },
-              {
-                key: "actor",
-                header: "Actor",
-                mobileLabel: "Actor",
-                render: (log) => {
-                  const actorBadge = getActorBadge(log.actorType);
-                  return (
-                    <Badge className={actorBadge.className}>
-                      {actorBadge.label}
-                    </Badge>
-                  );
-                },
-              },
-              {
-                key: "details",
-                header: "Details",
-                hideOnMobile: true,
-                className: "max-w-[300px]",
-                render: (log) => (
-                  <code className="text-xs bg-muted px-2 py-1 rounded">
-                    {JSON.stringify(log.details)}
-                  </code>
-                ),
-              },
-              {
-                key: "timestamp",
-                header: "Timestamp",
-                mobileLabel: "Time",
-                render: (log) => (
-                  <div>
-                    {format(new Date(log.createdAt), "MMM dd, yyyy")}
-                    <br />
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(log.createdAt), "h:mm:ss a")}
-                    </span>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <CrudPage<OrderLog>
+      title="Order Activity"
+      description="Audit trail and activity monitoring"
+      data={logs}
+      loading={loading}
+      getRowKey={(log) => log.id}
+      columns={columns}
+      stats={stats}
+      statsColumns={4}
+      searchPlaceholder="Search by order ID or event..."
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      filters={filters}
+      filterValues={filterValues}
+      onFilterChange={handleFilterChange}
+      exportConfig={exportConfig}
+      emptyIcon={<Activity className="h-12 w-12 text-muted-foreground" />}
+      emptyMessage="No activity logs found"
+    />
   );
 }

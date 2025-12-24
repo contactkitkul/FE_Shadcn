@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CrudDataTable } from "@/components/ui/crud-data-table";
+import { Card, CardContent } from "@/components/ui/card";
+import { CrudDataTable, Column } from "@/components/ui/crud-data-table";
 import { StatsGrid, StatItem } from "@/components/ui/stats-grid";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search,
   CreditCard,
-  TrendingUp,
   TrendingDown,
   DollarSign,
   AlertCircle,
@@ -85,7 +83,6 @@ export default function TransactionsPage() {
         limit: 100,
         search: debouncedSearch || undefined,
       });
-
       if (response.success && response.data?.data) {
         setPayments(response.data.data);
       }
@@ -102,7 +99,6 @@ export default function TransactionsPage() {
         limit: 100,
         search: debouncedSearch || undefined,
       });
-
       if (response.success && response.data?.data) {
         setRefunds(response.data.data);
       }
@@ -119,11 +115,10 @@ export default function TransactionsPage() {
       setLoading(false);
     };
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Memoized stats - use order.totalAmount (EUR) for accurate totals
-  const stats = useMemo(() => {
+  // Stats
+  const stats: StatItem[] = useMemo(() => {
     const totalReceived = payments
       .filter((p) => p.paymentStatus === "SUCCESS")
       .reduce((sum, p) => sum + (p.order?.totalAmount || 0), 0);
@@ -135,27 +130,63 @@ export default function TransactionsPage() {
       .reduce((sum, r) => sum + r.amountPaid, 0);
     const pendingRefunds = refunds.filter((r) => r.status === "PENDING").length;
 
-    return { totalReceived, pendingPayments, totalRefunded, pendingRefunds };
+    return [
+      {
+        label: "Total Received",
+        value: `€${totalReceived.toFixed(2)}`,
+        subLabel: `${
+          payments.filter((p) => p.paymentStatus === "SUCCESS").length
+        } successful`,
+        icon: DollarSign,
+        iconColor: "text-green-600",
+        borderColor: "border-l-green-400",
+      },
+      {
+        label: "Pending Payments",
+        value: `€${pendingPayments.toFixed(2)}`,
+        subLabel: `${
+          payments.filter((p) => p.paymentStatus === "PENDING").length
+        } pending`,
+        icon: AlertCircle,
+        iconColor: "text-yellow-600",
+        borderColor: "border-l-yellow-400",
+      },
+      {
+        label: "Total Refunded",
+        value: `€${totalRefunded.toFixed(2)}`,
+        subLabel: `${
+          refunds.filter((r) => r.status === "REFUNDED").length
+        } processed`,
+        icon: TrendingDown,
+        iconColor: "text-red-600",
+        borderColor: "border-l-red-400",
+      },
+      {
+        label: "Pending Refunds",
+        value: pendingRefunds,
+        subLabel: "Awaiting processing",
+        icon: RefreshCcw,
+        iconColor: "text-orange-600",
+        borderColor: "border-l-orange-400",
+      },
+    ];
   }, [payments, refunds]);
 
   // Filtered data
   const filteredPayments = useMemo(() => {
-    return payments.filter((payment) => {
-      const matchesStatus =
-        paymentStatusFilter === "all" ||
-        payment.paymentStatus === paymentStatusFilter;
-      return matchesStatus;
-    });
+    return payments.filter(
+      (p) =>
+        paymentStatusFilter === "all" || p.paymentStatus === paymentStatusFilter
+    );
   }, [payments, paymentStatusFilter]);
 
   const filteredRefunds = useMemo(() => {
-    return refunds.filter((refund) => {
-      const matchesStatus =
-        refundStatusFilter === "all" || refund.status === refundStatusFilter;
-      return matchesStatus;
-    });
+    return refunds.filter(
+      (r) => refundStatusFilter === "all" || r.status === refundStatusFilter
+    );
   }, [refunds, refundStatusFilter]);
 
+  // Badge helpers
   const getPaymentStatusBadge = (status: string) => {
     const config: Record<string, { className: string; label: string }> = {
       SUCCESS: { className: "bg-green-100 text-green-800", label: "Success" },
@@ -188,69 +219,151 @@ export default function TransactionsPage() {
     return <Badge className={c.className}>{c.label}</Badge>;
   };
 
+  // Payment columns
+  const paymentColumns: Column<Payment>[] = [
+    {
+      key: "orderID",
+      header: "Order ID",
+      isPrimary: true,
+      render: (p) => p.order?.orderID || "N/A",
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      mobileLabel: "Customer",
+      render: (p) => p.order?.shippingName || "N/A",
+    },
+    {
+      key: "transactionId",
+      header: "Transaction ID",
+      hideOnMobile: true,
+      render: (p) => (
+        <span className="font-mono text-sm">{p.transactionId}</span>
+      ),
+    },
+    {
+      key: "gateway",
+      header: "Gateway",
+      hideOnMobile: true,
+      render: (p) => p.paymentGateway,
+    },
+    {
+      key: "date",
+      header: "Date",
+      mobileLabel: "Date",
+      render: (p) => (
+        <div className="text-sm">
+          <div>{format(new Date(p.createdAt), "MMM dd, yyyy")}</div>
+          <div className="text-muted-foreground text-xs">
+            {format(new Date(p.createdAt), "h:mm a")}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      isSecondary: true,
+      render: (p) => (
+        <span className="font-semibold">
+          {getCurrencySymbol(p.currencyPaid)}
+          {p.amountPaid.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      mobileLabel: "Status",
+      render: (p) => getPaymentStatusBadge(p.paymentStatus),
+    },
+  ];
+
+  // Refund columns
+  const refundColumns: Column<Refund>[] = [
+    {
+      key: "orderID",
+      header: "Order ID",
+      isPrimary: true,
+      render: (r) => r.payment?.order?.orderID || "N/A",
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      mobileLabel: "Customer",
+      render: (r) => r.payment?.order?.shippingName || "N/A",
+    },
+    {
+      key: "transactionId",
+      header: "Transaction ID",
+      hideOnMobile: true,
+      render: (r) => (
+        <span className="font-mono text-sm">
+          {r.payment?.transactionId || "N/A"}
+        </span>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      isSecondary: true,
+      render: (r) => (
+        <span className="font-semibold">€{r.amountPaid.toFixed(2)}</span>
+      ),
+    },
+    {
+      key: "reason",
+      header: "Reason",
+      hideOnMobile: true,
+      className: "max-w-[200px] truncate",
+      render: (r) => r.reason || "N/A",
+    },
+    {
+      key: "date",
+      header: "Date",
+      mobileLabel: "Date",
+      render: (r) => (
+        <div className="text-sm">
+          <div>{format(new Date(r.createdAt), "MMM dd, yyyy")}</div>
+          <div className="text-muted-foreground text-xs">
+            {format(new Date(r.createdAt), "h:mm a")}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      mobileLabel: "Status",
+      render: (r) => getRefundStatusBadge(r.status),
+    },
+  ];
+
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8 pt-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
-          <p className="text-muted-foreground">Manage payments and refunds</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Transactions
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Manage payments and refunds
+          </p>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <StatsGrid
-        loading={loading}
-        columns={4}
-        stats={[
-          {
-            label: "Total Received",
-            value: `€${stats.totalReceived.toFixed(2)}`,
-            subLabel: `${
-              payments.filter((p) => p.paymentStatus === "SUCCESS").length
-            } successful`,
-            icon: DollarSign,
-            iconColor: "text-green-600",
-            borderColor: "border-l-green-400",
-          },
-          {
-            label: "Pending Payments",
-            value: `€${stats.pendingPayments.toFixed(2)}`,
-            subLabel: `${
-              payments.filter((p) => p.paymentStatus === "PENDING").length
-            } pending`,
-            icon: AlertCircle,
-            iconColor: "text-yellow-600",
-            borderColor: "border-l-yellow-400",
-          },
-          {
-            label: "Total Refunded",
-            value: `€${stats.totalRefunded.toFixed(2)}`,
-            subLabel: `${
-              refunds.filter((r) => r.status === "REFUNDED").length
-            } processed`,
-            icon: TrendingDown,
-            iconColor: "text-red-600",
-            borderColor: "border-l-red-400",
-          },
-          {
-            label: "Pending Refunds",
-            value: stats.pendingRefunds,
-            subLabel: "Awaiting processing",
-            icon: RefreshCcw,
-            iconColor: "text-orange-600",
-            borderColor: "border-l-orange-400",
-          },
-        ]}
-      />
+      {/* Stats */}
+      <StatsGrid stats={stats} columns={4} loading={loading} />
 
-      {/* Tabs for Payments and Refunds */}
+      {/* Tabs */}
       <Card>
         <CardContent className="pt-6">
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "payments" | "refunds")}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <TabsList>
                 <TabsTrigger
                   value="payments"
@@ -268,12 +381,12 @@ export default function TransactionsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative w-full sm:w-auto">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search..."
-                    className="pl-8 w-[250px]"
+                    className="pl-8 w-full sm:w-[250px]"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -283,7 +396,7 @@ export default function TransactionsPage() {
                     value={paymentStatusFilter}
                     onValueChange={setPaymentStatusFilter}
                   >
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -299,7 +412,7 @@ export default function TransactionsPage() {
                     value={refundStatusFilter}
                     onValueChange={setRefundStatusFilter}
                   >
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,73 +430,12 @@ export default function TransactionsPage() {
               <CrudDataTable<Payment>
                 data={filteredPayments}
                 loading={loading}
+                columns={paymentColumns}
                 getRowKey={(p) => p.id}
                 emptyIcon={
                   <CreditCard className="h-12 w-12 text-muted-foreground" />
                 }
                 emptyMessage="No payments found"
-                columns={[
-                  {
-                    key: "orderID",
-                    header: "Order ID",
-                    isPrimary: true,
-                    render: (p) => p.order?.orderID || "N/A",
-                  },
-                  {
-                    key: "customer",
-                    header: "Customer",
-                    mobileLabel: "Customer",
-                    render: (p) => p.order?.shippingName || "N/A",
-                  },
-                  {
-                    key: "transactionId",
-                    header: "Transaction ID",
-                    hideOnMobile: true,
-                    render: (p) => (
-                      <span className="font-mono text-sm">
-                        {p.transactionId}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "gateway",
-                    header: "Gateway",
-                    hideOnMobile: true,
-                    render: (p) => p.paymentGateway,
-                  },
-                  {
-                    key: "date",
-                    header: "Date",
-                    mobileLabel: "Date",
-                    render: (p) => (
-                      <div className="text-sm">
-                        <div>
-                          {format(new Date(p.createdAt), "MMM dd, yyyy")}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          {format(new Date(p.createdAt), "h:mm a")}
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "amount",
-                    header: "Amount",
-                    isSecondary: true,
-                    render: (p) => (
-                      <span className="font-semibold">
-                        {getCurrencySymbol(p.currencyPaid)}
-                        {p.amountPaid.toFixed(2)}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "status",
-                    header: "Status",
-                    mobileLabel: "Status",
-                    render: (p) => getPaymentStatusBadge(p.paymentStatus),
-                  },
-                ]}
               />
             </TabsContent>
 
@@ -391,73 +443,12 @@ export default function TransactionsPage() {
               <CrudDataTable<Refund>
                 data={filteredRefunds}
                 loading={loading}
+                columns={refundColumns}
                 getRowKey={(r) => r.id}
                 emptyIcon={
                   <RefreshCcw className="h-12 w-12 text-muted-foreground" />
                 }
                 emptyMessage="No refunds found"
-                columns={[
-                  {
-                    key: "orderID",
-                    header: "Order ID",
-                    isPrimary: true,
-                    render: (r) => r.payment?.order?.orderID || "N/A",
-                  },
-                  {
-                    key: "customer",
-                    header: "Customer",
-                    mobileLabel: "Customer",
-                    render: (r) => r.payment?.order?.shippingName || "N/A",
-                  },
-                  {
-                    key: "transactionId",
-                    header: "Transaction ID",
-                    hideOnMobile: true,
-                    render: (r) => (
-                      <span className="font-mono text-sm">
-                        {r.payment?.transactionId || "N/A"}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "amount",
-                    header: "Amount",
-                    isSecondary: true,
-                    render: (r) => (
-                      <span className="font-semibold">
-                        €{r.amountPaid.toFixed(2)}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "reason",
-                    header: "Reason",
-                    hideOnMobile: true,
-                    className: "max-w-[200px] truncate",
-                    render: (r) => r.reason || "N/A",
-                  },
-                  {
-                    key: "date",
-                    header: "Date",
-                    mobileLabel: "Date",
-                    render: (r) => (
-                      <div className="text-sm">
-                        <div>
-                          {format(new Date(r.createdAt), "MMM dd, yyyy")}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          {format(new Date(r.createdAt), "h:mm a")}
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "status",
-                    header: "Status",
-                    mobileLabel: "Status",
-                    render: (r) => getRefundStatusBadge(r.status),
-                  },
-                ]}
               />
             </TabsContent>
           </Tabs>
