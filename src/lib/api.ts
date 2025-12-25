@@ -85,6 +85,16 @@ export async function fetchAPI(endpoint: string, options?: RequestInit) {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }
+        throw new Error("Session expired. Please login again.");
+      }
+
       const errorData = await response
         .json()
         .catch(() => ({ error: response.statusText }));
@@ -119,6 +129,16 @@ export async function fetchAPIWithFormData(
   });
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - token expired or invalid
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
+      throw new Error("Session expired. Please login again.");
+    }
+
     const errorData = await response
       .json()
       .catch(() => ({ error: response.statusText }));
