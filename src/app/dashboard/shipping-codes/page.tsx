@@ -251,7 +251,7 @@ export default function ShippingCodesPage() {
             </div>
             <div className="flex gap-2">
               <span className="font-bold">4.</span>
-              <span>Upload the file and click "Process"</span>
+              <span>Upload the file and click &quot;Process&quot;</span>
             </div>
             <Separator />
             <div className="space-y-2">
@@ -259,7 +259,7 @@ export default function ShippingCodesPage() {
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>New tracking codes are added to orders</li>
                 <li>Existing codes are skipped (no duplicates)</li>
-                <li>Order status changes to "Partially Fulfilled"</li>
+                <li>Order status changes to &quot;Partially Fulfilled&quot;</li>
                 <li>Tracking email is sent to customer automatically</li>
               </ul>
             </div>
