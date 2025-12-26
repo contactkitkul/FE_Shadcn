@@ -224,6 +224,8 @@ export interface Customer {
   lastName?: string;
   phone: string;
   countryCode: string;
+  email?: string;
+  totalOrders?: number;
 }
 
 export interface Order {
@@ -253,6 +255,7 @@ export interface Order {
   tag?: string;
   addressVerified?: EnumAddVerificationStatus;
   shippingFees?: number;
+  orderSource?: string;
   orderItems?: OrderItem[];
   payments?: Payment[];
   shipments?: Shipment[];

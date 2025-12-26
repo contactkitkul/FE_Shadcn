@@ -21,7 +21,27 @@ import {
   EnumNoStockStatus,
   EnumOrderStatus,
   EnumOrderItemStatus,
+  EnumCurrency,
 } from "@/types";
+
+// Currency symbol helper
+const getCurrencySymbol = (currency: EnumCurrency): string => {
+  const symbols: Record<string, string> = {
+    EUR: "€",
+    USD: "$",
+    GBP: "£",
+    INR: "₹",
+    JPY: "¥",
+    CHF: "CHF ",
+    AED: "AED ",
+    AUD: "A$",
+    CAD: "C$",
+    CNY: "¥",
+    HKD: "HK$",
+    SGD: "S$",
+  };
+  return symbols[currency] || `${currency} `;
+};
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -29,14 +49,12 @@ interface OrderItemsCardProps {
   order: Order;
   onOrderUpdate: (order: Order) => void;
   onAddItem: () => void;
-  onDuplicateOrder: () => void;
 }
 
 export function OrderItemsCard({
   order,
   onOrderUpdate,
   onAddItem,
-  onDuplicateOrder,
 }: OrderItemsCardProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemValues, setEditingItemValues] = useState<{
@@ -46,6 +64,37 @@ export function OrderItemsCard({
   }>({ quantity: 1, customisationPrice: 0 });
 
   const statusConfig = getStatusConfig(order.orderStatus);
+
+  const handleDuplicateItem = async (item: OrderItem) => {
+    try {
+      // Create a new order item with the same details (including customisation)
+      const response = await api.orderItems.create({
+        orderId: order.id,
+        productVariantId: item.productVariantId,
+        quantity: item.quantity,
+        customisationString: item.customisationString,
+        customisationPrice: item.customisationPrice || 0,
+      });
+
+      if (response.success && response.data) {
+        // Add the new item to the order
+        const newItem = {
+          ...response.data,
+          createdAt: new Date(response.data.createdAt),
+          updatedAt: new Date(response.data.updatedAt),
+        };
+        onOrderUpdate({
+          ...order,
+          orderItems: [...(order.orderItems || []), newItem],
+        });
+        toast.success("Item duplicated successfully");
+      } else {
+        toast.error(response.error || "Failed to duplicate item");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to duplicate item");
+    }
+  };
 
   const handleEditItem = (item: OrderItem) => {
     setEditingItemId(item.id);
@@ -121,6 +170,7 @@ export function OrderItemsCard({
               <OrderItemRow
                 key={item.id}
                 item={item}
+                currency={order.currencyPayment}
                 isEditing={editingItemId === item.id}
                 editingValues={editingItemValues}
                 onEditingValuesChange={setEditingItemValues}
@@ -128,6 +178,7 @@ export function OrderItemsCard({
                 onSave={() => handleSaveItem(item.id)}
                 onCancel={() => setEditingItemId(null)}
                 onRemove={() => handleRemoveItem(item.id)}
+                onDuplicate={() => handleDuplicateItem(item)}
                 onStockStatusChange={(status) =>
                   handleStockStatusChange(item.id, status)
                 }
@@ -141,10 +192,6 @@ export function OrderItemsCard({
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
-            <Button variant="outline" size="sm" onClick={onDuplicateOrder}>
-              <Copy className="mr-2 h-4 w-4" />
-              Duplicate Order
-            </Button>
           </div>
         </div>
       </CardContent>
@@ -154,6 +201,7 @@ export function OrderItemsCard({
 
 interface OrderItemRowProps {
   item: OrderItem;
+  currency: EnumCurrency;
   isEditing: boolean;
   editingValues: {
     quantity: number;
@@ -169,12 +217,14 @@ interface OrderItemRowProps {
   onSave: () => void;
   onCancel: () => void;
   onRemove: () => void;
+  onDuplicate: () => void;
   onStockStatusChange: (status: EnumNoStockStatus) => void;
   showSeparator: boolean;
 }
 
 function OrderItemRow({
   item,
+  currency,
   isEditing,
   editingValues,
   onEditingValuesChange,
@@ -182,6 +232,7 @@ function OrderItemRow({
   onSave,
   onCancel,
   onRemove,
+  onDuplicate,
   onStockStatusChange,
   showSeparator,
 }: OrderItemRowProps) {
@@ -321,17 +372,32 @@ function OrderItemRow({
             ) : (
               <>
                 <p className="font-medium">
-                  {item.quantity} × €{item.unitPrice?.toFixed(2) || "0.00"}
+                  {item.quantity} × {getCurrencySymbol(currency)}
+                  {item.unitPrice?.toFixed(2) || "0.00"}
                 </p>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" onClick={onEdit}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onEdit}
+                    title="Edit"
+                  >
                     <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onDuplicate}
+                    title="Duplicate Item"
+                  >
+                    <Copy className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="text-destructive"
                     onClick={onRemove}
+                    title="Remove"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

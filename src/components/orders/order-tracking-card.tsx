@@ -144,7 +144,7 @@ export function OrderTrackingCard({
               value={row.provider}
               onValueChange={(value) => handleChange(index, "provider", value)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Provider" />
               </SelectTrigger>
               <SelectContent>

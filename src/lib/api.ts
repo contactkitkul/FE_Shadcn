@@ -306,6 +306,11 @@ export const api = {
       fetchAPI(`/orders/${orderId}/resend-tracking-email`, {
         method: "POST",
       }),
+    cancel: (orderId: string, reason?: string, autoRefund: boolean = true) =>
+      fetchAPI(`/orders/${orderId}`, {
+        method: "DELETE",
+        body: JSON.stringify({ reason, autoRefund }),
+      }),
   },
 
   // Order Items
@@ -523,5 +528,22 @@ export const api = {
       const queryStr = query.toString() ? `?${query.toString()}` : "";
       return fetchAPI(`/order-logs${queryStr}`);
     },
+    create: (data: {
+      orderId: string;
+      event: string;
+      actorType?: string;
+      actorId?: string;
+      details?: any;
+    }) =>
+      fetchAPI("/order-logs", { method: "POST", body: JSON.stringify(data) }),
+  },
+
+  // Bulk Tracking Upload
+  bulkTracking: {
+    upload: (items: { orderID: string; trackingNumbers: string[] }[]) =>
+      fetchAPI("/orders/bulk-tracking", {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      }),
   },
 };

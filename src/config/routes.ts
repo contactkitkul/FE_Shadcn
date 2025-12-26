@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Activity,
   Truck,
+  Upload,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { PAGE_VISIBILITY } from "./permissions";
@@ -72,6 +73,12 @@ export const routeGroups: RouteGroup[] = [
         icon: Truck,
         href: "/dashboard/shipping",
         resource: "shipping", // Shipping fees page
+      },
+      {
+        label: "Shipping Codes",
+        icon: Upload,
+        href: "/dashboard/shipping-codes",
+        resource: "shipping", // Bulk upload shipping codes
       },
     ],
   },
