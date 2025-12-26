@@ -170,10 +170,28 @@ export default function OrdersPage() {
       },
       {
         label: "Revenue",
-        value: `€${orders
-          .reduce((sum, o) => sum + o.payableAmount, 0)
-          .toFixed(2)}`,
-        subLabel: "Total earnings",
+        // NOTE: Revenue uses payableAmount grouped by currency
+        // See docs/CURRENCY_GUIDE.md for currency rules
+        value: (() => {
+          const byCurrency: Record<string, number> = {};
+          orders.forEach((o) => {
+            const curr = o.currencyPayment || "EUR";
+            byCurrency[curr] = (byCurrency[curr] || 0) + o.payableAmount;
+          });
+          const symbols: Record<string, string> = {
+            INR: "₹",
+            EUR: "€",
+            USD: "$",
+            GBP: "£",
+          };
+          return Object.entries(byCurrency)
+            .map(
+              ([curr, amt]) =>
+                `${symbols[curr] || curr}${Math.round(amt).toLocaleString()}`
+            )
+            .join(" | ");
+        })(),
+        subLabel: "By currency",
         icon: DollarSign,
         iconColor: "text-yellow-400",
         borderColor: "border-l-yellow-400",
