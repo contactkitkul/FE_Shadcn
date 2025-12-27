@@ -217,10 +217,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">
                     €{stats?.totalRevenue?.toFixed(2) || "0.00"}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    Avg: €{stats?.averageOrderValue?.toFixed(2) || "0.00"} per
-                    order
-                  </p>
+                  <p className="text-xs text-gray-500">By payment currency</p>
                 </div>
                 <DollarSign className="h-5 w-5 text-gray-400" />
               </div>

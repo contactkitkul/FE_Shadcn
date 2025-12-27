@@ -128,7 +128,8 @@ export default function AnalyticsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange]);
 
-  // Fallback data for charts that don't have API data yet
+  // TODO: Replace with real API data when available
+  // DEMO DATA - Not connected to actual sales
   const salesByLeague = [
     { name: "Premier League", value: 3500, color: "#8b5cf6" },
     { name: "La Liga", value: 2800, color: "#3b82f6" },
@@ -138,6 +139,8 @@ export default function AnalyticsPage() {
     { name: "Others", value: 1200, color: "#6b7280" },
   ];
 
+  // TODO: Replace with real API data when available
+  // DEMO DATA - Not connected to actual sales
   const salesByType = [
     { type: "Normal", count: 4200 },
     { type: "Player", count: 3100 },
@@ -159,7 +162,7 @@ export default function AnalyticsPage() {
       name: p.name,
       sales: p.orderCount,
       quantity: p.totalQuantity,
-      revenue: p.orderCount * 50, // Estimate - replace with actual revenue when API supports it
+      revenue: p.orderCount * 50, // TODO: Replace with actual revenue from API
     })) || [];
 
   // Customer metrics from API or fallback

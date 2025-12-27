@@ -102,26 +102,26 @@ export default function CustomersPage() {
       {
         label: "Total Customers",
         value: customers.length,
-        subLabel: "+15% from last month",
+        subLabel: "All registered",
         icon: Users,
         borderColor: "border-l-blue-400",
       },
-      {
-        label: "Active Customers",
-        value: Math.floor(customers.length * 0.7),
-        subLabel: "Made purchase in last 30 days",
-        icon: Users,
-        iconColor: "text-green-500",
-        borderColor: "border-l-green-400",
-      },
-      {
-        label: "New This Month",
-        value: Math.floor(customers.length * 0.2),
-        subLabel: "First-time buyers",
-        icon: Users,
-        iconColor: "text-purple-500",
-        borderColor: "border-l-purple-400",
-      },
+      // {
+      //   label: "Active Customers",
+      //   value: Math.floor(customers.length * 0.7),
+      //   subLabel: "Made purchase in last 30 days",
+      //   icon: Users,
+      //   iconColor: "text-green-500",
+      //   borderColor: "border-l-green-400",
+      // },
+      // {
+      //   label: "New This Month",
+      //   value: Math.floor(customers.length * 0.2),
+      //   subLabel: "First-time buyers",
+      //   icon: Users,
+      //   iconColor: "text-purple-500",
+      //   borderColor: "border-l-purple-400",
+      // },
     ],
     [customers]
   );

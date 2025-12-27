@@ -134,8 +134,8 @@ export default function ShippingCodesPage() {
   const handleDownloadTemplate = () => {
     const templateData = [
       ["Order Number", "Shipping Code(s)"],
-      ["FUTGY@ABC123", "DHL123456789"],
-      ["FUTGY@DEF456", "FEDEX111222333,FEDEX444555666"],
+      ["KK@ABC123", "DHL123456789"],
+      ["KK@DEF456", "FEDEX111222333,FEDEX444555666"],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(templateData);
@@ -241,7 +241,7 @@ export default function ShippingCodesPage() {
             </div>
             <div className="flex gap-2">
               <span className="font-bold">2.</span>
-              <span>Column A: Order Number (e.g., FUTGY@ABC123)</span>
+              <span>Column A: Order Number (e.g., KK@ABC123)</span>
             </div>
             <div className="flex gap-2">
               <span className="font-bold">3.</span>

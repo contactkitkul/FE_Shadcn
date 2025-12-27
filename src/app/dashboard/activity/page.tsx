@@ -279,8 +279,8 @@ export default function ActivityPage() {
       loading={loading}
       getRowKey={(log) => log.id}
       columns={columns}
-      stats={stats}
-      statsColumns={4}
+      // stats={stats}
+      // statsColumns={4}
       searchPlaceholder="Search by order ID or event..."
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}

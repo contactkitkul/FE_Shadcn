@@ -563,7 +563,25 @@ export default function OrderDetailPage({
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-lg lg:text-xl font-bold">{order.orderID}</h2>
-          <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
+          <Select
+            value={order.orderStatus}
+            onValueChange={(value) =>
+              handleStatusChange(value as EnumOrderStatus)
+            }
+          >
+            <SelectTrigger className="w-[180px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RECEIVED">Unfulfilled</SelectItem>
+              <SelectItem value="PARTIALLY_FULFILLED">
+                Partially Fulfilled
+              </SelectItem>
+              <SelectItem value="FULFILLED">Fulfilled</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              <SelectItem value="FULLY_REFUNDED">Refunded</SelectItem>
+            </SelectContent>
+          </Select>
           <Badge variant="outline" className="bg-green-100 text-green-800">
             Paid
           </Badge>
@@ -1024,7 +1042,7 @@ export default function OrderDetailPage({
           </div>
 
           {/* Order Risk */}
-          <div className="border rounded-lg p-4">
+          <div className="border rounded-lg p-4 bg-muted/50">
             <h3 className="font-medium mb-2">Order risk</h3>
             <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
               <div className="h-full bg-green-500 w-1/4" />

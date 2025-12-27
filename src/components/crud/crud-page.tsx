@@ -334,7 +334,7 @@ export function useCrudPageState<T>(
   const [filterValues, setFilterValues] = React.useState<
     Record<string, string>
   >({});
-  const [dateFilter, setDateFilter] = React.useState("all");
+  const [dateFilter, setDateFilter] = React.useState("30d");
   const [page, setPage] = React.useState(1);
 
   const handleSort = React.useCallback(
