@@ -82,29 +82,3 @@ Change `"+15% from last month"` to something generic or remove.
 Comment out or clearly mark `salesByLeague`, `salesByType` as demo data until API supports it.
 
 ---
-
-## API Enhancements Needed (Future)
-
-These would require backend API changes:
-
-1. **Customer Stats API**
-
-   - `newCustomersThisMonth` - count of customers created in last 30 days
-   - `activeCustomers` - customers with orders in last 30 days
-   - `customerGrowthRate` - percentage change from previous period
-
-2. **Product Stats API**
-
-   - `lowStockProducts` - products with stock below threshold
-   - `outOfStockProducts` - products with zero stock
-   - `totalInventoryValue` - sum of (stock \* price) across all products
-
-3. **Sales Analytics API**
-
-   - `salesByLeague` - aggregated sales grouped by league
-   - `salesByProductType` - aggregated sales grouped by product type (Normal, Player, Retro, Kid)
-   - `topProductsRevenue` - actual revenue per product (not estimated)
-
-4. **Top Customers API**
-   - List of top customers by total spent
-   - Customer lifetime value calculations
